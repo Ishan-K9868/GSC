@@ -256,40 +256,6 @@ function CustomCursor() {
           </motion.div>
         ))}
       </AnimatePresence>
-
-      {/* Magnetic particles that appear on hover */}
-      <AnimatePresence>
-        {isHovering && isVisible && (
-          <>
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className={styles.particle}
-                style={{
-                  x: cursorXSpring,
-                  y: cursorYSpring,
-                }}
-                initial={{ 
-                  opacity: 0, 
-                  scale: 0,
-                }}
-                animate={{ 
-                  opacity: [0, 0.8, 0],
-                  scale: [0, 1, 0.5],
-                  x: cursorXSpring.get() + Math.cos(i * 60 * Math.PI / 180) * 40,
-                  y: cursorYSpring.get() + Math.sin(i * 60 * Math.PI / 180) * 40,
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  delay: i * 0.15,
-                  ease: 'easeOut',
-                }}
-              />
-            ))}
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

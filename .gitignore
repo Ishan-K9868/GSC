@@ -8,3 +8,5 @@ steps/
 
 # Agent configuration folder
 agents/
+
+dist/
