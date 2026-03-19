@@ -1,0 +1,10 @@
+# Ignore generated and local content
+
+# Node.js dependencies
+node_modules/
+
+# Tutorial / documentation steps
+steps/
+
+# Agent configuration folder
+agents/

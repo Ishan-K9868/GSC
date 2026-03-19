@@ -1,0 +1,272 @@
+.personas {
+  background: var(--bg);
+  padding: 140px clamp(2rem, 6vw, 6rem);
+  position: relative;
+}
+
+/* ===== Section Header ===== */
+.eyebrow {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.headline {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  max-width: 20ch;
+  margin: 0 auto 64px;
+  text-align: center;
+}
+
+/* ===== Persona Grid ===== */
+.personaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  align-items: start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Stagger offsets for visual tension */
+.personaCard1 {
+  margin-top: 0;
+}
+
+.personaCard2 {
+  margin-top: 48px;
+}
+
+.personaCard3 {
+  margin-top: 96px;
+}
+
+/* ===== Persona Card ===== */
+.personaCard {
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  transition: opacity 0.3s ease;
+  cursor: default;
+}
+
+/* ===== Card Content ===== */
+.avatar {
+  width: 64px;
+  height: 64px;
+}
+
+.nameChip {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  background: var(--bg-2);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  display: inline-block;
+  margin-top: 12px;
+}
+
+.cardHeadline {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-top: 12px;
+  line-height: 1.2;
+}
+
+/* Before Block */
+.beforeBlock {
+  margin-top: 24px;
+}
+
+.beforeEyebrow {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.beforeText {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* After Block */
+.afterBlock {
+  margin-top: 20px;
+}
+
+.afterEyebrowContainer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.jadeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--jade);
+}
+
+.afterEyebrow {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--jade);
+}
+
+.afterText {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* SDG Chips */
+.sdgChips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.sdgChip {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ===== Navigation Dots ===== */
+.navigationDots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 48px;
+}
+
+.navDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+.navDot:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+  .personas {
+    padding: 100px clamp(1.5rem, 5vw, 3rem);
+  }
+
+  .headline {
+    font-size: clamp(2rem, 7vw, 3rem);
+    margin-bottom: 48px;
+  }
+
+  /* Switch to horizontal scroll carousel */
+  .personaGrid {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 16px;
+    margin-bottom: 0;
+  }
+
+  /* Remove stagger offsets on mobile */
+  .personaCard1,
+  .personaCard2,
+  .personaCard3 {
+    margin-top: 0;
+    min-width: 300px;
+    scroll-snap-align: start;
+  }
+
+  .personaCard {
+    padding: 28px;
+  }
+
+  .cardHeadline {
+    font-size: 1rem;
+  }
+
+  .beforeText,
+  .afterText {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .personas {
+    padding: 80px clamp(1rem, 4vw, 2rem);
+  }
+
+  .headline {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    max-width: none;
+  }
+
+  .personaCard1,
+  .personaCard2,
+  .personaCard3 {
+    min-width: 280px;
+  }
+
+  .personaCard {
+    padding: 24px;
+  }
+
+  .avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .nameChip {
+    font-size: 0.55rem;
+  }
+
+  .cardHeadline {
+    font-size: 0.95rem;
+  }
+
+  .beforeText,
+  .afterText {
+    font-size: 0.8rem;
+  }
+}

@@ -1,0 +1,163 @@
+.trustStrip {
+  background: var(--bg-dark);
+  padding: 48px 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Left Label */
+.leftLabel {
+  position: absolute;
+  left: 5vw;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .leftLabel {
+    display: none;
+  }
+}
+
+/* Gradient Mask */
+.gradientMask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 280px;
+  background: linear-gradient(to right, var(--bg-dark) 140px, transparent 280px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .gradientMask {
+    display: none;
+  }
+}
+
+/* Marquee Container */
+.marqueeContainer {
+  overflow: hidden;
+}
+
+/* Marquee Animations */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marqueeReverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.marqueeTrack {
+  display: flex;
+  gap: 4rem;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.marqueeTrack:hover {
+  animation-play-state: paused;
+}
+
+.marqueeTrackReverse {
+  display: flex;
+  gap: 4rem;
+  width: max-content;
+  animation: marqueeReverse 22s linear infinite;
+  margin-top: 20px;
+}
+
+.marqueeTrackReverse:hover {
+  animation-play-state: paused;
+}
+
+@media (max-width: 768px) {
+  .marqueeTrack,
+  .marqueeTrackReverse {
+    gap: 2.5rem;
+  }
+
+  .marqueeTrackReverse {
+    display: none;
+  }
+}
+
+/* Tech Item */
+.techItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.45;
+  color: #F5EDE0;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+  flex-shrink: 0;
+}
+
+.techItem:hover {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+
+.techItem svg {
+  height: 22px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.techLabel {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* SDG Item */
+.sdgItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.45;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sdgItem:hover {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+
+.sdgItem svg {
+  height: 22px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.sdgLabel {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

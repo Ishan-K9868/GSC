@@ -1,0 +1,328 @@
+/* ─────────────────────────────────────────────────────────────
+   THREE PILLARS — Sticky Scroll Section
+   ───────────────────────────────────────────────────────────── */
+
+.threePillars {
+  background: var(--bg);
+  padding: 0;
+  position: relative;
+}
+
+.sectionIntro {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 84px clamp(2rem, 6vw, 6rem) 28px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DESKTOP LAYOUT — Sticky Pair
+   ───────────────────────────────────────────────────────────── */
+
+.pillarsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.stickyPanel {
+  position: sticky;
+  top: 10vh;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 8px 0 40px clamp(2rem, 6vw, 6rem);
+}
+
+.scrollPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LEFT PANEL — Text + Illustration
+   ───────────────────────────────────────────────────────────── */
+
+.eyebrow {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.headline {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  max-width: 12ch;
+  margin-bottom: 24px;
+}
+
+.subtext {
+  font-family: 'General Sans', sans-serif;
+  font-size: 1rem;
+  color: var(--text-muted);
+  max-width: 36ch;
+  line-height: 1.75;
+  margin-bottom: 20px;
+}
+
+.illustrationArea {
+  width: clamp(420px, 34vw, 520px);
+  height: clamp(420px, 34vw, 520px);
+  overflow: hidden;
+  position: relative;
+  margin-top: 0;
+}
+
+.illustrationWrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.illustrationSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.railNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  width: min(100%, 520px);
+}
+
+.railButton {
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.railButton:hover {
+  border-color: rgba(212, 98, 42, 0.42);
+  color: var(--text);
+}
+
+.railButtonActive {
+  background: rgba(212, 98, 42, 0.1);
+  border-color: rgba(212, 98, 42, 0.5);
+  color: var(--accent);
+}
+
+.railNumber {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.railLabel {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RIGHT PANEL — Subsections
+   ───────────────────────────────────────────────────────────── */
+
+.subsection {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px clamp(2rem, 6vw, 6rem) 80px 0;
+}
+
+.subsectionEyebrow {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.devanagari {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 900;
+  font-size: 0.875rem;
+  letter-spacing: 0;
+}
+
+.subsectionHeadline {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.subsectionBody {
+  font-family: 'General Sans', sans-serif;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text-muted);
+  max-width: 48ch;
+  margin-bottom: 24px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CHIPS
+   ───────────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.chip:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.chipActive {
+  background: rgba(212, 98, 42, 0.1);
+  border-color: rgba(212, 98, 42, 0.5);
+  color: var(--accent);
+}
+
+.chip:focus-visible {
+  outline: none;
+}
+
+.chip svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.interactionHint {
+  margin-top: 10px;
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.72rem;
+  color: rgba(99, 71, 44, 0.72);
+  letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE LAYOUT
+   ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .pillarsGrid {
+    display: none;
+  }
+
+  .mobileContainer {
+    display: block;
+    padding: clamp(2rem, 6vw, 4rem);
+  }
+
+  .sectionIntro {
+    padding: 56px clamp(2rem, 6vw, 4rem) 18px;
+  }
+
+  .stickyPanel {
+    position: static;
+    min-height: auto;
+    padding: 0;
+  }
+
+  .railNav {
+    display: none;
+  }
+
+  .mobileSubsection {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobileSubsection:last-child {
+    border-bottom: none;
+  }
+
+  .mobileIllustration {
+    width: 320px;
+    height: 320px;
+    margin: 0 auto 1.5rem;
+    overflow: hidden;
+  }
+
+  .mobileIllustration .illustrationWrapper {
+    position: relative;
+  }
+
+  .mobileIllustration svg {
+    width: 320px;
+    height: 320px;
+  }
+
+  .mobileSubsection .subsectionEyebrow {
+    justify-content: center;
+  }
+
+  .mobileSubsection .subsectionHeadline {
+    text-align: center;
+  }
+
+  .mobileSubsection .subsectionBody {
+    text-align: center;
+    max-width: none;
+  }
+
+  .mobileSubsection .chips {
+    justify-content: center;
+  }
+
+  .subsection {
+    min-height: auto;
+    padding: 2rem 0;
+  }
+}

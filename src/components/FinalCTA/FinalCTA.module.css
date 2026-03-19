@@ -1,0 +1,162 @@
+.finalCta {
+  background: var(--accent);
+  padding: 240px clamp(2rem, 6vw, 6rem);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* Devanagari texture */
+.devanagariTexture {
+  position: absolute;
+  right: -2%;
+  bottom: -8%;
+  font-size: clamp(12rem, 35vw, 30rem);
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 900;
+  opacity: 0.07;
+  color: #1C0E06;
+  user-select: none;
+  pointer-events: none;
+  line-height: 0.85;
+  z-index: 0;
+}
+
+/* Content wrapper */
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Headline container */
+.headlineContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Headline line 1 */
+.headlineLine1 {
+  display: block;
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  color: #F5EDE0;
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+}
+
+/* Headline line 2 - diminuendo effect */
+.headlineLine2 {
+  display: block;
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 7vw, 6.5rem);
+  color: #F5EDE0;
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+}
+
+/* Headline line 3 - quieter invitation */
+.headlineLine3 {
+  display: block;
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(1.75rem, 4vw, 3.5rem);
+  color: rgba(245, 237, 224, 0.7);
+  letter-spacing: -0.02em;
+  line-height: 0.88;
+  margin-top: 0.15em;
+}
+
+/* Subheadline */
+.subheadline {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 1.125rem;
+  color: rgba(245, 237, 224, 0.65);
+  max-width: 44ch;
+  margin: 32px auto 0;
+  line-height: 1.6;
+}
+
+/* CTA buttons container */
+.ctaButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+/* Ghost button on accent background */
+.ghostButton {
+  background: transparent;
+  border: 1.5px solid rgba(245, 237, 224, 0.4);
+  color: #F5EDE0;
+  border-radius: var(--radius-md);
+  padding: 0.688rem 1.25rem 0.562rem;
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ghostButton:hover {
+  border-color: rgba(245, 237, 224, 0.8);
+  background: rgba(245, 237, 224, 0.08);
+}
+
+/* Micro note */
+.microNote {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: rgba(245, 237, 224, 0.5);
+  margin-top: 20px;
+  letter-spacing: 0.04em;
+}
+
+/* Inverse button enhanced hover (in addition to global styles) */
+:global(.btn-inverse:hover) {
+  background: #FFFFFF;
+  box-shadow: 0 8px 32px rgba(28, 14, 6, 0.25);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .finalCta {
+    padding: 160px clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .headlineLine1 {
+    font-size: clamp(2.5rem, 10vw, 7.5rem);
+  }
+
+  .headlineLine2 {
+    font-size: clamp(2rem, 8vw, 6.5rem);
+  }
+
+  .headlineLine3 {
+    font-size: clamp(1.5rem, 5vw, 3.5rem);
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .ctaButtons button {
+    min-width: 240px;
+  }
+
+  .devanagariTexture {
+    right: -10%;
+    bottom: -5%;
+    font-size: clamp(8rem, 30vw, 20rem);
+  }
+}

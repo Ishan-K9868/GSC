@@ -1,0 +1,176 @@
+/* Tech Foundation Section */
+.techFoundation {
+  background: var(--bg-dark-2);
+  padding: 140px clamp(2rem, 6vw, 6rem);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Teal-tinged dot grid texture */
+.techFoundation::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg width='32' height='32' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='16' cy='16' r='1.5' fill='rgba(61,184,138,0.3)'/%3E%3C/svg%3E");
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+/* Bento grid layout */
+.bentoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-top: 64px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Base card styles */
+.bentoCard {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.bentoCard:hover {
+  border-color: rgba(61, 184, 138, 0.4);
+  box-shadow: 0 0 40px var(--jade-glow);
+  transform: translateY(-2px);
+}
+
+/* Grid positions for each card */
+.cardGemini {
+  grid-column: 1 / 3;
+  grid-row: 1 / 3;
+}
+
+.cardMaps {
+  grid-column: 3 / 5;
+  grid-row: 1;
+}
+
+.cardVertex {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.cardFirebase {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+.cardForecast {
+  grid-column: 1 / 3;
+  grid-row: 3;
+}
+
+.cardBigQuery {
+  grid-column: 3 / 5;
+  grid-row: 3;
+}
+
+/* Card text styles */
+.cardTitle {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #F5EDE0;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.cardBody {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* Logo mark (top-right) */
+.logoMark {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* Jade feature chips (Gemini card only) */
+.featureChip {
+  background: var(--jade-light);
+  border: 1px solid rgba(61, 184, 138, 0.3);
+  color: var(--jade);
+  border-radius: var(--radius-pill);
+  padding: 3px 12px;
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+/* Mini hex grid (Maps card) */
+.hexGridContainer {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.hexGrid {
+  display: block;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .techFoundation {
+    padding: 100px clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .bentoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bentoCard {
+    padding: 18px;
+  }
+
+  /* Reset grid positions for mobile */
+  .cardGemini {
+    grid-column: 1 / 3;
+    grid-row: auto;
+  }
+
+  .cardMaps {
+    grid-column: 1 / 3;
+    grid-row: auto;
+  }
+
+  .cardVertex {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .cardFirebase {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .cardForecast {
+    grid-column: 1 / 3;
+    grid-row: auto;
+  }
+
+  .cardBigQuery {
+    grid-column: 1 / 3;
+    grid-row: auto;
+  }
+
+  /* Hide hex grid on mobile */
+  .hexGridContainer {
+    display: none;
+  }
+}

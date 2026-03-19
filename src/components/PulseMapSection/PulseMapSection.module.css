@@ -1,0 +1,341 @@
+/* ─────────────────────────────────────────────────────────────
+   PULSE MAP SECTION — Hexagonal Visualization
+   ───────────────────────────────────────────────────────────── */
+
+.pulseMapSection {
+  background: var(--bg);
+  padding: 120px 0;
+  position: relative;
+}
+
+[data-theme="dark"] .pulseMapSection {
+  background: var(--bg-dark);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION HEADER
+   ───────────────────────────────────────────────────────────── */
+
+.header {
+  max-width: 56ch;
+  margin: 0 auto 48px;
+  text-align: center;
+  padding: 0 clamp(1.5rem, 4vw, 3rem);
+}
+
+.eyebrow {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--jade);
+  margin-bottom: 16px;
+}
+
+.headline {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 6vw, 5.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.subtext {
+  font-family: 'General Sans', sans-serif;
+  font-size: 1.125rem;
+  color: var(--text-muted);
+  margin-top: 24px;
+  max-width: 50ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LAYER CHIPS
+   ───────────────────────────────────────────────────────────── */
+
+.layerChips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 48px;
+  padding: 0 clamp(1.5rem, 4vw, 3rem);
+}
+
+.layerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.8rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  border: none;
+}
+
+.layerChipActive {
+  background: var(--accent);
+  color: #F5EDE0;
+  border: 1px solid transparent;
+}
+
+.layerChipInactive {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   VISUALIZATION CONTAINER
+   ───────────────────────────────────────────────────────────── */
+
+.vizContainer {
+  width: calc(100% - clamp(2rem, 6vw, 6rem));
+  max-width: 1200px;
+  aspect-ratio: 16 / 9;
+  max-height: 600px;
+  margin: 0 auto;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: relative;
+  background: #150B04;
+}
+
+[data-theme="dark"] .vizContainer {
+  background: #0F0804;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STATUS BAR
+   ───────────────────────────────────────────────────────────── */
+
+.statusBar {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+.liveDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #C0392B;
+}
+
+.liveText {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: rgba(245, 237, 224, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HOVER INFO CARD
+   ───────────────────────────────────────────────────────────── */
+
+.hoverCard {
+  position: absolute;
+  background: rgba(24, 14, 6, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  min-width: 180px;
+  z-index: 10;
+}
+
+.hoverPlaceName {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #F5EDE0;
+  margin-bottom: 8px;
+}
+
+.hoverCategory {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.75rem;
+  color: #F5EDE0;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+}
+
+.hoverDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.hoverMeta {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.hoverReports {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ZOOM SELECTOR
+   ───────────────────────────────────────────────────────────── */
+
+.zoomSelector {
+  position: absolute;
+  bottom: 60px;
+  right: 16px;
+  display: flex;
+  background: rgba(24, 14, 6, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  z-index: 2;
+}
+
+.zoomButton {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.zoomButtonActive {
+  background: rgba(245, 237, 224, 0.15);
+  color: #F5EDE0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BOTTOM OVERLAY
+   ───────────────────────────────────────────────────────────── */
+
+.bottomOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(24, 14, 6, 0.7);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(245, 237, 224, 0.08);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.statsText {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(245, 237, 224, 0.65);
+}
+
+.privacyText {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FALLING DOT ANIMATION
+   ───────────────────────────────────────────────────────────── */
+
+@keyframes fallDrop {
+  from {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.fallingDot {
+  animation: fallDrop 1.2s ease-in forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MOBILE STYLES
+   ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .pulseMapSection {
+    padding: 80px 0;
+  }
+
+  .header {
+    margin-bottom: 32px;
+  }
+
+  .layerChips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 8px;
+    margin-bottom: 32px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .layerChips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .layerChip {
+    flex-shrink: 0;
+  }
+
+  .vizContainer {
+    aspect-ratio: 4 / 3;
+    max-height: none;
+    border-radius: var(--radius-lg);
+  }
+
+  .bottomOverlay {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .zoomSelector {
+    bottom: 70px;
+    right: 8px;
+  }
+
+  .zoomButton {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+  }
+}

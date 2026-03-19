@@ -1,0 +1,242 @@
+/* CSR Portal Section */
+.csrPortal {
+  background: var(--bg);
+  padding: 140px clamp(2rem, 6vw, 6rem);
+  position: relative;
+}
+
+/* Main grid layout */
+.csrGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+/* Feature list row */
+.featureRow {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  transition: transform 0.15s ease;
+}
+
+.featureRow:hover {
+  transform: translateX(4px);
+}
+
+.featureRow:hover .iconBox {
+  background: var(--accent-light);
+}
+
+.iconBox {
+  width: 36px;
+  height: 36px;
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  transition: background-color 0.15s ease;
+}
+
+.featureTitle {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  display: block;
+}
+
+.featureSub {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* Browser mockup */
+.mockupWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.browserFrame {
+  background: var(--bg-dark);
+  border-radius: var(--radius-xl);
+  padding: 4px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 400px;
+}
+
+.chromeBar {
+  height: 32px;
+  background: var(--bg-dark-2);
+  border-radius: calc(var(--radius-xl) - 4px) calc(var(--radius-xl) - 4px) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.urlLabel {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.65rem;
+  color: var(--text-subtle);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.screenArea {
+  background: var(--bg-dark);
+  border-radius: 0 0 calc(var(--radius-xl) - 4px) calc(var(--radius-xl) - 4px);
+  padding: 16px;
+  min-height: 280px;
+}
+
+.screenHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboardContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.donutContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.donutChart {
+  display: block;
+}
+
+/* Employee leaderboard */
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.employeeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+
+.employeeInitial {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.employeeName {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hoursBarContainer {
+  width: 40px;
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.hoursBar {
+  height: 100%;
+  background: var(--jade);
+  border-radius: 2px;
+}
+
+.hoursValue {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.6rem;
+  color: var(--jade);
+  font-variant-numeric: tabular-nums;
+  min-width: 20px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* Export button (decorative) */
+.exportButton {
+  background: var(--accent);
+  color: #f5ede0;
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-top: 12px;
+  text-align: center;
+  cursor: default;
+  transition: filter 0.15s ease;
+}
+
+.exportButton:hover {
+  filter: brightness(1.15);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .csrPortal {
+    padding: 100px clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .csrGrid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .mockupWrapper {
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  .browserFrame {
+    max-width: 100%;
+  }
+
+  .dashboardContent {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .donutContainer {
+    margin-bottom: 8px;
+  }
+}

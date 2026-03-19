@@ -1,0 +1,122 @@
+/* Crisis Mode Section */
+.crisisMode {
+  background: var(--bg-dark);
+  padding: 160px clamp(2rem, 6vw, 6rem);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Radial glow overlay */
+.radialGlow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 50% 40% at 50% 50%,
+    rgba(212, 98, 42, 0.1),
+    transparent
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Content container */
+.content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Terminal container */
+.terminal {
+  background: rgba(15, 8, 4, 0.8);
+  border: 1px solid rgba(245, 237, 224, 0.08);
+  border-radius: var(--radius-md);
+  padding: 24px 32px;
+  max-width: 640px;
+  margin-top: 48px;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 0.875rem;
+  line-height: 2;
+  position: relative;
+}
+
+.terminalLine {
+  display: flex;
+  gap: 16px;
+}
+
+.timestamp {
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+/* Crisis chips grid */
+.crisisChips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 640px;
+  margin-top: 48px;
+}
+
+.crisisChip {
+  background: rgba(35, 22, 8, 0.8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+  cursor: default;
+}
+
+.crisisChip:hover {
+  border-color: rgba(212, 98, 42, 0.5);
+  transform: translateY(-2px);
+}
+
+.iconContainer {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.chipTitle {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #F5EDE0;
+  line-height: 1.4;
+}
+
+.chipSub {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .crisisMode {
+    padding: 100px clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .crisisChips {
+    grid-template-columns: 1fr;
+  }
+
+  .terminal {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 20px 24px;
+  }
+}

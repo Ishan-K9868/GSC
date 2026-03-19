@@ -1,0 +1,264 @@
+.footer {
+  background: #1C0E06;
+  padding: 80px clamp(2rem, 6vw, 6rem) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ambient Devanagari texture */
+.devanagariTexture {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(6rem, 18vw, 14rem);
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 900;
+  opacity: 0.045;
+  color: #F5EDE0;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1;
+  z-index: 0;
+}
+
+/* Main grid */
+.footerGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 4rem;
+  padding-bottom: 64px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Brand column */
+.brandColumn {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-md);
+}
+
+.brandContent {
+  position: relative;
+  z-index: 1;
+}
+
+.spotlightLayer {
+  position: absolute;
+  inset: -24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.logoText {
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #F5EDE0;
+  letter-spacing: -0.03em;
+  display: block;
+  line-height: 1.1;
+}
+
+.logoDevanagari {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 400;
+  font-size: 0.65rem;
+  color: rgba(245, 237, 224, 0.4);
+  letter-spacing: 0.04em;
+  display: block;
+}
+
+.tagline {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(245, 237, 224, 0.5);
+  max-width: 28ch;
+  line-height: 1.65;
+  margin-top: 20px;
+}
+
+/* Social links */
+.socialLinks {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.socialButton {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 237, 224, 0.06);
+  border-radius: var(--radius-sm);
+  color: rgba(245, 237, 224, 0.5);
+  text-decoration: none;
+  transition: background 0.15s ease, filter 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.socialButton:hover {
+  background: rgba(245, 237, 224, 0.12);
+  color: #F5EDE0;
+  filter: brightness(1.12);
+}
+
+/* Screen reader only text */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* Link columns */
+.linkColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnHeading {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(245, 237, 224, 0.35);
+  margin-bottom: 20px;
+}
+
+.linkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.linkList li {
+  margin-bottom: 12px;
+}
+
+.footerLink {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: rgba(245, 237, 224, 0.55);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  position: relative;
+}
+
+.footerLink:hover {
+  color: #F5EDE0;
+}
+
+/* Hairline divider */
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(245, 237, 224, 0.12) 20%,
+    rgba(245, 237, 224, 0.12) 80%,
+    transparent
+  );
+  position: relative;
+  z-index: 1;
+}
+
+/* Bottom bar */
+.bottomBar {
+  padding: 24px 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.copyright {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: rgba(245, 237, 224, 0.35);
+}
+
+.madeWith {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: rgba(245, 237, 224, 0.4);
+  letter-spacing: 0.02em;
+}
+
+/* Google Cloud badge */
+.googleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 237, 224, 0.04);
+  border: 1px solid rgba(245, 237, 224, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.badgeIcon {
+  flex-shrink: 0;
+}
+
+.badgeLabel {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 400;
+  font-size: 0.65rem;
+  color: rgba(245, 237, 224, 0.4);
+}
+
+.badgeBrand {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  color: rgba(245, 237, 224, 0.6);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .footer {
+    padding: 60px clamp(1.5rem, 5vw, 2rem) 0;
+  }
+
+  .footerGrid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .bottomBar {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .copyright,
+  .madeWith,
+  .googleBadge {
+    width: 100%;
+    justify-content: center;
+  }
+}

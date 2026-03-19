@@ -1,0 +1,119 @@
+/* Testimonials Section */
+.testimonials {
+  background: var(--bg);
+  padding: 160px clamp(2rem, 6vw, 6rem);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Cards grid with staggered offsets */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  align-items: start;
+  position: relative;
+  z-index: 1;
+}
+
+/* Vertical offsets — stepped layout */
+.testimonialCard:nth-child(1) {
+  margin-top: 0;
+}
+
+.testimonialCard:nth-child(2) {
+  margin-top: 64px;
+}
+
+.testimonialCard:nth-child(3) {
+  margin-top: 32px;
+}
+
+/* Card base style */
+.testimonialCard {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.testimonialCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+
+/* Focus-within state for keyboard navigation */
+.testimonialCard:focus-within {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(212, 98, 42, 0.25);
+}
+
+/* Card quote text */
+.cardQuote {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 0.9375rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin-top: 16px;
+}
+
+.cardQuote p {
+  margin: 0;
+}
+
+/* Card attribution */
+.cardAttribution {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* SDG chips */
+.sdgChip {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  font-family: 'General Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: inline-block;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .testimonials {
+    padding: 100px clamp(1.5rem, 5vw, 2rem);
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Remove stagger offsets on mobile */
+  .testimonialCard:nth-child(1),
+  .testimonialCard:nth-child(2),
+  .testimonialCard:nth-child(3) {
+    margin-top: 0;
+  }
+
+  .testimonialCard {
+    padding: 24px;
+  }
+
+  /* Scale down Devanagari texture on mobile */
+  .testimonials > div[aria-hidden='true'] {
+    left: -15%;
+  }
+}

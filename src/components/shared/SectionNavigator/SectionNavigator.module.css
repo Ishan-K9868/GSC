@@ -1,0 +1,78 @@
+.navigator {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+}
+
+/* Hidden on mobile */
+@media (max-width: 768px) {
+  .navigator {
+    display: none;
+  }
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dotWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.label {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  padding: 0;
+  transition: background-color 0.15s ease;
+}
+
+.dot:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.iconWrapper svg {
+  width: 100%;
+  height: 100%;
+}
