@@ -132,13 +132,13 @@ export function FinalCTA() {
               variants={lineVariants}
               className={styles.headlineLine1}
             >
-              India\u2019s communities
+              India's communities
             </motion.span>
             <motion.span
               variants={lineVariants}
               className={styles.headlineLine2}
             >
-              can\u2019t wait.
+              can't wait.
             </motion.span>
             <motion.span
               variants={lineVariants}

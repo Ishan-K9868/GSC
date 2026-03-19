@@ -160,6 +160,26 @@ const chipIcons: Record<string, JSX.Element> = {
 
 const categoryColors = ['#C0392B', '#E67E22', '#27AE60', '#2980B9', '#8E44AD', '#D4622A'];
 
+// Category configuration with SVG icon paths
+const PILLAR_CATEGORIES = [
+  { id: 'emergency', label: 'Emergency', color: '#C0392B' },
+  { id: 'food', label: 'Food', color: '#E67E22' },
+  { id: 'health', label: 'Health', color: '#27AE60' },
+  { id: 'water', label: 'Water', color: '#2980B9' },
+  { id: 'education', label: 'Education', color: '#8E44AD' },
+  { id: 'shelter', label: 'Shelter', color: '#D4622A' },
+] as const;
+
+// SVG icon paths for categories (inline in hex)
+const PILLAR_CATEGORY_ICONS: Record<string, string> = {
+  emergency: 'M6 2L8 6H4L6 2ZM6 8V10M6 11V11.5', // Warning triangle
+  food: 'M3 6h6v1c0 2-1.5 3.5-3 3.5S3 9 3 7V6zm1-2h4v1H4V4z', // Bowl
+  health: 'M5 3h2v2h2v2H7v2H5V7H3V5h2V3z', // Cross
+  water: 'M6 2C6 2 2 6 2 8a4 4 0 0 0 8 0c0-2-4-6-4-6z', // Droplet
+  education: 'M6 2L1 4.5l5 2.5 5-2.5L6 2zm0 4v4', // Book/graduation
+  shelter: 'M6 2L1 6h2v4h6V6h2L6 2z', // House
+};
+
 function seedFromIndex(index: number): number {
   const x = Math.sin((index + 1) * 12.9898) * 43758.5453;
   return x - Math.floor(x);
@@ -406,27 +426,35 @@ function IllustrationIntake({ activeChip }: { activeChip: string | null }) {
 
 function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
   const cols = 8;
-  const rows = 6;
-  const hexSize = 20;
+  const rows = 5;
+  const hexSize = 24;
   const hexHeight = hexSize * Math.sqrt(3);
   const hexCells = useMemo(() => getInteractiveHexData(rows, cols), [rows, cols]);
   const filledCells = useMemo(() => hexCells.filter((cell) => cell.isFilled), [hexCells]);
 
   const [activeHex, setActiveHex] = useState(filledCells[0]?.key ?? hexCells[0].key);
-  const [pinPos, setPinPos] = useState({ x: 180, y: 174 });
+  const [pinPos, setPinPos] = useState({ x: 180, y: 180 });
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
+  const [stats, setStats] = useState({ resolved: 0, pending: filledCells.length, active: 24 });
 
-  const categoryLabelByColor: Record<string, string> = {
-    '#C0392B': 'Emergency',
-    '#E67E22': 'Food',
-    '#27AE60': 'Health',
-    '#2980B9': 'Water',
-    '#8E44AD': 'Education',
-    '#D4622A': 'Shelter'
+  // Map color to category for richer display
+  const categoryByColor: Record<string, typeof PILLAR_CATEGORIES[number]> = {
+    '#C0392B': PILLAR_CATEGORIES[0],
+    '#E67E22': PILLAR_CATEGORIES[1],
+    '#27AE60': PILLAR_CATEGORIES[2],
+    '#2980B9': PILLAR_CATEGORIES[3],
+    '#8E44AD': PILLAR_CATEGORIES[4],
+    '#D4622A': PILLAR_CATEGORIES[5],
   };
 
   const getHexCenter = (col: number, row: number) => {
-    const x = 86 + col * hexSize * 1.62;
-    const y = 98 + row * hexHeight * 0.88 + (col % 2 === 1 ? hexHeight * 0.44 : 0);
+    // Larger hexes to fill the container
+    const startX = 58;
+    const startY = 102;
+    const spacingX = hexSize * 1.55;
+    const spacingY = hexHeight * 0.9;
+    const x = startX + col * spacingX;
+    const y = startY + row * spacingY + (col % 2 === 1 ? spacingY * 0.5 : 0);
     return { x, y };
   };
 
@@ -439,30 +467,55 @@ function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
     return points.join(' ');
   };
 
+  // Auto-resolve animation
   useEffect(() => {
-    if (filledCells.length === 0) return;
-
-    let index = 0;
-
-    const movePin = () => {
-      const target = filledCells[index % filledCells.length];
-      const targetCenter = getHexCenter(target.col, target.row);
-      setPinPos(targetCenter);
-      setActiveHex(target.key);
-      index += 1;
-    };
-
-    movePin();
-
     const interval = setInterval(() => {
-      movePin();
-    }, 2000);
+      const unresolvedFilled = filledCells.filter((c) => !resolvedIds.has(c.key));
+      if (unresolvedFilled.length === 0) {
+        // Reset
+        setResolvedIds(new Set());
+        setStats({ resolved: 0, pending: filledCells.length, active: 24 });
+        return;
+      }
+      
+      const toResolve = unresolvedFilled[Math.floor(Math.random() * unresolvedFilled.length)];
+      const targetCenter = getHexCenter(toResolve.col, toResolve.row);
+      setPinPos(targetCenter);
+      setActiveHex(toResolve.key);
+      
+      setTimeout(() => {
+        setResolvedIds((prev) => new Set([...prev, toResolve.key]));
+        setStats((prev) => ({
+          ...prev,
+          resolved: prev.resolved + 1,
+          pending: Math.max(0, prev.pending - 1),
+        }));
+      }, 1200);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [filledCells]);
+  }, [filledCells, resolvedIds]);
+
+  // Click to resolve
+  const handleHexClick = (cell: typeof hexCells[0]) => {
+    if (!cell.isFilled || resolvedIds.has(cell.key)) return;
+    
+    const targetCenter = getHexCenter(cell.col, cell.row);
+    setPinPos(targetCenter);
+    setActiveHex(cell.key);
+    
+    setTimeout(() => {
+      setResolvedIds((prev) => new Set([...prev, cell.key]));
+      setStats((prev) => ({
+        ...prev,
+        resolved: prev.resolved + 1,
+        pending: Math.max(0, prev.pending - 1),
+      }));
+    }, 600);
+  };
 
   const activeCell = hexCells.find((cell) => cell.key === activeHex) ?? hexCells[0];
-  const activeLabel = categoryLabelByColor[activeCell.color] ?? 'Need Cluster';
+  const activeCategory = categoryByColor[activeCell.color] ?? PILLAR_CATEGORIES[3];
   const activeZone = `Zone ${activeCell.row + 1}-${activeCell.col + 1}`;
   const privacyMode = activeChip === 'privacy';
   const forecastMode = activeChip === 'forecast';
@@ -489,58 +542,111 @@ function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
           fontSize="58"
           fill="var(--accent)"
         >
-          ०२
+          02
         </text>
 
-        <rect x="34" y="84" width="292" height="212" rx="16" fill="rgba(245,237,224,0.03)" stroke="rgba(66,47,29,0.2)" />
+        {/* Stats Bar */}
+        <rect x="150" y="32" width="180" height="32" rx="8" fill="rgba(44,24,16,0.5)" />
+        <text x="166" y="46" fill="#F5EDE0" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '11px', fontWeight: 600 }}>
+          {stats.resolved}
+        </text>
+        <text x="166" y="57" fill="rgba(245,237,224,0.5)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '7px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Resolved
+        </text>
+        <line x1="206" y1="40" x2="206" y2="56" stroke="rgba(245,237,224,0.15)" />
+        <text x="222" y="46" fill="#F5EDE0" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '11px', fontWeight: 600 }}>
+          {stats.pending}
+        </text>
+        <text x="222" y="57" fill="rgba(245,237,224,0.5)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '7px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Pending
+        </text>
+        <line x1="262" y1="40" x2="262" y2="56" stroke="rgba(245,237,224,0.15)" />
+        <circle cx="282" cy="48" r="3" fill="#3DB88A">
+          <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />
+        </circle>
+        <text x="290" y="52" fill="#3DB88A" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '8px', fontWeight: 700, letterSpacing: '0.08em' }}>
+          LIVE
+        </text>
 
-        {hexCells.map((cell, index) => {
+        {/* Hex grid container - expanded to fill the card */}
+        <rect x="28" y="72" width="304" height="230" rx="16" fill="rgba(245,237,224,0.03)" stroke="rgba(66,47,29,0.2)" />
+
+        {hexCells.map((cell) => {
           const { x, y } = getHexCenter(cell.col, cell.row);
           const isActive = activeHex === cell.key;
+          const isResolved = resolvedIds.has(cell.key);
+          const category = categoryByColor[cell.color];
 
           return (
-            <motion.polygon
-              key={cell.key}
-              role="button"
-              tabIndex={0}
-              aria-label={`Inspect ${categoryLabelByColor[cell.color]} in Zone ${cell.row + 1}-${cell.col + 1}`}
-              points={hexPoints(x, y, hexSize * 0.8)}
-              fill={
-                privacyMode && cell.isFilled && !isActive
-                  ? 'rgba(92,74,57,0.4)'
-                  : cell.isFilled
-                    ? cell.color
-                    : 'rgba(245,237,224,0.04)'
-              }
-              stroke={
-                isActive
-                  ? 'rgba(245,237,224,0.85)'
-                  : hexMode
-                    ? 'rgba(212,98,42,0.5)'
-                    : 'rgba(99,71,44,0.35)'
-              }
-              strokeWidth={isActive ? '1.8' : '1'}
-              opacity={cell.isFilled ? (isActive ? 1 : 0.82) : hexMode ? 0.85 : 0.6}
-              onMouseEnter={() => setActiveHex(cell.key)}
-              onFocus={() => setActiveHex(cell.key)}
-              onClick={() => setActiveHex(cell.key)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setActiveHex(cell.key);
+            <g key={cell.key}>
+              <motion.polygon
+                role="button"
+                tabIndex={0}
+                aria-label={cell.isFilled ? `Inspect ${category?.label} in Zone ${cell.row + 1}-${cell.col + 1}` : undefined}
+                points={hexPoints(x, y, hexSize * 0.78)}
+                fill={
+                  isResolved
+                    ? '#3DB88A'
+                    : privacyMode && cell.isFilled && !isActive
+                      ? 'rgba(92,74,57,0.4)'
+                      : cell.isFilled
+                        ? cell.color
+                        : 'rgba(245,237,224,0.04)'
                 }
-              }}
-              animate={cell.isFilled ? { scale: isActive ? [1, 1.08, 1] : [1, 1.04, 1] } : { scale: 1 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: index * 0.04 }}
-              style={{ transformOrigin: `${x}px ${y}px`, cursor: 'pointer' }}
-            />
+                stroke={
+                  isActive
+                    ? 'rgba(245,237,224,0.85)'
+                    : hexMode
+                      ? 'rgba(212,98,42,0.5)'
+                      : 'rgba(99,71,44,0.35)'
+                }
+                strokeWidth={isActive ? '1.8' : '1'}
+                fillOpacity={cell.isFilled ? (isResolved ? 0.85 : isActive ? 1 : 0.7) : hexMode ? 0.85 : 0.6}
+                onMouseEnter={() => cell.isFilled && !isResolved && setActiveHex(cell.key)}
+                onFocus={() => cell.isFilled && !isResolved && setActiveHex(cell.key)}
+                onClick={() => handleHexClick(cell)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleHexClick(cell);
+                  }
+                }}
+                animate={cell.isFilled && !isResolved ? { scale: isActive ? [1, 1.08, 1] : [1, 1.03, 1] } : { scale: 1 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: (cell.row * cols + cell.col) * 0.03 }}
+                style={{ transformOrigin: `${x}px ${y}px`, cursor: cell.isFilled && !isResolved ? 'pointer' : 'default' }}
+              />
+              
+              {/* Category icon inside hex */}
+              {cell.isFilled && !isResolved && category && (
+                <g transform={`translate(${x - 7}, ${y - 7})`} style={{ pointerEvents: 'none' }}>
+                  <svg width="14" height="14" viewBox="0 0 12 12">
+                    <path d={PILLAR_CATEGORY_ICONS[category.id]} fill="rgba(255,255,255,0.9)" />
+                  </svg>
+                </g>
+              )}
+              
+              {/* Resolved checkmark */}
+              {isResolved && (
+                <motion.path
+                  d={`M${x - 6},${y} L${x - 2},${y + 5} L${x + 7},${y - 6}`}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              )}
+            </g>
           );
         })}
 
         {privacyMode && (
           <>
-            <rect x="246" y="96" width="64" height="22" rx="9" fill="rgba(33,24,16,0.6)" stroke="rgba(245,237,224,0.2)" />
-            <text x="278" y="111" textAnchor="middle" fill="rgba(245,237,224,0.75)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', fontWeight: 700 }}>
+            <rect x="246" y="84" width="64" height="22" rx="9" fill="rgba(33,24,16,0.6)" stroke="rgba(245,237,224,0.2)" />
+            <text x="278" y="99" textAnchor="middle" fill="rgba(245,237,224,0.75)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', fontWeight: 700 }}>
               ANONYMIZED
             </text>
           </>
@@ -560,14 +666,14 @@ function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
 
         {weatherMode && (
           <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <path d="M248 134a18 18 0 0 0-34 8h-10a10 10 0 0 0 0 20h44a12 12 0 0 0 0-24z" fill="rgba(66,130,180,0.2)" stroke="rgba(66,130,180,0.55)" />
+            <path d="M248 110a18 18 0 0 0-34 8h-10a10 10 0 0 0 0 20h44a12 12 0 0 0 0-24z" fill="rgba(66,130,180,0.2)" stroke="rgba(66,130,180,0.55)" />
             {[0, 1, 2].map((i) => (
               <motion.line
                 key={i}
                 x1={218 + i * 14}
-                y1="166"
+                y1="142"
                 x2={214 + i * 14}
-                y2="176"
+                y2="152"
                 stroke="rgba(66,130,180,0.7)"
                 strokeWidth="1.5"
                 animate={{ opacity: [0.2, 1, 0.2] }}
@@ -579,17 +685,18 @@ function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
 
         {layersMode && (
           <motion.g initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}>
-            <rect x="272" y="198" width="44" height="12" rx="5" fill="rgba(245,237,224,0.13)" />
-            <rect x="268" y="212" width="48" height="12" rx="5" fill="rgba(212,98,42,0.2)" />
-            <rect x="264" y="226" width="52" height="12" rx="5" fill="rgba(245,237,224,0.09)" />
+            <rect x="272" y="180" width="44" height="12" rx="5" fill="rgba(245,237,224,0.13)" />
+            <rect x="268" y="194" width="48" height="12" rx="5" fill="rgba(212,98,42,0.2)" />
+            <rect x="264" y="208" width="52" height="12" rx="5" fill="rgba(245,237,224,0.09)" />
           </motion.g>
         )}
 
+        {/* Location pin */}
         <motion.g
-          animate={{ x: pinPos.x - 180, y: pinPos.y - 174 }}
-          transition={{ duration: 1.5, ease: 'easeInOut' }}
+          animate={{ x: pinPos.x - 160, y: pinPos.y - 150 }}
+          transition={{ duration: 1.2, ease: 'easeInOut' }}
         >
-          <g transform="translate(175, 164)">
+          <g transform="translate(155, 140)">
             <path
               d="M5 0C2.24 0 0 2.24 0 5c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z"
               fill="var(--accent)"
@@ -598,9 +705,11 @@ function IllustrationPulseMap({ activeChip }: { activeChip: string | null }) {
           </g>
         </motion.g>
 
+        {/* Bottom info bar */}
         <rect x="34" y="306" width="292" height="36" rx="12" fill="rgba(212,98,42,0.1)" stroke="rgba(212,98,42,0.22)" />
-        <text x="50" y="329" fill="var(--text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '12px', fontWeight: 600 }}>
-          {activeLabel}
+        <circle cx="50" cy="324" r="5" fill={activeCategory.color} />
+        <text x="62" y="329" fill="var(--text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '12px', fontWeight: 600 }}>
+          {activeCategory.label}
         </text>
         <text x="318" y="329" textAnchor="end" fill="var(--text-muted)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '11px' }}>
           {activeZone} · tap hexes

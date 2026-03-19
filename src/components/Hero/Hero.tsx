@@ -1,20 +1,61 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NoiseTexture } from '../shared';
 import styles from './Hero.module.css';
 
 // Motion configs from foundation
 const springWarm = { type: 'spring', stiffness: 220, damping: 16 } as const;
+const springSnappy = { type: 'spring', stiffness: 400, damping: 25 } as const;
 const easeMapData = { duration: 1.2, ease: [0.25, 0, 0, 1] } as const;
 
-// Category colors for mini hex grid (matching Section 7)
-const categoryColors = [
-  '#E85A4F', // Food/Hunger - warm red
-  '#3DB88A', // Health - jade
-  '#5B8DEF', // Education - blue
-  '#D4922A', // Shelter - amber
-  '#9B6DD7', // Clothing - purple
-];
+// Category configuration with full metadata
+const CATEGORIES = [
+  { id: 'food', label: 'Food', color: '#E85A4F' },
+  { id: 'health', label: 'Health', color: '#3DB88A' },
+  { id: 'education', label: 'Education', color: '#5B8DEF' },
+  { id: 'shelter', label: 'Shelter', color: '#D4922A' },
+  { id: 'clothing', label: 'Clothing', color: '#9B6DD7' },
+] as const;
+
+// SVG icon paths for each category (rendered inside hexagons)
+const CATEGORY_ICONS: Record<CategoryId, { path: string; viewBox: string }> = {
+  food: {
+    // Bowl with steam
+    path: 'M3 9h18v1c0 3.87-3.13 7-7 7h-4c-3.87 0-7-3.13-7-7V9zm2-3h14v1H5V6zm3-3h8v1H8V3z',
+    viewBox: '0 0 24 24',
+  },
+  health: {
+    // Medical cross
+    path: 'M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z',
+    viewBox: '0 0 24 24',
+  },
+  education: {
+    // Open book
+    path: 'M12 4L2 7v11l10-3 10 3V7L12 4zm0 2.5l6 1.8v6.4l-6-1.8-6 1.8V8.3l6-1.8z',
+    viewBox: '0 0 24 24',
+  },
+  shelter: {
+    // House
+    path: 'M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm0 3.5L18 12v7h-2v-6H8v6H6v-7l6-5.5z',
+    viewBox: '0 0 24 24',
+  },
+  clothing: {
+    // T-shirt
+    path: 'M16 3h-2l-2 3-2-3H8L4 7l3 2v11h10V9l3-2-4-4zm-4 4.5L14 5h.5l2 2-1.5 1V17H9V8L7.5 7l2-2H10l2 2.5z',
+    viewBox: '0 0 24 24',
+  },
+};
+
+type CategoryId = typeof CATEGORIES[number]['id'];
+
+// Sample need descriptions for tooltips
+const NEED_DESCRIPTIONS: Record<CategoryId, string[]> = {
+  food: ['Rice packets needed', 'Mid-day meals', 'Emergency ration kits'],
+  health: ['Medical camp', 'First-aid supplies', 'Vaccination drive'],
+  education: ['School supplies', 'Books donation', 'Tuition support'],
+  shelter: ['Temporary housing', 'Building repair', 'Bedding supplies'],
+  clothing: ['Winter clothes', 'School uniforms', 'Blanket distribution'],
+};
 
 // Word animation variants
 const wordVariants = {
@@ -33,147 +74,423 @@ const fadeRise = {
 
 function hexPoints(cx: number, cy: number, r: number): string {
   return Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 180) * (60 * i); // 0° offset for flat-top
+    const angle = (Math.PI / 180) * (60 * i);
     return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
   }).join(' ');
 }
 
 function getHexCenter(col: number, row: number, r: number, offsetX: number, offsetY: number) {
   const x = offsetX + col * r * 1.5;
-  const y = offsetY + row * r * Math.sqrt(3) + (col % 2 === 1 ? r * Math.sqrt(3) / 2 : 0);
+  const y = offsetY + row * r * Math.sqrt(3) + (col % 2 === 1 ? (r * Math.sqrt(3)) / 2 : 0);
   return { x, y };
 }
 
-// Mini HexGrid Component (5×4 grid preview for Hero)
-function MiniHexGrid() {
+// Hex data type
+interface HexData {
+  id: string;
+  col: number;
+  row: number;
+  category: typeof CATEGORIES[number];
+  phase: number;
+  cx: number;
+  cy: number;
+  need: string;
+  urgency: 'low' | 'medium' | 'high';
+  ngoName: string;
+}
+
+// Simulated NGO names
+const NGO_NAMES = [
+  'Akshaya Patra', 'Goonj', 'CRY India', 'Pratham', 'Smile Foundation',
+  'HelpAge India', 'Teach For India', 'Robin Hood Army', 'Feeding India',
+  'Habitat India', 'SEWA', 'Nanhi Kali', 'Magic Bus', 'iVolunteer',
+];
+
+// ─────────────────────────────────────────────────────────────
+// INTERACTIVE HEX DEMO — Comprehensive Hero Visual
+// ─────────────────────────────────────────────────────────────
+
+function InteractiveHexDemo() {
   const COLS = 5;
   const ROWS = 4;
   const HEX_RADIUS = 22;
-  const OFFSET_X = HEX_RADIUS + 4;
-  const OFFSET_Y = HEX_RADIUS * Math.sqrt(3) / 2 + 4;
+  const OFFSET_X = HEX_RADIUS + 12;
+  const OFFSET_Y = (HEX_RADIUS * Math.sqrt(3)) / 2 + 12;
 
-  // Generate hexagons with random colors and phase offsets
-  const [hexagons] = useState(() => {
-    const hexes: { id: string; col: number; row: number; color: string; phase: number; cx: number; cy: number }[] = [];
+  // Refs for tooltip positioning
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Generate hexagons with rich metadata
+  const [hexagons] = useState<HexData[]>(() => {
+    const hexes: HexData[] = [];
     for (let row = 0; row < ROWS; row++) {
       for (let col = 0; col < COLS; col++) {
         const { x: cx, y: cy } = getHexCenter(col, row, HEX_RADIUS, OFFSET_X, OFFSET_Y);
+        const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+        const needs = NEED_DESCRIPTIONS[category.id];
         hexes.push({
           id: `${col}-${row}`,
           col,
           row,
-          color: categoryColors[Math.floor(Math.random() * categoryColors.length)],
+          category,
           phase: Math.random() * Math.PI * 2,
           cx,
           cy,
+          need: needs[Math.floor(Math.random() * needs.length)],
+          urgency: (['low', 'medium', 'high'] as const)[Math.floor(Math.random() * 3)],
+          ngoName: NGO_NAMES[Math.floor(Math.random() * NGO_NAMES.length)],
         });
       }
     }
     return hexes;
   });
 
+  // State management
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
-  const [volunteerPositions, setVolunteerPositions] = useState(() => {
-    const centers = hexagons.map(h => ({ x: h.cx, y: h.cy }));
-    return [
-      centers[Math.floor(Math.random() * centers.length)],
-      centers[Math.floor(Math.random() * centers.length)],
-    ];
-  });
+  const [matchingId, setMatchingId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<CategoryId | 'all'>('all');
+  const [stats, setStats] = useState({ resolved: 0, pending: 20, volunteers: 47 });
+  const [connectionLine, setConnectionLine] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
 
-  // Resolution animation - every 4s resolve a random hex
+  // Volunteer positions with trails
+  const [volunteers, setVolunteers] = useState<Array<{ x: number; y: number; targetHexId: string | null }>>(() => [
+    { x: hexagons[0].cx, y: hexagons[0].cy, targetHexId: null },
+    { x: hexagons[hexagons.length - 1].cx, y: hexagons[hexagons.length - 1].cy, targetHexId: null },
+    { x: hexagons[Math.floor(hexagons.length / 2)].cx, y: hexagons[Math.floor(hexagons.length / 2)].cy, targetHexId: null },
+  ]);
+
+  // Auto resolution animation with matching state
   useEffect(() => {
     const interval = setInterval(() => {
-      setResolvedIds((prev) => {
-        const unresolved = hexagons.filter((h) => !prev.has(h.id));
-        if (unresolved.length === 0) return new Set(); // Reset
-        const toResolve = unresolved[Math.floor(Math.random() * unresolved.length)];
-        return new Set([...prev, toResolve.id]);
+      const unresolved = hexagons.filter((h) => !resolvedIds.has(h.id));
+      if (unresolved.length === 0) {
+        // Reset after all resolved
+        setResolvedIds(new Set());
+        setStats({ resolved: 0, pending: 20, volunteers: 47 });
+        return;
+      }
+
+      // Pick a random unresolved hex
+      const toMatch = unresolved[Math.floor(Math.random() * unresolved.length)];
+
+      // Pick a volunteer to dispatch
+      const volunteerIdx = Math.floor(Math.random() * volunteers.length);
+      const volunteer = volunteers[volunteerIdx];
+
+      // Show connection line
+      setConnectionLine({
+        from: { x: volunteer.x, y: volunteer.y },
+        to: { x: toMatch.cx, y: toMatch.cy },
       });
+
+      // Start matching animation
+      setMatchingId(toMatch.id);
+
+      // Move volunteer toward the hex
+      setVolunteers((prev) =>
+        prev.map((v, i) =>
+          i === volunteerIdx ? { ...v, x: toMatch.cx, y: toMatch.cy, targetHexId: toMatch.id } : v
+        )
+      );
+
+      // After delay, resolve
+      setTimeout(() => {
+        setMatchingId(null);
+        setConnectionLine(null);
+        setResolvedIds((prev) => new Set([...prev, toMatch.id]));
+        setStats((prev) => ({
+          ...prev,
+          resolved: prev.resolved + 1,
+          pending: Math.max(0, prev.pending - 1),
+        }));
+      }, 1800);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [hexagons, resolvedIds, volunteers]);
+
+  // Simulated volunteer movement when not dispatched
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVolunteers((prev) =>
+        prev.map((v) => {
+          if (v.targetHexId) return v; // Don't interrupt dispatch
+          const target = hexagons[Math.floor(Math.random() * hexagons.length)];
+          return { ...v, x: target.cx, y: target.cy };
+        })
+      );
     }, 4000);
     return () => clearInterval(interval);
   }, [hexagons]);
 
-  // Volunteer dot movement between hex centers
+  // Increment volunteers periodically
   useEffect(() => {
     const interval = setInterval(() => {
-      setVolunteerPositions((prev) =>
-        prev.map(() => {
-          const target = hexagons[Math.floor(Math.random() * hexagons.length)];
-          return { x: target.cx, y: target.cy };
-        })
-      );
-    }, 2500);
+      setStats((prev) => ({ ...prev, volunteers: prev.volunteers + Math.floor(Math.random() * 3) }));
+    }, 5000);
     return () => clearInterval(interval);
-  }, [hexagons]);
+  }, []);
 
-  // Calculate viewBox dimensions
-  const svgWidth = COLS * HEX_RADIUS * 1.5 + HEX_RADIUS + 8;
-  const svgHeight = ROWS * HEX_RADIUS * Math.sqrt(3) + HEX_RADIUS * Math.sqrt(3) / 2 + 8;
+  // Manual hex click to resolve
+  const handleHexClick = useCallback((hex: HexData) => {
+    if (resolvedIds.has(hex.id) || matchingId) return;
+
+    setMatchingId(hex.id);
+    setTimeout(() => {
+      setMatchingId(null);
+      setResolvedIds((prev) => new Set([...prev, hex.id]));
+      setStats((prev) => ({
+        ...prev,
+        resolved: prev.resolved + 1,
+        pending: Math.max(0, prev.pending - 1),
+      }));
+    }, 800);
+  }, [resolvedIds, matchingId]);
+
+  // Calculate viewBox dimensions with proper padding
+  const svgWidth = COLS * HEX_RADIUS * 1.5 + HEX_RADIUS + 24;
+  const svgHeight = ROWS * HEX_RADIUS * Math.sqrt(3) + (HEX_RADIUS * Math.sqrt(3)) / 2 + 24;
+
+  // Hovered hex data for tooltip
+  const hoveredHex = hoveredId ? hexagons.find((h) => h.id === hoveredId) : null;
 
   return (
-    <svg
-      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      className={styles.miniHexGrid}
-      aria-hidden="true"
-    >
-      {hexagons.map((hex) => {
-        const isResolved = resolvedIds.has(hex.id);
-        const color = isResolved ? '#3DB88A' : hex.color;
+    <div className={styles.demoContainer} ref={containerRef}>
+      {/* Live Stats Bar */}
+      <div className={styles.statsBar}>
+        <div className={styles.statItem}>
+          <span className={styles.statValue}>{stats.resolved}</span>
+          <span className={styles.statLabel}>Resolved</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statItem}>
+          <span className={styles.statValue}>{stats.pending}</span>
+          <span className={styles.statLabel}>Pending</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statItem}>
+          <span className={styles.statValue}>{stats.volunteers}</span>
+          <span className={styles.statLabel}>Active</span>
+        </div>
+        <motion.div
+          className={styles.liveIndicator}
+          animate={{ opacity: [1, 0.4, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <span className={styles.liveDot} />
+          LIVE
+        </motion.div>
+      </div>
 
-        return (
-          <g key={hex.id}>
-            <motion.polygon
-              points={hexPoints(hex.cx, hex.cy, HEX_RADIUS * 0.9)}
-              fill={color}
-              fillOpacity={0.6}
-              stroke={color}
-              strokeWidth={1}
-              strokeOpacity={0.8}
-              initial={{ scale: 0.92 }}
-              animate={{
-                scale: [0.92, 1, 0.92],
-                fillOpacity: isResolved ? 0.8 : 0.6,
-              }}
-              transition={{
-                scale: {
-                  duration: 2.5,
-                  repeat: Infinity,
-                  delay: hex.phase / (Math.PI * 2) * 2.5,
-                  ease: 'easeInOut',
-                },
-                fillOpacity: { duration: 0.5 },
-              }}
-              style={{ transformOrigin: `${hex.cx}px ${hex.cy}px` }}
+      {/* Main Hex Grid */}
+      <svg
+        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+        className={styles.interactiveHexGrid}
+        aria-label="Interactive resource allocation visualization"
+        role="img"
+      >
+        {/* Connection line for volunteer dispatch */}
+        <AnimatePresence>
+          {connectionLine && (
+            <motion.line
+              x1={connectionLine.from.x}
+              y1={connectionLine.from.y}
+              x2={connectionLine.to.x}
+              y2={connectionLine.to.y}
+              stroke="rgba(245,237,224,0.6)"
+              strokeWidth={2}
+              strokeDasharray="4 4"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
             />
-            {isResolved && (
-              <motion.path
-                d={`M${hex.cx - 5},${hex.cy} L${hex.cx - 1},${hex.cy + 4} L${hex.cx + 6},${hex.cy - 4}`}
-                fill="none"
-                stroke="white"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
+          )}
+        </AnimatePresence>
+
+        {/* Hexagons */}
+        {hexagons.map((hex) => {
+          const isResolved = resolvedIds.has(hex.id);
+          const isMatching = matchingId === hex.id;
+          const isHovered = hoveredId === hex.id;
+          const isFiltered = activeFilter !== 'all' && hex.category.id !== activeFilter;
+          const color = isResolved ? '#3DB88A' : hex.category.color;
+
+          // Urgency ring
+          const urgencyColors = { low: 'transparent', medium: '#D4922A', high: '#E85A4F' };
+
+          return (
+            <g
+              key={hex.id}
+              style={{ cursor: isResolved ? 'default' : 'pointer' }}
+              onClick={() => handleHexClick(hex)}
+              onMouseEnter={() => setHoveredId(hex.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            >
+              {/* Urgency ring (outer glow) */}
+              {!isResolved && hex.urgency !== 'low' && (
+                <motion.polygon
+                  points={hexPoints(hex.cx, hex.cy, HEX_RADIUS)}
+                  fill="none"
+                  stroke={urgencyColors[hex.urgency]}
+                  strokeWidth={2}
+                  strokeOpacity={0.6}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: [1, 1.08, 1], strokeOpacity: [0.6, 0.3, 0.6] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  style={{ transformOrigin: `${hex.cx}px ${hex.cy}px` }}
+                />
+              )}
+
+              {/* Main hexagon */}
+              <motion.polygon
+                points={hexPoints(hex.cx, hex.cy, HEX_RADIUS * 0.88)}
+                fill={color}
+                fillOpacity={isFiltered ? 0.15 : isHovered ? 0.9 : 0.65}
+                stroke={color}
+                strokeWidth={isHovered ? 2 : 1}
+                strokeOpacity={isFiltered ? 0.3 : 0.9}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{
+                  scale: isMatching ? [1, 1.15, 1] : isHovered ? 1.05 : 1,
+                  opacity: 1,
+                  fillOpacity: isFiltered ? 0.15 : isResolved ? 0.85 : isHovered ? 0.9 : 0.65,
+                }}
+                transition={isMatching ? { duration: 0.6, times: [0, 0.5, 1] } : springSnappy}
+                style={{ transformOrigin: `${hex.cx}px ${hex.cy}px` }}
               />
-            )}
-          </g>
-        );
-      })}
-      {/* Volunteer dots */}
-      {volunteerPositions.map((pos, i) => (
-        <motion.circle
-          key={i}
-          r={4}
-          fill="rgba(245,237,224,0.9)"
-          initial={false}
-          animate={{ cx: pos.x, cy: pos.y }}
-          transition={{ duration: 2, ease: 'easeInOut' }}
-        />
-      ))}
-    </svg>
+
+              {/* Matching pulse ring */}
+              {isMatching && (
+                <motion.polygon
+                  points={hexPoints(hex.cx, hex.cy, HEX_RADIUS * 1.2)}
+                  fill="none"
+                  stroke="#3DB88A"
+                  strokeWidth={3}
+                  initial={{ scale: 0.8, opacity: 1 }}
+                  animate={{ scale: 1.4, opacity: 0 }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  style={{ transformOrigin: `${hex.cx}px ${hex.cy}px` }}
+                />
+              )}
+
+              {/* Category icon (SVG) */}
+              {!isResolved && !isFiltered && (
+                <g
+                  transform={`translate(${hex.cx - 5}, ${hex.cy - 5})`}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  <svg width="10" height="10" viewBox={CATEGORY_ICONS[hex.category.id].viewBox}>
+                    <path
+                      d={CATEGORY_ICONS[hex.category.id].path}
+                      fill="rgba(255,255,255,0.9)"
+                    />
+                  </svg>
+                </g>
+              )}
+
+              {/* Resolved checkmark */}
+              {isResolved && (
+                <motion.path
+                  d={`M${hex.cx - 6},${hex.cy} L${hex.cx - 2},${hex.cy + 5} L${hex.cx + 7},${hex.cy - 5}`}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+              )}
+            </g>
+          );
+        })}
+
+        {/* Volunteer dots */}
+        {volunteers.map((vol, i) => (
+          <motion.g key={i}>
+            {/* Trail/glow */}
+            <motion.circle
+              r={8}
+              fill="rgba(245,237,224,0.2)"
+              initial={false}
+              animate={{ cx: vol.x, cy: vol.y }}
+              transition={{ duration: 1.5, ease: 'easeInOut' }}
+            />
+            {/* Main dot */}
+            <motion.circle
+              r={4}
+              fill="rgba(245,237,224,0.95)"
+              stroke="rgba(44,24,16,0.3)"
+              strokeWidth={1}
+              initial={false}
+              animate={{ cx: vol.x, cy: vol.y }}
+              transition={{ duration: 1.5, ease: 'easeInOut' }}
+            />
+          </motion.g>
+        ))}
+      </svg>
+
+      {/* Category Legend / Filters */}
+      <div className={styles.categoryLegend}>
+        <button
+          type="button"
+          className={`${styles.legendItem} ${activeFilter === 'all' ? styles.legendActive : ''}`}
+          onClick={() => setActiveFilter('all')}
+        >
+          All
+        </button>
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            className={`${styles.legendItem} ${activeFilter === cat.id ? styles.legendActive : ''}`}
+            onClick={() => setActiveFilter(cat.id)}
+          >
+            <span className={styles.legendDot} style={{ background: cat.color }} />
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      <AnimatePresence>
+        {hoveredHex && !resolvedIds.has(hoveredHex.id) && (
+          <motion.div
+            className={styles.hexTooltip}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className={styles.tooltipHeader}>
+              <svg 
+                className={styles.tooltipIcon} 
+                width="14" 
+                height="14" 
+                viewBox={CATEGORY_ICONS[hoveredHex.category.id].viewBox}
+              >
+                <path
+                  d={CATEGORY_ICONS[hoveredHex.category.id].path}
+                  fill={hoveredHex.category.color}
+                />
+              </svg>
+              <span className={styles.tooltipCategory} style={{ color: hoveredHex.category.color }}>
+                {hoveredHex.category.label}
+              </span>
+              {hoveredHex.urgency === 'high' && <span className={styles.tooltipUrgent}>Urgent</span>}
+            </div>
+            <p className={styles.tooltipNeed}>{hoveredHex.need}</p>
+            <p className={styles.tooltipNgo}>
+              <span className={styles.tooltipNgoLabel}>Matched:</span> {hoveredHex.ngoName}
+            </p>
+            <p className={styles.tooltipHint}>Click to resolve</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -411,7 +728,7 @@ function Hero() {
             </div>
             {/* Screen Area */}
             <div className={styles.screenArea}>
-              <MiniHexGrid />
+              <InteractiveHexDemo />
             </div>
           </div>
         </motion.div>

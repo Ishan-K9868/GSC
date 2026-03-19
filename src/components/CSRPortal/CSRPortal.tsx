@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'motion/react';
 import { WaitlistModal } from '../shared';
 import styles from './CSRPortal.module.css';
@@ -45,21 +45,29 @@ const features: Feature[] = [
   }
 ];
 
-const sdgSegments = [
-  { sdg: 1, color: '#E5243B', portion: 0.18 },
-  { sdg: 3, color: '#4C9F38', portion: 0.22 },
-  { sdg: 4, color: '#C5192D', portion: 0.15 },
-  { sdg: 6, color: '#26BDE2', portion: 0.15 },
-  { sdg: 11, color: '#FD9D24', portion: 0.18 },
-  { sdg: 17, color: '#19486A', portion: 0.12 }
+interface SdgSegment {
+  sdg: number;
+  color: string;
+  portion: number;
+  label: string;
+  focus: string;
+}
+
+const sdgSegments: SdgSegment[] = [
+  { sdg: 1, color: '#E5243B', portion: 0.18, label: 'No Poverty', focus: 'Emergency cash + food drives' },
+  { sdg: 3, color: '#4C9F38', portion: 0.22, label: 'Good Health', focus: 'Medical camp deployment' },
+  { sdg: 4, color: '#C5192D', portion: 0.15, label: 'Quality Education', focus: 'After-school volunteer network' },
+  { sdg: 6, color: '#26BDE2', portion: 0.15, label: 'Clean Water', focus: 'Water relief coordination' },
+  { sdg: 11, color: '#FD9D24', portion: 0.18, label: 'Sustainable Cities', focus: 'Urban resilience squads' },
+  { sdg: 17, color: '#19486A', portion: 0.12, label: 'Partnerships', focus: 'Cross-NGO joint missions' }
 ];
 
 const employees = [
-  { initial: 'A', name: 'Arjun M.', hours: 48, maxHours: 60 },
-  { initial: 'P', name: 'Priya K.', hours: 42, maxHours: 60 },
-  { initial: 'R', name: 'Rohan S.', hours: 38, maxHours: 60 },
-  { initial: 'M', name: 'Meera J.', hours: 35, maxHours: 60 },
-  { initial: 'V', name: 'Vikram T.', hours: 28, maxHours: 60 }
+  { initial: 'A', name: 'Arjun M.', hours: 48, maxHours: 60, unit: 'Field Ops', impact: '14 family kits dispatched' },
+  { initial: 'P', name: 'Priya K.', hours: 42, maxHours: 60, unit: 'Medical', impact: '11 clinics coordinated' },
+  { initial: 'R', name: 'Rohan S.', hours: 38, maxHours: 60, unit: 'Education', impact: '9 learning circles launched' },
+  { initial: 'M', name: 'Meera J.', hours: 35, maxHours: 60, unit: 'Water', impact: '7 tanker routes verified' },
+  { initial: 'V', name: 'Vikram T.', hours: 28, maxHours: 60, unit: 'Logistics', impact: '5 rapid response trips' }
 ];
 
 function FeatureIcon({ type }: { type: string }) {
@@ -139,30 +147,41 @@ function FeatureIcon({ type }: { type: string }) {
   }
 }
 
-function DonutChart({ isInView }: { isInView: boolean }) {
-  const radius = 45;
+function DonutChart({
+  isInView,
+  activeSdg,
+  onActivate
+}: {
+  isInView: boolean;
+  activeSdg: number;
+  onActivate: (sdg: number) => void;
+}) {
+  const radius = 64;
   const circumference = 2 * Math.PI * radius;
   let cumulativeOffset = 0;
+  const activeSegment = sdgSegments.find((segment) => segment.sdg === activeSdg) ?? sdgSegments[0];
 
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120" className={styles.donutChart}>
+    <svg width="170" height="170" viewBox="0 0 170 170" className={styles.donutChart}>
+      <circle cx="85" cy="85" r={radius} fill="none" stroke="rgba(245,237,224,0.12)" strokeWidth="10" />
       {sdgSegments.map((segment, i) => {
         const segmentLength = circumference * segment.portion;
-        const gap = 2;
+        const gap = 4;
         const dashArray = `${segmentLength - gap} ${circumference - segmentLength + gap}`;
         const dashOffset = -cumulativeOffset;
+        const isActive = activeSdg === segment.sdg;
 
         cumulativeOffset += segmentLength;
 
         return (
           <motion.circle
             key={segment.sdg}
-            cx="60"
-            cy="60"
+            cx="85"
+            cy="85"
             r={radius}
             fill="none"
             stroke={segment.color}
-            strokeWidth="10"
+            strokeWidth={isActive ? 15 : 11}
             strokeDasharray={dashArray}
             strokeDashoffset={dashOffset}
             initial={{ strokeDashoffset: dashOffset + circumference }}
@@ -172,24 +191,66 @@ function DonutChart({ isInView }: { isInView: boolean }) {
                 : { strokeDashoffset: dashOffset + circumference }
             }
             transition={{ ...springWarm, delay: i * 0.15 }}
-            transform="rotate(-90 60 60)"
+            transform="rotate(-90 85 85)"
+            opacity={isActive ? 1 : 0.78}
+            onMouseEnter={() => onActivate(segment.sdg)}
+            onFocus={() => onActivate(segment.sdg)}
+            onClick={() => onActivate(segment.sdg)}
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Highlight SDG ${segment.sdg}: ${segment.label}`}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onActivate(segment.sdg);
+              }
+            }}
           />
         );
       })}
-      {/* Center label */}
+
       <text
-        x="60"
-        y="60"
+        x="85"
+        y="76"
         textAnchor="middle"
         dominantBaseline="middle"
         style={{
           fontFamily: 'General Sans, sans-serif',
           fontWeight: 600,
-          fontSize: '0.65rem',
+          fontSize: '0.62rem',
           fill: 'var(--text-muted)'
         }}
       >
-        6 SDGs
+        SDG {activeSegment.sdg}
+      </text>
+      <text
+        x="85"
+        y="92"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{
+          fontFamily: 'General Sans, sans-serif',
+          fontWeight: 700,
+          fontSize: '0.95rem',
+          fill: '#F5EDE0'
+        }}
+      >
+        {Math.round(activeSegment.portion * 100)}%
+      </text>
+      <text
+        x="85"
+        y="107"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{
+          fontFamily: 'General Sans, sans-serif',
+          fontWeight: 500,
+          fontSize: '0.58rem',
+          fill: 'var(--text-subtle)'
+        }}
+      >
+        contribution
       </text>
     </svg>
   );
@@ -199,6 +260,25 @@ export default function CSRPortal() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeSdg, setActiveSdg] = useState(3);
+  const [activeEmployee, setActiveEmployee] = useState(0);
+  const [dashboardMode, setDashboardMode] = useState<'sdg' | 'team' | 'compliance'>('sdg');
+
+  const selectedSdg = sdgSegments.find((segment) => segment.sdg === activeSdg) ?? sdgSegments[0];
+  const selectedEmployee = employees[activeEmployee];
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveSdg((prev) => {
+        const currentIndex = sdgSegments.findIndex((segment) => segment.sdg === prev);
+        const nextIndex = (currentIndex + 1) % sdgSegments.length;
+        return sdgSegments[nextIndex].sdg;
+      });
+      setActiveEmployee((prev) => (prev + 1) % employees.length);
+    }, 2800);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -270,7 +350,16 @@ export default function CSRPortal() {
             <div className={styles.browserFrame}>
               {/* Chrome bar */}
               <div className={styles.chromeBar}>
-                <div style={{ display: 'flex', gap: '5px', marginLeft: '12px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '5px',
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)'
+                  }}
+                >
                   <div
                     style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#E05353' }}
                     aria-hidden="true"
@@ -294,9 +383,9 @@ export default function CSRPortal() {
                   <span
                     style={{
                       fontFamily: 'General Sans, sans-serif',
-                      fontWeight: 600,
-                      fontSize: '0.7rem',
-                      color: 'var(--text-muted)'
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      color: 'rgba(245, 237, 224, 0.9)'
                     }}
                   >
                     CSR Impact Dashboard — Q4 2026
@@ -323,11 +412,52 @@ export default function CSRPortal() {
                   </span>
                 </div>
 
+                <div className={styles.modeBar}>
+                  {[
+                    { id: 'sdg', label: 'SDG Lens' },
+                    { id: 'team', label: 'Team Lens' },
+                    { id: 'compliance', label: 'Audit Lens' }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      className={`${styles.modeButton} ${dashboardMode === mode.id ? styles.modeButtonActive : ''}`}
+                      onClick={() => setDashboardMode(mode.id as 'sdg' | 'team' | 'compliance')}
+                      aria-label={`Switch dashboard to ${mode.label}`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+
+                <p className={styles.interactionGuide}>Hover SDG arcs and employee rows to inspect live impact.</p>
+
                 {/* Content grid - donut + leaderboard */}
                 <div className={styles.dashboardContent}>
                   {/* Donut chart */}
                   <div className={styles.donutContainer}>
-                    <DonutChart isInView={isInView} />
+                    <DonutChart
+                      isInView={isInView}
+                      activeSdg={activeSdg}
+                      onActivate={(sdg) => setActiveSdg(sdg)}
+                    />
+
+                    <motion.div
+                      key={selectedSdg.sdg}
+                      className={styles.sdgDetailCard}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...springWarm, delay: 0.05 }}
+                    >
+                      <span className={styles.sdgDetailEyebrow}>SDG {selectedSdg.sdg} FOCUS</span>
+                      <span className={styles.sdgDetailTitle}>{selectedSdg.label}</span>
+                      <span className={styles.sdgDetailSub}>{selectedSdg.focus}</span>
+                      <span className={styles.sdgDetailMetric}>
+                        {dashboardMode === 'sdg' && '1,248 verified service-hours in this stream'}
+                        {dashboardMode === 'team' && '4 NGO partners currently mapped to this stream'}
+                        {dashboardMode === 'compliance' && 'BRSR + GRI fields auto-linked for this stream'}
+                      </span>
+                    </motion.div>
                   </div>
 
                   {/* Employee leaderboard */}
@@ -337,7 +467,23 @@ export default function CSRPortal() {
                         key={i}
                         className={styles.employeeRow}
                         style={{
-                          background: i % 2 === 0 ? 'var(--bg-dark)' : 'var(--bg-dark-2)'
+                          background: i === activeEmployee
+                            ? 'rgba(212, 98, 42, 0.15)'
+                            : i % 2 === 0
+                              ? 'var(--bg-dark)'
+                              : 'var(--bg-dark-2)'
+                        }}
+                        onMouseEnter={() => setActiveEmployee(i)}
+                        onFocus={() => setActiveEmployee(i)}
+                        onClick={() => setActiveEmployee(i)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Inspect ${employee.name} impact details`}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setActiveEmployee(i);
+                          }
                         }}
                       >
                         <div className={styles.employeeInitial}>{employee.initial}</div>
@@ -351,6 +497,25 @@ export default function CSRPortal() {
                         <span className={styles.hoursValue}>{employee.hours}h</span>
                       </div>
                     ))}
+
+                    <motion.div
+                      key={selectedEmployee.name}
+                      className={styles.employeeDetailCard}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={springWarm}
+                    >
+                      <span className={styles.employeeDetailName}>{selectedEmployee.name} · {selectedEmployee.unit}</span>
+                      <span className={styles.employeeDetailImpact}>{selectedEmployee.impact}</span>
+                      <div className={styles.employeeSparkTrack}>
+                        <motion.div
+                          className={styles.employeeSparkFill}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.round((selectedEmployee.hours / selectedEmployee.maxHours) * 100)}%` }}
+                          transition={springWarm}
+                        />
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
 

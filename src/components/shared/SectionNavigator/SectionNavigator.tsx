@@ -2,180 +2,162 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import styles from './SectionNavigator.module.css';
 
-// Motion config from foundation
-const springSnap = { type: 'spring', stiffness: 400, damping: 30 } as const;
-
 interface Section {
   id: string;
   label: string;
-  icon: React.ReactNode;
+  icon: JSX.Element;
   color: string;
 }
 
-// Custom SVG icons for each section
 const sections: Section[] = [
   {
     id: 'hero',
     label: 'Hero',
-    color: 'var(--accent)',
+    color: '#6366F1',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M7 1L1 6v7h4V9h4v4h4V6L7 1z" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    id: 'trust-strip',
-    label: 'Trust',
-    color: 'var(--jade)',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M7 1L2 3v4c0 3.5 2.1 5.7 5 6.5 2.9-.8 5-3 5-6.5V3L7 1zm-1 8L4 7l1-1 1 1 3-3 1 1-4 4z" fill="currentColor" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
   {
     id: 'problem',
-    label: 'The Problem',
-    color: '#D4921A',
+    label: 'Problem',
+    color: '#F59E0B',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M7 4v3.5M7 9.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
     ),
   },
   {
     id: 'three-pillars',
     label: 'Three Pillars',
-    color: 'var(--accent)',
+    color: '#EC4899',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="1" y="5" width="3" height="8" rx="0.5" fill="currentColor" />
-        <rect x="5.5" y="2" width="3" height="11" rx="0.5" fill="currentColor" />
-        <rect x="10" y="4" width="3" height="9" rx="0.5" fill="currentColor" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="8" width="4" height="13" rx="1" />
+        <rect x="10" y="4" width="4" height="17" rx="1" />
+        <rect x="17" y="11" width="4" height="10" rx="1" />
       </svg>
     ),
   },
   {
     id: 'intake-demo',
-    label: 'Intake Engine',
-    color: 'var(--jade)',
+    label: 'Intake',
+    color: '#8B5CF6',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M4 4h6M4 7h4M4 10h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="22" />
       </svg>
     ),
   },
   {
     id: 'pulse-map',
     label: 'Pulse Map',
-    color: '#E85A4F',
+    color: '#EF4444',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="7" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M7 1C4.2 1 2 3.5 2 6c0 3.5 5 7 5 7s5-3.5 5-7c0-2.5-2.2-5-5-5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
       </svg>
     ),
   },
   {
     id: 'matching-engine',
-    label: 'Matching Engine',
-    color: 'var(--jade)',
+    label: 'Matching',
+    color: '#14B8A6',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="4" cy="4" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M6 6l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="8.5" cy="7" r="4" />
+        <line x1="23" y1="11" x2="17" y2="17" />
+        <polyline points="17 11 23 11 23 17" />
       </svg>
     ),
   },
   {
     id: 'impact',
     label: 'Impact',
-    color: 'var(--accent)',
+    color: '#06B6D4',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M1 12h2V6H1v6zM5 12h2V4H5v8zM9 12h2V2H9v10zM13 12V8h-2v4h2z" fill="currentColor" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     ),
   },
   {
     id: 'personas',
-    label: 'Who It Serves',
-    color: '#8B5CF6',
+    label: 'Personas',
+    color: '#F97316',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="5" cy="4" r="2" fill="currentColor" />
-        <circle cx="10" cy="4" r="1.5" fill="currentColor" opacity="0.6" />
-        <path d="M1 12c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M9 10c0-1.3.9-2.5 2-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
   },
   {
-    id: 'crisis',
-    label: 'Crisis Mode',
-    color: '#EF4444',
+    id: 'crisis-mode',
+    label: 'Crisis',
+    color: '#DC2626',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M7 1L1 13h12L7 1z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
-        <path d="M7 5v3M7 10v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
       </svg>
     ),
   },
   {
-    id: 'csr',
+    id: 'csr-portal',
     label: 'CSR Portal',
-    color: '#0EA5E9',
+    color: '#7C3AED',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="2" y="3" width="10" height="9" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M2 6h10M5 3V1M9 3V1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
       </svg>
     ),
   },
   {
     id: 'tech',
-    label: 'Technology',
-    color: '#6366F1',
+    label: 'Tech',
+    color: '#0EA5E9',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M5 2L2 7l3 5M9 2l3 5-3 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 18 22 12 16 6" />
+        <polyline points="8 6 2 12 8 18" />
       </svg>
     ),
   },
   {
     id: 'testimonials',
     label: 'Testimonials',
-    color: 'var(--jade)',
+    color: '#10B981',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M2 3c0-.6.4-1 1-1h8c.6 0 1 .4 1 1v6c0 .6-.4 1-1 1H6l-3 2v-2H3c-.6 0-1-.4-1-1V3z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M4 5h6M4 7h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
       </svg>
     ),
   },
   {
     id: 'final-cta',
     label: 'Get Started',
-    color: 'var(--accent)',
+    color: '#22C55E',
     icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M7 12V2M7 2l-4 4M7 2l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    id: 'footer',
-    label: 'Footer',
-    color: 'var(--text-muted)',
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <rect x="1" y="2" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M1 8h12" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M4 10h2M8 10h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 16 16 12 12 8" />
+        <line x1="8" y1="12" x2="16" y2="12" />
       </svg>
     ),
   },
@@ -183,9 +165,8 @@ const sections: Section[] = [
 
 function SectionNavigator() {
   const [activeSection, setActiveSection] = useState<string>('hero');
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // IntersectionObserver to detect active section
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
 
@@ -216,79 +197,64 @@ function SectionNavigator() {
     };
   }, []);
 
-  const handleClick = useCallback((id: string) => {
+  const scrollToSection = useCallback((id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, id: string) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleClick(id);
-      }
-    },
-    [handleClick]
-  );
-
   return (
     <nav className={styles.navigator} aria-label="Page sections">
-      <ul className={styles.list}>
-        {sections.map(({ id, label, icon, color }) => {
-          const isActive = activeSection === id;
-          const isHovered = hoveredSection === id;
+      <ul className={styles.navList}>
+        {sections.map((section) => {
+          const isActive = activeSection === section.id;
+          const isHovered = hoveredId === section.id;
 
           return (
-            <li key={id} className={styles.item}>
-              <div className={styles.dotWrapper}>
-                {/* Hover label */}
-                <motion.span
-                  className={styles.label}
-                  initial={false}
-                  animate={{
-                    opacity: isHovered ? 1 : 0,
-                    x: isHovered ? 0 : -4,
-                  }}
-                  transition={{ duration: 0.2 }}
-                  aria-hidden="true"
-                >
-                  {label}
-                </motion.span>
-
-                {/* Dot button */}
-                <motion.button
-                  type="button"
-                  className={styles.dot}
-                  onClick={() => handleClick(id)}
-                  onKeyDown={(e) => handleKeyDown(e, id)}
-                  onMouseEnter={() => setHoveredSection(id)}
-                  onMouseLeave={() => setHoveredSection(null)}
-                  onFocus={() => setHoveredSection(id)}
-                  onBlur={() => setHoveredSection(null)}
-                  aria-label={`Navigate to ${label}`}
-                  aria-current={isActive ? 'true' : undefined}
-                  initial={false}
-                  animate={{
-                    scale: isActive ? 1 : 0.6,
-                    opacity: isActive ? 1 : 0.4,
-                  }}
-                  whileHover={{ scale: isActive ? 1.1 : 0.8, opacity: 1 }}
-                  transition={springSnap}
+            <li key={section.id} className={styles.navItem}>
+              <motion.button
+                type="button"
+                className={styles.navButton}
+                onClick={() => scrollToSection(section.id)}
+                onMouseEnter={() => setHoveredId(section.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                aria-label={`Navigate to ${section.label}`}
+                aria-current={isActive ? 'true' : undefined}
+                data-active={isActive}
+                style={{ color: section.color }}
+                animate={{
+                  scale: isActive ? 1 : 0.96,
+                }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.94 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 0.8 }}
+              >
+                <span 
+                  className={styles.iconWrapper}
                   style={{
-                    color: isActive ? color : 'rgba(128,128,128,0.3)',
-                    backgroundColor: isActive ? color : 'rgba(128,128,128,0.3)',
+                    color: section.color,
+                    opacity: isActive ? 1 : 0.7,
                   }}
                 >
-                  <span
-                    className={styles.iconWrapper}
-                    style={{ color: isActive ? 'var(--bg)' : 'transparent' }}
-                  >
-                    {icon}
-                  </span>
-                </motion.button>
-              </div>
+                  {section.icon}
+                </span>
+              </motion.button>
+
+              {/* Tooltip label */}
+              <motion.span
+                className={styles.tooltip}
+                initial={{ opacity: 0, x: 8, scale: 0.9 }}
+                animate={{
+                  opacity: isHovered ? 1 : 0,
+                  x: isHovered ? 0 : 8,
+                  scale: isHovered ? 1 : 0.9,
+                }}
+                transition={{ duration: 0.15 }}
+                style={{ pointerEvents: 'none' }}
+              >
+                {section.label}
+              </motion.span>
             </li>
           );
         })}

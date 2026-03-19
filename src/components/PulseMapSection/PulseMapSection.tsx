@@ -39,6 +39,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   shelter: '#D4622A',
 };
 
+// SVG icon paths for each category (12x12 viewBox)
+const CATEGORY_ICON_PATHS: Record<string, string> = {
+  emergency: 'M6 1l5 9H1l5-9zm0 3v3m0 1.5v.5', // Warning triangle
+  food: 'M2 6h8v.5c0 2.5-2 4.5-4 4.5S2 9 2 6.5V6zm1-2h6v1H3V4z', // Bowl
+  health: 'M5 2h2v3h3v2H7v3H5V7H2V5h3V2z', // Cross
+  water: 'M6 1s4 4 4 6a4 4 0 0 1-8 0c0-2 4-6 4-6z', // Droplet
+  education: 'M6 1L1 3.5l5 2.5 5-2.5L6 1zm0 4.5v5M3 5v3.5l3 1.5 3-1.5V5', // Graduation cap
+  shelter: 'M6 1L1 5h1.5v5h7V5H11L6 1zm0 5v4', // House
+};
+
 const PLACE_NAMES = [
   'Dharavi Block 7', 'Govandi East', 'Kurla Station Road',
   'Bhiwandi Sector 3', 'Thane West', 'Malad Malvani',
@@ -193,6 +203,7 @@ export default function PulseMapSection() {
   });
   const [fallingDot, setFallingDot] = useState<{ x: number; y: number; active: boolean } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
 
   // Grid dimensions based on mobile
   const COLS = isMobile ? 8 : 14;
@@ -370,6 +381,20 @@ export default function PulseMapSection() {
     setHoveredCell(null);
   }, []);
 
+  // Handle click to resolve
+  const handleHexClick = useCallback((cell: HexCell) => {
+    if (!cell.category || cell.status === 'empty') return;
+    setResolvedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(cell.id)) {
+        next.delete(cell.id);
+      } else {
+        next.add(cell.id);
+      }
+      return next;
+    });
+  }, []);
+
   // Toggle layer visibility
   const toggleLayer = (layerId: keyof LayerState) => {
     setLayersVisible(prev => ({ ...prev, [layerId]: !prev[layerId] }));
@@ -433,7 +458,7 @@ export default function PulseMapSection() {
         role="img"
         aria-label="Community Pulse Map showing real-time need distribution across Indian regions"
       >
-        {/* Status Bar */}
+        {/* Status Bar - Enhanced with dynamic counts */}
         <div className={styles.statusBar}>
           <motion.div
             className={styles.liveDot}
@@ -441,6 +466,14 @@ export default function PulseMapSection() {
             transition={{ duration: 1, ease: 'easeInOut', repeat: Infinity }}
           />
           <span className={styles.liveText}>LIVE</span>
+          <span className={styles.statsCounter}>
+            {resolvedIds.size} resolved
+          </span>
+          <span className={styles.statsDivider}>|</span>
+          <span className={styles.statsCounter}>
+            {cells.filter(c => c.status === 'active' && !resolvedIds.has(c.id)).length + 
+             cells.filter(c => c.status === 'in-progress' && !resolvedIds.has(c.id)).length} pending
+          </span>
         </div>
 
         {/* SVG Visualization */}
@@ -458,26 +491,74 @@ export default function PulseMapSection() {
             opacity: layersVisible.activeNeeds ? 1 : 0, 
             transition: 'opacity 0.3s ease' 
           }}>
-            {cells.filter(c => c.status === 'active').map((cell) => (
-              <polygon
-                key={cell.id}
-                id={`hex-${cell.id}`}
-                points={hexPoints(cell.cx, cell.cy, hexRadius * 0.92)}
-                fill={cell.category ? CATEGORY_COLORS[cell.category] : 'transparent'}
-                fillOpacity={cell.urgency > 0 ? 0.3 + cell.urgency * 0.7 : 0}
-                stroke="rgba(245,237,224,0.15)"
-                strokeWidth="1"
-                style={{
-                  cursor: cell.category ? 'pointer' : 'default',
-                  filter: hoveredCell?.id === cell.id ? `drop-shadow(0 0 14px ${CATEGORY_COLORS[cell.category!]})` : 'none',
-                }}
-                onMouseEnter={(e) => handleHexHover(cell, e)}
-                onMouseLeave={handleHexLeave}
-                role={cell.category ? 'button' : undefined}
-                tabIndex={cell.category ? 0 : undefined}
-                aria-label={cell.category ? `${cell.placeName}, ${cell.reportCount} active reports, ${cell.category} category` : undefined}
-              />
-            ))}
+            {cells.filter(c => c.status === 'active').map((cell) => {
+              const isResolved = resolvedIds.has(cell.id);
+              const iconPath = cell.category ? CATEGORY_ICON_PATHS[cell.category] : null;
+              
+              return (
+                <g key={cell.id}>
+                  <polygon
+                    id={`hex-${cell.id}`}
+                    points={hexPoints(cell.cx, cell.cy, hexRadius * 0.92)}
+                    fill={isResolved ? '#2D9D78' : (cell.category ? CATEGORY_COLORS[cell.category] : 'transparent')}
+                    fillOpacity={isResolved ? 0.5 : (cell.urgency > 0 ? 0.3 + cell.urgency * 0.7 : 0)}
+                    stroke="rgba(245,237,224,0.15)"
+                    strokeWidth="1"
+                    style={{
+                      cursor: cell.category ? 'pointer' : 'default',
+                      filter: hoveredCell?.id === cell.id ? `drop-shadow(0 0 14px ${CATEGORY_COLORS[cell.category!]})` : 'none',
+                    }}
+                    onMouseEnter={(e) => handleHexHover(cell, e)}
+                    onMouseLeave={handleHexLeave}
+                    onClick={() => handleHexClick(cell)}
+                    role={cell.category ? 'button' : undefined}
+                    tabIndex={cell.category ? 0 : undefined}
+                    aria-label={cell.category ? `${cell.placeName}, ${cell.reportCount} active reports, ${cell.category} category${isResolved ? ' (resolved)' : ''}` : undefined}
+                  />
+                  
+                  {/* Category Icon */}
+                  {iconPath && !isResolved && (
+                    <g 
+                      transform={`translate(${cell.cx - 6}, ${cell.cy - 6})`} 
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path 
+                          d={iconPath} 
+                          fill="rgba(245,237,224,0.85)" 
+                          stroke="none"
+                        />
+                      </svg>
+                    </g>
+                  )}
+                  
+                  {/* Checkmark for resolved */}
+                  {isResolved && (
+                    <motion.g
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <circle
+                        cx={cell.cx}
+                        cy={cell.cy}
+                        r={hexRadius * 0.35}
+                        fill="rgba(45, 157, 120, 0.9)"
+                      />
+                      <path
+                        d={`M${cell.cx - hexRadius * 0.15} ${cell.cy} l${hexRadius * 0.1} ${hexRadius * 0.1} l${hexRadius * 0.2} ${-hexRadius * 0.2}`}
+                        stroke="#F5EDE0"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    </motion.g>
+                  )}
+                </g>
+              );
+            })}
           </g>
 
           {/* In Progress Layer */}
@@ -485,17 +566,68 @@ export default function PulseMapSection() {
             opacity: layersVisible.inProgress ? 1 : 0, 
             transition: 'opacity 0.3s ease' 
           }}>
-            {cells.filter(c => c.status === 'in-progress').map((cell) => (
-              <polygon
-                key={`inprog-${cell.id}`}
-                id={`hex-${cell.id}`}
-                points={hexPoints(cell.cx, cell.cy, hexRadius * 0.92)}
-                fill="#D4921A"
-                fillOpacity={0.5}
-                stroke="rgba(245,237,224,0.15)"
-                strokeWidth="1"
-              />
-            ))}
+            {cells.filter(c => c.status === 'in-progress').map((cell) => {
+              const isResolved = resolvedIds.has(cell.id);
+              const iconPath = cell.category ? CATEGORY_ICON_PATHS[cell.category] : null;
+              
+              return (
+                <g key={`inprog-${cell.id}`}>
+                  <polygon
+                    id={`hex-${cell.id}`}
+                    points={hexPoints(cell.cx, cell.cy, hexRadius * 0.92)}
+                    fill={isResolved ? '#2D9D78' : '#D4921A'}
+                    fillOpacity={isResolved ? 0.5 : 0.5}
+                    stroke="rgba(245,237,224,0.15)"
+                    strokeWidth="1"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleHexClick(cell)}
+                    onMouseEnter={(e) => handleHexHover(cell, e)}
+                    onMouseLeave={handleHexLeave}
+                  />
+                  
+                  {/* Category Icon */}
+                  {iconPath && !isResolved && (
+                    <g 
+                      transform={`translate(${cell.cx - 6}, ${cell.cy - 6})`} 
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12">
+                        <path 
+                          d={iconPath} 
+                          fill="rgba(245,237,224,0.85)" 
+                          stroke="none"
+                        />
+                      </svg>
+                    </g>
+                  )}
+                  
+                  {/* Checkmark for resolved */}
+                  {isResolved && (
+                    <motion.g
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <circle
+                        cx={cell.cx}
+                        cy={cell.cy}
+                        r={hexRadius * 0.35}
+                        fill="rgba(45, 157, 120, 0.9)"
+                      />
+                      <path
+                        d={`M${cell.cx - hexRadius * 0.15} ${cell.cy} l${hexRadius * 0.1} ${hexRadius * 0.1} l${hexRadius * 0.2} ${-hexRadius * 0.2}`}
+                        stroke="#F5EDE0"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    </motion.g>
+                  )}
+                </g>
+              );
+            })}
           </g>
 
           {/* Resolved Layer */}

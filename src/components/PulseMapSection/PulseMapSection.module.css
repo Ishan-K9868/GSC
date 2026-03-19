@@ -141,6 +141,21 @@
   color: rgba(245, 237, 224, 0.9);
 }
 
+.statsCounter {
+  font-family: 'General Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.65rem;
+  color: rgba(245, 237, 224, 0.7);
+  margin-left: 8px;
+}
+
+.statsDivider {
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.65rem;
+  color: rgba(245, 237, 224, 0.3);
+  margin-left: 6px;
+}
+
 /* ─────────────────────────────────────────────────────────────
    HOVER INFO CARD
    ───────────────────────────────────────────────────────────── */

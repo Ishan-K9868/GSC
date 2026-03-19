@@ -87,51 +87,51 @@ const featureIcons: Record<string, JSX.Element> = {
 
 function VoiceScreen() {
   const [step, setStep] = useState(1);
-  const [waveHeights, setWaveHeights] = useState<number[]>(Array(20).fill(30));
+  const [waveHeights, setWaveHeights] = useState<number[]>(Array(32).fill(30));
   const waveIntervalRef = useRef<number | null>(null);
   const mainIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Main animation loop - 6.5s cycle
+    // Main animation loop - 10s cycle (slowed down)
     const runAnimation = () => {
-      // Step 1: Idle (0 - 0.5s)
+      // Step 1: Idle (0 - 1s)
       setStep(1);
       
       setTimeout(() => {
-        // Step 2: Recording (0.5s - 2.5s)
+        // Step 2: Recording (1s - 4.5s)
         setStep(2);
-      }, 500);
+      }, 1000);
 
       setTimeout(() => {
-        // Step 3: Processing (2.5s - 3.5s)
+        // Step 3: Processing (4.5s - 6s)
         setStep(3);
-      }, 2500);
+      }, 4500);
 
       setTimeout(() => {
-        // Step 4: Confirmation (3.5s - 5.5s)
+        // Step 4: Confirmation (6s - 8.5s)
         setStep(4);
-      }, 3500);
+      }, 6000);
 
       setTimeout(() => {
-        // Step 5: Submission (5.5s - 6s)
+        // Step 5: Submission (8.5s - 10s)
         setStep(5);
-      }, 5500);
+      }, 8500);
     };
 
     runAnimation();
-    mainIntervalRef.current = window.setInterval(runAnimation, 6500);
+    mainIntervalRef.current = window.setInterval(runAnimation, 10000);
 
     return () => {
       if (mainIntervalRef.current) clearInterval(mainIntervalRef.current);
     };
   }, []);
 
-  // Waveform animation for step 2
+  // Waveform animation for step 2 (slowed down)
   useEffect(() => {
     if (step === 2) {
       waveIntervalRef.current = window.setInterval(() => {
-        setWaveHeights(Array(20).fill(0).map(() => Math.random() * 60 + 20));
-      }, 100);
+        setWaveHeights(Array(32).fill(0).map(() => Math.random() * 70 + 15));
+      }, 150);
     } else {
       if (waveIntervalRef.current) {
         clearInterval(waveIntervalRef.current);
@@ -302,16 +302,46 @@ function VoiceScreen() {
         )}
       </div>
 
-      {/* Waveform for step 2 */}
+      {/* Waveform for step 2 - Enhanced visualization */}
       {step === 2 && (
-        <div className={styles.waveform}>
-          {waveHeights.map((height, i) => (
-            <div
-              key={i}
-              className={styles.waveBar}
-              style={{ height: `${height}%` }}
+        <div className={styles.waveformContainer}>
+          {/* Main waveform */}
+          <div className={styles.waveform}>
+            {waveHeights.map((height, i) => (
+              <div
+                key={i}
+                className={styles.waveBar}
+                style={{ 
+                  height: `${height}%`,
+                  opacity: 0.5 + (height / 100) * 0.5,
+                }}
+              />
+            ))}
+          </div>
+          {/* Mirror waveform (reflection) */}
+          <div className={styles.waveformMirror}>
+            {waveHeights.map((height, i) => (
+              <div
+                key={`mirror-${i}`}
+                className={styles.waveBarMirror}
+                style={{ 
+                  height: `${height * 0.4}%`,
+                  opacity: 0.15 + (height / 100) * 0.15,
+                }}
+              />
+            ))}
+          </div>
+          {/* Frequency line */}
+          <svg className={styles.frequencyLine} viewBox="0 0 230 40" preserveAspectRatio="none">
+            <path
+              d={`M0,20 ${waveHeights.slice(0, 16).map((h, i) => `Q${i * 15 + 7},${20 - (h - 50) * 0.3} ${i * 15 + 14},20`).join(' ')}`}
+              fill="none"
+              stroke="var(--jade)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              opacity="0.6"
             />
-          ))}
+          </svg>
         </div>
       )}
 

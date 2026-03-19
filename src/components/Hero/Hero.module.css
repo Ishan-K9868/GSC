@@ -196,8 +196,7 @@
   overflow: hidden;
   aspect-ratio: 4/3;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
 
 /* Mini Hex Grid */
@@ -205,6 +204,251 @@
   width: 100%;
   height: 100%;
   padding: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTERACTIVE HEX DEMO — Comprehensive Hero Visual
+   ───────────────────────────────────────────────────────────── */
+
+.demoContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Live Stats Bar */
+.statsBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(44, 24, 16, 0.6);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid rgba(245, 237, 224, 0.08);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.statValue {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #F5EDE0;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.5rem;
+  color: rgba(245, 237, 224, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statDivider {
+  width: 1px;
+  height: 24px;
+  background: rgba(245, 237, 224, 0.12);
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.5rem;
+  color: #3DB88A;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3DB88A;
+}
+
+/* Interactive Hex Grid SVG */
+.interactiveHexGrid {
+  flex: 1;
+  width: 100%;
+  padding: 12px;
+}
+
+/* Category Legend / Filters */
+.categoryLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  background: rgba(44, 24, 16, 0.4);
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid rgba(245, 237, 224, 0.06);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid rgba(245, 237, 224, 0.12);
+  border-radius: 12px;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.55rem;
+  color: rgba(245, 237, 224, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.legendItem:hover {
+  background: rgba(245, 237, 224, 0.08);
+  color: rgba(245, 237, 224, 0.85);
+}
+
+.legendItem.legendActive {
+  background: rgba(245, 237, 224, 0.12);
+  border-color: rgba(245, 237, 224, 0.25);
+  color: #F5EDE0;
+}
+
+.legendDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Tooltip */
+.hexTooltip {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(44, 24, 16, 0.95);
+  border: 1px solid rgba(245, 237, 224, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 160px;
+  max-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.tooltipHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.tooltipIcon {
+  flex-shrink: 0;
+}
+
+.tooltipCategory {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltipUrgent {
+  margin-left: auto;
+  padding: 2px 6px;
+  background: rgba(232, 90, 79, 0.2);
+  border-radius: 4px;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.5rem;
+  color: #E85A4F;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tooltipNeed {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #F5EDE0;
+  line-height: 1.4;
+  margin: 0 0 6px;
+}
+
+.tooltipNgo {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 400;
+  font-size: 0.625rem;
+  color: rgba(245, 237, 224, 0.6);
+  margin: 0 0 8px;
+}
+
+.tooltipNgoLabel {
+  color: rgba(245, 237, 224, 0.4);
+}
+
+.tooltipHint {
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-weight: 500;
+  font-size: 0.55rem;
+  color: rgba(61, 184, 138, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+  padding-top: 6px;
+  border-top: 1px solid rgba(245, 237, 224, 0.08);
+}
+
+/* Responsive adjustments for demo */
+@media (max-width: 768px) {
+  .statsBar {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .statValue {
+    font-size: 0.75rem;
+  }
+
+  .statLabel {
+    font-size: 0.45rem;
+  }
+
+  .categoryLegend {
+    gap: 3px;
+    padding: 6px 8px;
+  }
+
+  .legendItem {
+    padding: 2px 6px;
+    font-size: 0.5rem;
+  }
+
+  .legendDot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .hexTooltip {
+    bottom: 60px;
+    min-width: 140px;
+    padding: 8px 10px;
+  }
 }
 
 /* Demo Modal */

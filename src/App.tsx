@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react';
 import { MotionConfig } from 'motion/react';
 import { ReactLenis } from 'lenis/react';
 import { ThemeProvider } from './context/ThemeContext';
-import { SectionSkeleton } from './components/shared';
+import { SectionSkeleton, SectionNavigator } from './components/shared';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import './styles/global.css';
@@ -30,6 +30,7 @@ function App() {
         <ReactLenis root options={{ lerp: 0.1, duration: 1.5 }}>
           <a href="#main-content" className="skip-link">Skip to content</a>
           <Navbar />
+          <SectionNavigator />
           <main id="main-content">
             <Hero />
             <Suspense fallback={<SectionSkeleton />}>

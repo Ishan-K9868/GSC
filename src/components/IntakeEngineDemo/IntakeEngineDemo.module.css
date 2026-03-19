@@ -171,7 +171,7 @@
   align-items: center;
   justify-content: flex-start;
   position: relative;
-  padding-top: 64px;
+  padding-top: 48px;
 }
 
 .statusBar {
@@ -219,7 +219,7 @@
   justify-content: flex-start;
   position: relative;
   width: 100%;
-  padding-top: 80px;
+  padding-top: 60px;
 }
 
 .ringsContainer {
@@ -281,23 +281,61 @@
   color: var(--text-muted);
 }
 
-.waveform {
+.waveformContainer {
   position: absolute;
-  bottom: 74px;
-  left: 16px;
-  right: 16px;
-  height: 52px;
+  bottom: 60px;
+  left: 12px;
+  right: 12px;
+  height: 140px;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 4px;
+}
+
+.waveform {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 
 .waveBar {
-  width: 3px;
-  background: linear-gradient(to top, rgba(212, 98, 42, 0.35), var(--accent));
+  width: 4px;
+  background: linear-gradient(to top, rgba(212, 98, 42, 0.4), var(--accent), rgba(230, 126, 34, 0.9));
   border-radius: 2px;
-  transition: height 0.1s ease;
+  transition: height 0.15s ease;
+  box-shadow: 0 0 8px rgba(212, 98, 42, 0.3);
+}
+
+.waveformMirror {
+  width: 100%;
+  height: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  transform: scaleY(-1);
+  margin-top: 2px;
+}
+
+.waveBarMirror {
+  width: 4px;
+  background: linear-gradient(to top, transparent, rgba(212, 98, 42, 0.3));
+  border-radius: 2px;
+  transition: height 0.15s ease;
+}
+
+.frequencyLine {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  right: 8px;
+  height: 40px;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .voiceTimeline {
@@ -326,29 +364,31 @@
 /* Confirmation Card */
 .confirmationCard {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, #1A0E06 0%, #120904 100%);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 20px 16px;
+  top: 24px;
+  left: 12px;
+  right: 12px;
+  background: linear-gradient(180deg, rgba(245, 237, 224, 0.95) 0%, rgba(235, 225, 210, 0.98) 100%);
+  border-radius: var(--radius-lg);
+  padding: 16px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .checkCircle {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  color: var(--jade);
 }
 
 .confirmationText {
   font-family: 'Noto Sans Devanagari', 'General Sans', sans-serif;
-  font-weight: 400;
-  font-size: 0.85rem;
-  color: #F5EDE0;
+  font-weight: 500;
+  font-size: 0.82rem;
+  color: #1A0E06;
   text-align: center;
   max-width: 220px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   line-height: 1.5;
 }
 
@@ -376,9 +416,9 @@
 }
 
 .noButton {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  background: rgba(28, 14, 6, 0.08);
+  border: 1px solid rgba(28, 14, 6, 0.2);
+  color: #5C4A39;
 }
 
 /* Toast */

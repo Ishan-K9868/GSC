@@ -89,7 +89,8 @@
 .cardBody {
   font-family: 'General Sans', sans-serif;
   font-size: 0.875rem;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: rgba(245, 237, 224, 0.85);
   line-height: 1.65;
 }
 

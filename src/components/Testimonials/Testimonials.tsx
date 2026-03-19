@@ -230,45 +230,107 @@ export default function Testimonials() {
           IN THEIR OWN WORDS
         </p>
 
-        {/* Pull quote */}
-        <div style={{ maxWidth: '70ch' }}>
-          <QuoteMark size="large" />
+        <div className={styles.pullQuoteTopRow}>
+          {/* Pull quote */}
+          <div className={styles.pullQuoteBlock}>
+            <QuoteMark size="large" />
 
-          <motion.blockquote
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={easeStately}
-            style={{
-              margin: 0,
-              fontFamily: "'Bricolage Grotesque', Georgia, serif",
-              fontStyle: 'italic',
-              fontWeight: 400,
-              fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)',
-              color: 'var(--text)',
-              lineHeight: 1.3,
-              letterSpacing: '-0.01em'
-            }}
-          >
-            I used to spend Tuesday afternoons copying data from WhatsApp to Excel. Now the system
-            does it while I'm still in the field.
-          </motion.blockquote>
+            <motion.blockquote
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+              transition={easeStately}
+              style={{
+                margin: 0,
+                fontFamily: "'Bricolage Grotesque', Georgia, serif",
+                fontStyle: 'italic',
+                fontWeight: 400,
+                fontSize: 'clamp(1.5rem, 3.5vw, 2.75rem)',
+                color: 'var(--text)',
+                lineHeight: 1.3,
+                letterSpacing: '-0.01em'
+              }}
+            >
+              I used to spend Tuesday afternoons copying data from WhatsApp to Excel. Now the system
+              does it while I'm still in the field.
+            </motion.blockquote>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ ...easeStately, delay: 0.2 }}
-            style={{
-              fontFamily: 'General Sans, sans-serif',
-              fontWeight: 600,
-              fontSize: '0.6875rem',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--text-muted)',
-              marginTop: '24px'
-            }}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+              transition={{ ...easeStately, delay: 0.2 }}
+              style={{
+                fontFamily: 'General Sans, sans-serif',
+                fontWeight: 600,
+                fontSize: '0.6875rem',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--text-muted)',
+                marginTop: '24px'
+              }}
+            >
+              PROGRAM COORDINATOR · MUMBAI-BASED NGO · HEALTH SECTOR
+            </motion.p>
+          </div>
+
+          <motion.div
+            className={styles.pullQuoteVisual}
+            initial={{ opacity: 0, x: 24 }}
+            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
+            transition={{ ...easeStately, delay: 0.12 }}
+            aria-hidden="true"
           >
-            PROGRAM COORDINATOR · MUMBAI-BASED NGO · HEALTH SECTOR
-          </motion.p>
+            <div className={styles.visualHeader}>Live Tuesday Snapshot</div>
+
+            <svg viewBox="0 0 560 300" className={styles.visualCanvas}>
+            <defs>
+              <linearGradient id="tuesday-bg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--snapshot-shell-bg)" />
+              <stop offset="100%" stopColor="var(--snapshot-shell-bg-2)" />
+            </linearGradient>
+          </defs>
+
+            <rect x="10" y="12" width="540" height="276" rx="22" fill="url(#tuesday-bg)" stroke="var(--snapshot-shell-stroke)" />
+
+            <rect x="44" y="58" width="150" height="190" rx="14" fill="var(--snapshot-phone-bg)" stroke="var(--snapshot-phone-stroke)" />
+            <text x="64" y="82" fill="var(--snapshot-phone-label)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '11px', letterSpacing: '0.07em' }}>
+              WhatsApp Intake
+            </text>
+            <rect x="62" y="96" width="110" height="24" rx="10" fill="var(--snapshot-phone-bubble)" />
+            <rect x="62" y="126" width="88" height="22" rx="10" fill="var(--snapshot-phone-bubble)" />
+            <rect x="62" y="154" width="116" height="22" rx="10" fill="var(--snapshot-phone-bubble)" />
+            <rect x="88" y="182" width="90" height="26" rx="12" fill="var(--snapshot-tag-bg)" stroke="var(--snapshot-tag-stroke)" />
+            <text x="133" y="199" textAnchor="middle" fill="var(--snapshot-tag-text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '11px', fontWeight: 600 }}>
+              Auto-Tagged
+            </text>
+
+            <path d="M212 152 C248 152 260 112 302 112" fill="none" stroke="var(--snapshot-arrow)" strokeWidth="2.2" strokeDasharray="8 8" />
+            <path d="M302 112 L294 106 M302 112 L294 118" fill="none" stroke="var(--snapshot-arrow)" strokeWidth="2.2" strokeLinecap="round" />
+
+            <rect x="310" y="70" width="208" height="56" rx="12" fill="var(--snapshot-prev-bg)" stroke="var(--snapshot-prev-stroke)" />
+            <text x="326" y="92" fill="var(--snapshot-prev-kicker)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700 }}>
+              PREVIOUS TUESDAY
+            </text>
+            <text x="326" y="112" fill="var(--snapshot-prev-text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '12px', fontWeight: 700 }}>
+              3h 42m manual transfer
+            </text>
+
+            <rect x="310" y="142" width="208" height="56" rx="12" fill="var(--snapshot-this-bg)" stroke="var(--snapshot-this-stroke)" />
+            <text x="326" y="164" fill="var(--snapshot-this-kicker)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700 }}>
+              THIS TUESDAY
+            </text>
+            <text x="326" y="184" fill="var(--snapshot-this-text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '12px', fontWeight: 700 }}>
+              9m review, zero transfer
+            </text>
+
+            <rect x="310" y="214" width="208" height="38" rx="10" fill="var(--snapshot-foot-bg)" />
+            <text x="326" y="232" fill="var(--snapshot-foot-text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', fontWeight: 700 }}>
+              96% time reclaimed
+            </text>
+            <text x="326" y="246" fill="var(--snapshot-foot-text)" style={{ fontFamily: "'General Sans', sans-serif", fontSize: '10px', fontWeight: 600 }}>
+              every Tuesday
+            </text>
+            </svg>
+          </motion.div>
         </div>
 
         {/* Hairline divider */}
