@@ -353,3 +353,13 @@ body {
 @media (max-width: 480px) {
   /* Small mobile */
 }
+
+/* ===================================
+   CUSTOM CURSOR — Hide default on desktop
+   =================================== */
+@media (hover: hover) and (pointer: fine) {
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: none !important;
+  }
+}

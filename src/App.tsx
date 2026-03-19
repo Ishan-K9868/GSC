@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react';
 import { MotionConfig } from 'motion/react';
 import { ReactLenis } from 'lenis/react';
 import { ThemeProvider } from './context/ThemeContext';
-import { SectionSkeleton, SectionNavigator } from './components/shared';
+import { SectionSkeleton, SectionNavigator, CustomCursor } from './components/shared';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import './styles/global.css';
@@ -28,6 +28,7 @@ function App() {
     <ThemeProvider>
       <MotionConfig reducedMotion="user">
         <ReactLenis root options={{ lerp: 0.1, duration: 1.5 }}>
+          <CustomCursor />
           <a href="#main-content" className="skip-link">Skip to content</a>
           <Navbar />
           <SectionNavigator />

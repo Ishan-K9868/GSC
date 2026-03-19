@@ -1,0 +1,336 @@
+/* Custom Cursor Styles - SevaSetu Theme */
+
+.cursorContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  overflow: hidden;
+  mix-blend-mode: normal;
+}
+
+/* Hide default cursor globally when custom cursor is active */
+:global(html:has(.cursorContainer)) {
+  cursor: none !important;
+}
+
+:global(html:has(.cursorContainer) *) {
+  cursor: none !important;
+}
+
+/* =====================================
+   MAIN CURSOR - The Seva Dot
+   A warm, glowing core representing service
+   ===================================== */
+.cursorMain {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+
+.cursorCore {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    #F5EDE0 0%,
+    #E8D4BC 40%,
+    #D4622A 100%
+  );
+  box-shadow:
+    0 0 8px rgba(212, 98, 42, 0.6),
+    0 0 20px rgba(212, 98, 42, 0.3),
+    0 0 40px rgba(212, 98, 42, 0.15),
+    inset 0 -2px 4px rgba(212, 98, 42, 0.4),
+    inset 0 2px 4px rgba(255, 248, 240, 0.8);
+  transition: transform 0.2s ease;
+}
+
+/* Subtle breathing animation for the core */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 8px rgba(212, 98, 42, 0.6),
+      0 0 20px rgba(212, 98, 42, 0.3),
+      0 0 40px rgba(212, 98, 42, 0.15),
+      inset 0 -2px 4px rgba(212, 98, 42, 0.4),
+      inset 0 2px 4px rgba(255, 248, 240, 0.8);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow:
+      0 0 12px rgba(212, 98, 42, 0.7),
+      0 0 28px rgba(212, 98, 42, 0.4),
+      0 0 50px rgba(212, 98, 42, 0.2),
+      inset 0 -2px 4px rgba(212, 98, 42, 0.4),
+      inset 0 2px 4px rgba(255, 248, 240, 0.9);
+  }
+}
+
+.cursorCore {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* =====================================
+   TRAIL - Connection Thread
+   Represents the connection between people
+   ===================================== */
+.cursorTrail {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(45, 157, 120, 0.4) 0%,
+    rgba(45, 157, 120, 0.15) 50%,
+    transparent 70%
+  );
+  z-index: 2;
+}
+
+/* =====================================
+   OUTER GLOW - Aura of Impact
+   The spreading warmth of service
+   ===================================== */
+.cursorGlow {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  margin-left: -30px;
+  margin-top: -30px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    rgba(212, 98, 42, 0.15) 0%,
+    rgba(212, 98, 42, 0.08) 30%,
+    rgba(245, 237, 224, 0.05) 50%,
+    transparent 70%
+  );
+  filter: blur(2px);
+  z-index: 1;
+}
+
+/* =====================================
+   HOVER RING - Activation State
+   Orbiting elements showing connection
+   ===================================== */
+.cursorRing {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(212, 98, 42, 0.3);
+  background: transparent;
+}
+
+.orbitDot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  transform-origin: center;
+}
+
+.orbitDot::before {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: -1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3DB88A 0%, #2D9D78 100%);
+  box-shadow: 
+    0 0 6px rgba(61, 184, 138, 0.8),
+    0 0 12px rgba(61, 184, 138, 0.4);
+}
+
+/* =====================================
+   RIPPLE - Impact Visualization
+   When clicking, impact spreads outward
+   ===================================== */
+.ripple {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  margin-top: -20px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.rippleRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: 
+    linear-gradient(135deg, rgba(212, 98, 42, 0.4), rgba(45, 157, 120, 0.3)) padding-box,
+    linear-gradient(135deg, #D4622A, #3DB88A) border-box;
+  opacity: 0;
+  animation: rippleExpand 0.8s ease-out forwards;
+}
+
+.rippleRing:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.rippleRing:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+@keyframes rippleExpand {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* =====================================
+   PARTICLES - Connection Sparks
+   Floating particles on hover
+   ===================================== */
+.particle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #F5EDE0, #D4622A);
+  box-shadow: 0 0 6px rgba(212, 98, 42, 0.6);
+  z-index: 0;
+}
+
+/* Alternate particle colors */
+.particle:nth-child(odd) {
+  background: linear-gradient(135deg, #c6f7e4, #3DB88A);
+  box-shadow: 0 0 6px rgba(61, 184, 138, 0.6);
+}
+
+/* =====================================
+   LABEL - Action Hint
+   Text that appears for special elements
+   ===================================== */
+.cursorLabel {
+  position: fixed;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, 
+    rgba(28, 14, 6, 0.92) 0%, 
+    rgba(35, 22, 8, 0.95) 100%
+  );
+  border: 1px solid rgba(212, 98, 42, 0.3);
+  border-radius: 8px;
+  font-family: 'General Sans', -apple-system, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #F5EDE0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(212, 98, 42, 0.15),
+    inset 0 1px 0 rgba(245, 237, 224, 0.1);
+  z-index: 5;
+}
+
+.cursorLabel::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(28, 14, 6, 0.92);
+  border-left: 1px solid rgba(212, 98, 42, 0.3);
+  border-top: 1px solid rgba(212, 98, 42, 0.3);
+}
+
+/* =====================================
+   DARK MODE ADJUSTMENTS
+   ===================================== */
+[data-theme="dark"] .cursorCore {
+  background: linear-gradient(
+    135deg,
+    #FFF8F0 0%,
+    #F5EDE0 40%,
+    #E8722A 100%
+  );
+  box-shadow:
+    0 0 10px rgba(232, 114, 42, 0.7),
+    0 0 25px rgba(232, 114, 42, 0.4),
+    0 0 50px rgba(232, 114, 42, 0.2),
+    inset 0 -2px 4px rgba(232, 114, 42, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .cursorGlow {
+  background: radial-gradient(
+    circle at center,
+    rgba(232, 114, 42, 0.2) 0%,
+    rgba(232, 114, 42, 0.1) 30%,
+    rgba(245, 237, 224, 0.06) 50%,
+    transparent 70%
+  );
+}
+
+[data-theme="dark"] .cursorTrail {
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(61, 184, 138, 0.5) 0%,
+    rgba(61, 184, 138, 0.2) 50%,
+    transparent 70%
+  );
+}
+
+[data-theme="dark"] .rippleRing {
+  background: 
+    linear-gradient(135deg, rgba(232, 114, 42, 0.5), rgba(61, 184, 138, 0.4)) padding-box,
+    linear-gradient(135deg, #E8722A, #4ACC99) border-box;
+}
+
+/* =====================================
+   REDUCED MOTION
+   Respect user preferences
+   ===================================== */
+@media (prefers-reduced-motion: reduce) {
+  .cursorCore {
+    animation: none;
+  }
+  
+  .orbitDot::before {
+    animation: none;
+  }
+  
+  .rippleRing {
+    animation: none;
+  }
+}
+
+/* =====================================
+   MOBILE - Hide custom cursor
+   ===================================== */
+@media (max-width: 768px), (hover: none) {
+  .cursorContainer {
+    display: none;
+  }
+}
