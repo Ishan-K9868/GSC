@@ -168,32 +168,39 @@ function SectionNavigator() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   useEffect(() => {
-    const observers: IntersectionObserver[] = [];
+    const handleScroll = () => {
+      const viewportHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+      // Target point: 30% down from top of viewport
+      const targetPoint = scrollY + viewportHeight * 0.3;
 
-    sections.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (!element) return;
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setActiveSection(id);
-            }
-          });
-        },
-        {
-          rootMargin: '-40% 0px -40% 0px',
-          threshold: 0,
+      let currentSection = 'hero';
+      
+      // Find the section whose top is closest to (but above) the target point
+      for (const { id } of sections) {
+        const element = document.getElementById(id);
+        if (!element) continue;
+        
+        const rect = element.getBoundingClientRect();
+        const elementTop = scrollY + rect.top;
+        
+        // If this section's top is above the target point, it's a candidate
+        if (elementTop <= targetPoint) {
+          currentSection = id;
         }
-      );
+      }
+      
+      setActiveSection(currentSection);
+    };
 
-      observer.observe(element);
-      observers.push(observer);
-    });
-
+    // Run once on mount
+    handleScroll();
+    
+    // Add scroll listener with passive flag for performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
     return () => {
-      observers.forEach((observer) => observer.disconnect());
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
