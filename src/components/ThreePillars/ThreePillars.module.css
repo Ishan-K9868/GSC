@@ -14,6 +14,27 @@
   padding: 84px clamp(2rem, 6vw, 6rem) 28px;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .sectionIntro {
+    padding: 72px clamp(1.5rem, 5vw, 5rem) 24px;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .sectionIntro {
+    padding: 60px clamp(1.5rem, 4vw, 4rem) 20px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .sectionIntro {
+    padding: 48px clamp(1.25rem, 3vw, 3rem) 16px;
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────
    DESKTOP LAYOUT — Sticky Pair
    ───────────────────────────────────────────────────────────── */
@@ -27,6 +48,27 @@
   margin: 0 auto;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .pillarsGrid {
+    gap: 3rem;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .pillarsGrid {
+    gap: 2.5rem;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .pillarsGrid {
+    gap: 2rem;
+  }
+}
+
 .stickyPanel {
   position: sticky;
   top: 10vh;
@@ -36,6 +78,31 @@
   align-items: flex-start;
   justify-content: flex-start;
   padding: 8px 0 40px clamp(2rem, 6vw, 6rem);
+}
+
+/* Large laptops */
+@media (max-width: 1440px) {
+  .stickyPanel {
+    padding: 8px 0 32px clamp(1.5rem, 5vw, 5rem);
+    min-height: 75vh;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .stickyPanel {
+    padding: 8px 0 28px clamp(1.5rem, 4vw, 4rem);
+    min-height: 70vh;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .stickyPanel {
+    padding: 8px 0 24px clamp(1.25rem, 3vw, 3rem);
+    min-height: 65vh;
+    top: 8vh;
+  }
 }
 
 .scrollPanel {
@@ -68,6 +135,22 @@
   margin-bottom: 24px;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .headline {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    margin-bottom: 20px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .headline {
+    font-size: clamp(1.75rem, 3.5vw, 3rem);
+    margin-bottom: 16px;
+  }
+}
+
 .subtext {
   font-family: 'General Sans', sans-serif;
   font-size: 1rem;
@@ -83,6 +166,30 @@
   overflow: hidden;
   position: relative;
   margin-top: 0;
+}
+
+/* Large laptops */
+@media (max-width: 1440px) {
+  .illustrationArea {
+    width: clamp(360px, 30vw, 460px);
+    height: clamp(360px, 30vw, 460px);
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .illustrationArea {
+    width: clamp(300px, 28vw, 380px);
+    height: clamp(300px, 28vw, 380px);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .illustrationArea {
+    width: clamp(260px, 26vw, 320px);
+    height: clamp(260px, 26vw, 320px);
+  }
 }
 
 .illustrationWrapper {
@@ -154,6 +261,30 @@
   padding: 64px clamp(2rem, 6vw, 6rem) 80px 0;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .subsection {
+    padding: 56px clamp(1.5rem, 5vw, 5rem) 64px 0;
+    min-height: 90vh;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .subsection {
+    padding: 48px clamp(1.5rem, 4vw, 4rem) 56px 0;
+    min-height: 85vh;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .subsection {
+    padding: 40px clamp(1.25rem, 3vw, 3rem) 48px 0;
+    min-height: 80vh;
+  }
+}
+
 .subsectionEyebrow {
   font-family: 'General Sans', sans-serif;
   font-weight: 600;
@@ -184,6 +315,22 @@
   margin-bottom: 16px;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .subsectionHeadline {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin-bottom: 14px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .subsectionHeadline {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin-bottom: 12px;
+  }
+}
+
 .subsectionBody {
   font-family: 'General Sans', sans-serif;
   font-size: 1rem;
@@ -191,6 +338,23 @@
   color: var(--text-muted);
   max-width: 48ch;
   margin-bottom: 24px;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .subsectionBody {
+    font-size: 0.9375rem;
+    margin-bottom: 20px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .subsectionBody {
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    max-width: 42ch;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────

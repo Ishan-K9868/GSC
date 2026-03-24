@@ -5,6 +5,27 @@
   overflow: hidden;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .matchingEngine {
+    padding: 140px clamp(1.5rem, 5vw, 5rem);
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .matchingEngine {
+    padding: 120px clamp(1.5rem, 4vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .matchingEngine {
+    padding: 100px clamp(1.25rem, 3vw, 3rem);
+  }
+}
+
 .matchingGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -12,6 +33,30 @@
   align-items: start;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Large laptops */
+@media (max-width: 1440px) {
+  .matchingGrid {
+    gap: 4rem;
+    max-width: 1100px;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .matchingGrid {
+    gap: 3rem;
+    max-width: 960px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .matchingGrid {
+    gap: 2.5rem;
+    max-width: 880px;
+  }
 }
 
 /* ===== LEFT COLUMN — Formula ===== */
@@ -38,6 +83,22 @@
   color: var(--text);
   max-width: 16ch;
   margin-bottom: 32px;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .headline {
+    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    margin-bottom: 28px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .headline {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    margin-bottom: 24px;
+  }
 }
 
 .formulaBlock {

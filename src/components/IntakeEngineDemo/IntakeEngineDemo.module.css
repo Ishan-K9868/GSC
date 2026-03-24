@@ -8,6 +8,27 @@
   position: relative;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .intakeDemo {
+    padding: 120px clamp(1.5rem, 5vw, 5rem);
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .intakeDemo {
+    padding: 100px clamp(1.5rem, 4vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .intakeDemo {
+    padding: 80px clamp(1.25rem, 3vw, 3rem);
+  }
+}
+
 /* Hexagonal dot pattern background */
 .intakeDemo::before {
   content: '';
@@ -45,6 +66,30 @@
   z-index: 1;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .demoGrid {
+    gap: 4rem;
+    max-width: 1100px;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .demoGrid {
+    gap: 3rem;
+    max-width: 960px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .demoGrid {
+    gap: 2.5rem;
+    max-width: 880px;
+  }
+}
+
 .leftColumn {
   display: flex;
   flex-direction: column;
@@ -71,6 +116,49 @@
   flex-direction: column;
   align-items: center;
   padding: 12px 9px;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .phoneFrame {
+    width: 250px;
+    height: 500px;
+    border-radius: 28px;
+    padding: 10px 8px;
+  }
+  
+  .phoneScreen {
+    width: 234px;
+    height: 392px;
+    border-radius: 20px;
+  }
+  
+  .notch {
+    width: 70px;
+    height: 14px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .phoneFrame {
+    width: 220px;
+    height: 440px;
+    border-radius: 24px;
+    padding: 9px 7px;
+  }
+  
+  .phoneScreen {
+    width: 206px;
+    height: 346px;
+    border-radius: 18px;
+  }
+  
+  .notch {
+    width: 60px;
+    height: 12px;
+    border-radius: 0 0 10px 10px;
+  }
 }
 
 .notch {
@@ -729,6 +817,22 @@
   margin-bottom: 16px;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .headline {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    margin-bottom: 14px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .headline {
+    font-size: clamp(1.25rem, 2.5vw, 1.875rem);
+    margin-bottom: 12px;
+  }
+}
+
 .subtext {
   font-family: 'General Sans', sans-serif;
   font-size: 1rem;
@@ -738,10 +842,41 @@
   margin-bottom: 40px;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .subtext {
+    font-size: 0.9375rem;
+    margin-bottom: 32px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .subtext {
+    font-size: 0.875rem;
+    margin-bottom: 24px;
+    max-width: 38ch;
+  }
+}
+
 .featureList {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .featureList {
+    gap: 16px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureList {
+    gap: 14px;
+  }
 }
 
 .featureItem {
@@ -782,6 +917,20 @@
   transition: background 0.15s ease;
 }
 
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureIcon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
+  
+  .featureIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 .featureIcon svg {
   transition: filter 0.15s ease;
 }
@@ -793,6 +942,20 @@
   line-height: 1.5;
   color: var(--text-muted);
   transition: color 0.15s ease;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .featureText {
+    font-size: 0.875rem;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureText {
+    font-size: 0.8125rem;
+  }
 }
 
 /* Amber icon for wifi-off */

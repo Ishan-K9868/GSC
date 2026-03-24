@@ -6,6 +6,27 @@
   overflow: hidden;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .crisisMode {
+    padding: 140px clamp(1.5rem, 5vw, 5rem);
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .crisisMode {
+    padding: 120px clamp(1.5rem, 4vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .crisisMode {
+    padding: 100px clamp(1.25rem, 3vw, 3rem);
+  }
+}
+
 /* Radial glow overlay */
 .radialGlow {
   position: absolute;
@@ -27,6 +48,20 @@
   margin: 0 auto;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .content {
+    max-width: 720px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .content {
+    max-width: 640px;
+  }
+}
+
 /* Terminal container */
 .terminal {
   background: rgba(15, 8, 4, 0.8);
@@ -39,6 +74,24 @@
   font-size: 0.875rem;
   line-height: 2;
   position: relative;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .terminal {
+    padding: 20px 24px;
+    margin-top: 40px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .terminal {
+    padding: 16px 20px;
+    margin-top: 32px;
+    font-size: 0.75rem;
+  }
 }
 
 .terminalLine {
@@ -60,6 +113,22 @@
   margin-top: 48px;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .crisisChips {
+    gap: 14px;
+    margin-top: 40px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .crisisChips {
+    gap: 12px;
+    margin-top: 32px;
+  }
+}
+
 .crisisChip {
   background: rgba(35, 22, 8, 0.8);
   border: 1px solid var(--border);
@@ -70,6 +139,14 @@
   gap: 12px;
   transition: border-color 0.15s ease, transform 0.15s ease;
   cursor: default;
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .crisisChip {
+    padding: 14px 16px;
+    gap: 10px;
+  }
 }
 
 .crisisChip:hover {

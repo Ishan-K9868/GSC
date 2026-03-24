@@ -127,6 +127,115 @@
   box-shadow: 0 8px 32px rgba(28, 14, 6, 0.25);
 }
 
+/* Laptop responsive - 1440px */
+@media (max-width: 1440px) {
+  .finalCta {
+    padding: 200px clamp(2rem, 5vw, 5rem);
+  }
+
+  .subheadline {
+    font-size: 1.0625rem;
+    margin: 28px auto 0;
+  }
+
+  .ctaButtons {
+    gap: 14px;
+    margin-top: 36px;
+  }
+
+  .microNote {
+    font-size: 0.7rem;
+    margin-top: 18px;
+  }
+}
+
+/* Laptop responsive - 1200px */
+@media (max-width: 1200px) {
+  .finalCta {
+    padding: 160px clamp(1.75rem, 4.5vw, 4rem);
+  }
+
+  .headlineLine1 {
+    font-size: clamp(2.75rem, 7vw, 6rem);
+  }
+
+  .headlineLine2 {
+    font-size: clamp(2.25rem, 6vw, 5.25rem);
+  }
+
+  .headlineLine3 {
+    font-size: clamp(1.5rem, 3.5vw, 2.75rem);
+  }
+
+  .subheadline {
+    font-size: 1rem;
+    margin: 24px auto 0;
+  }
+
+  .ctaButtons {
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .ghostButton {
+    padding: 0.625rem 1.125rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .microNote {
+    font-size: 0.6875rem;
+    margin-top: 16px;
+  }
+
+  .devanagariTexture {
+    font-size: clamp(10rem, 30vw, 24rem);
+  }
+}
+
+/* Laptop responsive - 1024px */
+@media (max-width: 1024px) {
+  .finalCta {
+    padding: 120px clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .headlineLine1 {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+  }
+
+  .headlineLine2 {
+    font-size: clamp(2rem, 5vw, 4.25rem);
+  }
+
+  .headlineLine3 {
+    font-size: clamp(1.25rem, 3vw, 2.25rem);
+  }
+
+  .subheadline {
+    font-size: 0.9375rem;
+    margin: 20px auto 0;
+    max-width: 40ch;
+  }
+
+  .ctaButtons {
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .ghostButton {
+    padding: 0.5625rem 1rem 0.4375rem;
+    font-size: 0.75rem;
+  }
+
+  .microNote {
+    font-size: 0.625rem;
+    margin-top: 14px;
+  }
+
+  .devanagariTexture {
+    font-size: clamp(8rem, 25vw, 18rem);
+  }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .finalCta {

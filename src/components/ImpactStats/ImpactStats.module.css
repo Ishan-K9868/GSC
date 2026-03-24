@@ -6,12 +6,49 @@
   text-align: center;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .impactStats {
+    padding: 160px 0;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .impactStats {
+    padding: 140px 0;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .impactStats {
+    padding: 120px 0;
+  }
+}
+
 .contentContainer {
   position: relative;
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 clamp(2rem, 6vw, 6rem);
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .contentContainer {
+    max-width: 1000px;
+    padding: 0 clamp(1.5rem, 4vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .contentContainer {
+    max-width: 880px;
+    padding: 0 clamp(1.25rem, 3vw, 3rem);
+  }
 }
 
 /* ===== Stats Grid ===== */
@@ -25,6 +62,20 @@
   margin: 0 auto;
 }
 
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .statsGrid {
+    max-width: 780px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .statsGrid {
+    max-width: 680px;
+  }
+}
+
 /* ===== Stat Cell ===== */
 .statCell {
   padding: 48px;
@@ -33,6 +84,20 @@
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .statCell {
+    padding: 40px 36px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .statCell {
+    padding: 32px 28px;
+  }
 }
 
 .statValue {
@@ -46,6 +111,20 @@
   justify-content: center;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .statValue {
+    font-size: clamp(2.25rem, 5vw, 4.5rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .statValue {
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+  }
 }
 
 .statLabel {

@@ -49,6 +49,97 @@
   z-index: 1;
 }
 
+/* Large laptops / small desktops */
+@media (max-width: 1440px) {
+  .heroInner {
+    padding: 160px clamp(1.5rem, 5vw, 5rem) 80px;
+    gap: 3rem;
+  }
+  
+  .headline {
+    font-size: clamp(3.5rem, 9vw, 7.5rem);
+  }
+  
+  .subheadline {
+    margin-top: 36px;
+  }
+  
+  .browserFrame {
+    max-width: clamp(380px, 32vw, 500px);
+  }
+}
+
+/* Medium laptops (15.6") */
+@media (max-width: 1200px) {
+  .heroInner {
+    padding: 140px clamp(1.5rem, 4vw, 4rem) 70px;
+    gap: 2.5rem;
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+  
+  .headline {
+    font-size: clamp(3rem, 7.5vw, 6rem);
+  }
+  
+  .subheadline {
+    font-size: 1rem;
+    margin-top: 32px;
+  }
+  
+  .ctaRow {
+    margin-top: 32px;
+  }
+  
+  .microTrust {
+    margin-top: 24px;
+  }
+  
+  .browserFrame {
+    max-width: clamp(320px, 28vw, 420px);
+  }
+  
+  .devanagariTexture {
+    font-size: clamp(6rem, 22vw, 16rem);
+  }
+}
+
+/* Small laptops (14") */
+@media (max-width: 1024px) {
+  .heroInner {
+    padding: 120px clamp(1.25rem, 3vw, 3rem) 60px;
+    gap: 2rem;
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+  
+  .headline {
+    font-size: clamp(2.5rem, 6.5vw, 5rem);
+  }
+  
+  .subheadline {
+    font-size: 0.9375rem;
+    margin-top: 28px;
+    max-width: 38ch;
+  }
+  
+  .ctaRow {
+    margin-top: 28px;
+    gap: 12px;
+  }
+  
+  .microTrust {
+    margin-top: 20px;
+    font-size: 0.625rem;
+  }
+  
+  .browserFrame {
+    max-width: clamp(280px, 26vw, 360px);
+  }
+  
+  .devanagariTexture {
+    font-size: clamp(5rem, 18vw, 12rem);
+  }
+}
+
 @media (max-width: 768px) {
   .heroInner {
     grid-template-columns: 1fr;

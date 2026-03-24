@@ -38,6 +38,138 @@
   }
 }
 
+/* Small laptops - compact version */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .navigator {
+    right: 12px;
+    padding: 8px 6px;
+    border-radius: 18px;
+  }
+  
+  .navList {
+    gap: 3px;
+  }
+  
+  .navButton {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  
+  .navButton::before {
+    border-radius: 10px;
+  }
+  
+  .navButton::after {
+    border-radius: 8px;
+  }
+  
+  .iconWrapper {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .iconWrapper svg {
+    stroke-width: 2;
+  }
+  
+  .tooltip {
+    font-size: 0.6875rem;
+    padding: 5px 10px;
+    border-radius: 7px;
+    right: calc(100% + 10px);
+  }
+  
+  .tooltip::before {
+    border-width: 5px;
+  }
+  
+  .navList::before {
+    top: 20px;
+    bottom: 20px;
+  }
+}
+
+/* Medium laptops - slightly smaller */
+@media (max-width: 1200px) and (min-width: 1025px) {
+  .navigator {
+    right: 16px;
+    padding: 10px 7px;
+    border-radius: 20px;
+  }
+  
+  .navList {
+    gap: 4px;
+  }
+  
+  .navButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+  
+  .navButton::before {
+    border-radius: 12px;
+  }
+  
+  .navButton::after {
+    border-radius: 10px;
+  }
+  
+  .iconWrapper {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .tooltip {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+    right: calc(100% + 12px);
+  }
+  
+  .tooltip::before {
+    border-width: 6px;
+  }
+  
+  .navList::before {
+    top: 24px;
+    bottom: 24px;
+  }
+}
+
+/* Large laptops - minor adjustments */
+@media (max-width: 1440px) and (min-width: 1201px) {
+  .navigator {
+    right: 20px;
+    padding: 10px 7px;
+    border-radius: 22px;
+  }
+  
+  .navList {
+    gap: 5px;
+  }
+  
+  .navButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+  
+  .navButton::before {
+    border-radius: 13px;
+  }
+  
+  .navButton::after {
+    border-radius: 11px;
+  }
+  
+  .iconWrapper {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 .navList {
   list-style: none;
   display: flex;

@@ -8,6 +8,27 @@
   position: relative;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .pulseMapSection {
+    padding: 100px 0;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .pulseMapSection {
+    padding: 80px 0;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .pulseMapSection {
+    padding: 64px 0;
+  }
+}
+
 [data-theme="dark"] .pulseMapSection {
   background: var(--bg-dark);
 }
@@ -40,6 +61,20 @@
   line-height: 0.92;
   letter-spacing: -0.03em;
   color: var(--text);
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .headline {
+    font-size: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .headline {
+    font-size: clamp(1.75rem, 4vw, 3rem);
+  }
 }
 
 .subtext {
@@ -106,6 +141,22 @@
   overflow: hidden;
   position: relative;
   background: #150B04;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .vizContainer {
+    max-width: 1000px;
+    max-height: 500px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .vizContainer {
+    max-width: 880px;
+    max-height: 440px;
+  }
 }
 
 [data-theme="dark"] .vizContainer {

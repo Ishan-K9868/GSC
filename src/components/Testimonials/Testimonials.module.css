@@ -188,6 +188,139 @@
   display: inline-block;
 }
 
+/* Laptop responsive - 1440px */
+@media (max-width: 1440px) {
+  .testimonials {
+    padding: 140px clamp(2rem, 5vw, 5rem);
+  }
+
+  .pullQuoteTopRow {
+    gap: 1.75rem;
+  }
+
+  .pullQuoteVisual {
+    max-width: 640px;
+  }
+
+  .cardsGrid {
+    gap: 1.75rem;
+  }
+
+  .testimonialCard {
+    padding: 28px;
+  }
+
+  .testimonialCard:nth-child(2) {
+    margin-top: 56px;
+  }
+
+  .testimonialCard:nth-child(3) {
+    margin-top: 28px;
+  }
+}
+
+/* Laptop responsive - 1200px */
+@media (max-width: 1200px) {
+  .testimonials {
+    padding: 120px clamp(1.75rem, 4.5vw, 4rem);
+  }
+
+  .pullQuoteTopRow {
+    gap: 1.5rem;
+  }
+
+  .pullQuoteVisual {
+    max-width: 560px;
+    padding: 8px;
+  }
+
+  .cardsGrid {
+    gap: 1.5rem;
+  }
+
+  .testimonialCard {
+    padding: 24px;
+  }
+
+  .cardQuote {
+    font-size: 0.875rem;
+    margin-top: 14px;
+  }
+
+  .cardAttribution {
+    font-size: 0.55rem;
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .testimonialCard:nth-child(2) {
+    margin-top: 48px;
+  }
+
+  .testimonialCard:nth-child(3) {
+    margin-top: 24px;
+  }
+
+  .sdgChip {
+    padding: 2px 8px;
+    font-size: 0.65rem;
+  }
+}
+
+/* Laptop responsive - 1024px */
+@media (max-width: 1024px) {
+  .testimonials {
+    padding: 100px clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .pullQuoteTopRow {
+    gap: 1.25rem;
+  }
+
+  .pullQuoteVisual {
+    max-width: 480px;
+    padding: 6px;
+  }
+
+  .visualHeader {
+    font-size: 0.6rem;
+    margin: 0 0 6px 3px;
+  }
+
+  .cardsGrid {
+    gap: 1.25rem;
+  }
+
+  .testimonialCard {
+    padding: 20px;
+  }
+
+  .cardQuote {
+    font-size: 0.8125rem;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+
+  .cardAttribution {
+    font-size: 0.5rem;
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .testimonialCard:nth-child(2) {
+    margin-top: 40px;
+  }
+
+  .testimonialCard:nth-child(3) {
+    margin-top: 20px;
+  }
+
+  .sdgChip {
+    padding: 2px 6px;
+    font-size: 0.6rem;
+  }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .testimonials {

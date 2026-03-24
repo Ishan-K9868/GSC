@@ -5,12 +5,57 @@
   position: relative;
 }
 
+/* Large laptops */
+@media (max-width: 1440px) {
+  .csrPortal {
+    padding: 120px clamp(1.5rem, 5vw, 5rem);
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .csrPortal {
+    padding: 100px clamp(1.5rem, 4vw, 4rem);
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .csrPortal {
+    padding: 80px clamp(1.25rem, 3vw, 3rem);
+  }
+}
+
 /* Main grid layout */
 .csrGrid {
   display: grid;
   grid-template-columns: minmax(380px, 1fr) minmax(620px, 1.5fr);
   gap: 2.2rem;
   align-items: center;
+}
+
+/* Large laptops */
+@media (max-width: 1440px) {
+  .csrGrid {
+    grid-template-columns: minmax(340px, 1fr) minmax(540px, 1.4fr);
+    gap: 2rem;
+  }
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .csrGrid {
+    grid-template-columns: minmax(300px, 1fr) minmax(460px, 1.3fr);
+    gap: 1.75rem;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .csrGrid {
+    grid-template-columns: minmax(260px, 1fr) minmax(380px, 1.2fr);
+    gap: 1.5rem;
+  }
 }
 
 /* Feature list row */
@@ -20,6 +65,22 @@
   align-items: flex-start;
   margin-bottom: 28px;
   transition: transform 0.15s ease;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .featureRow {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureRow {
+    gap: 14px;
+    margin-bottom: 20px;
+  }
 }
 
 .featureRow:hover {
@@ -51,6 +112,13 @@
   display: block;
 }
 
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureTitle {
+    font-size: 0.875rem;
+  }
+}
+
 .featureSub {
   font-family: 'General Sans', sans-serif;
   font-weight: 400;
@@ -59,6 +127,13 @@
   display: block;
   margin-top: 4px;
   line-height: 1.5;
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .featureSub {
+    font-size: 0.8rem;
+  }
 }
 
 /* Browser mockup */
@@ -76,6 +151,21 @@
   box-shadow: 0 28px 64px rgba(28, 14, 6, 0.28), 0 10px 24px rgba(212, 98, 42, 0.16);
   width: 100%;
   max-width: 760px;
+}
+
+/* Medium laptops */
+@media (max-width: 1200px) {
+  .browserFrame {
+    max-width: 620px;
+  }
+}
+
+/* Small laptops */
+@media (max-width: 1024px) {
+  .browserFrame {
+    max-width: 520px;
+    padding: 4px;
+  }
 }
 
 .chromeBar {
