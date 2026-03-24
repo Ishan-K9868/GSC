@@ -1,0 +1,118 @@
+.page {
+  min-height: 100vh;
+  padding: 6.2rem 1rem 2rem;
+  background:
+    radial-gradient(circle at 12% 5%, rgba(45, 157, 120, 0.12), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(212, 98, 42, 0.1), transparent 35%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: linear-gradient(160deg, rgba(45, 157, 120, 0.16), rgba(212, 98, 42, 0.08));
+}
+
+.title {
+  margin: 0;
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-size: clamp(1.5rem, 3vw, 2.3rem);
+}
+
+.sub {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.span5 { grid-column: span 5; }
+.span6 { grid-column: span 6; }
+.span7 { grid-column: span 7; }
+.span12 { grid-column: span 12; }
+
+.input,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0.55rem 0.65rem;
+}
+
+.textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem;
+  background: color-mix(in srgb, var(--bg-2) 58%, transparent);
+}
+
+.meta {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+}
+
+.pill {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.14rem 0.52rem;
+  font-size: 0.72rem;
+}
+
+.output {
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 0.6rem;
+  background: color-mix(in srgb, var(--bg-2) 58%, transparent);
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 1024px) {
+  .span5,
+  .span6,
+  .span7 {
+    grid-column: span 12;
+  }
+}

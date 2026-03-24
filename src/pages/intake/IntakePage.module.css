@@ -1,0 +1,272 @@
+/**
+ * Intake Page Styles
+ */
+
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.headerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Connection Status */
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.statusDot.online {
+  background: var(--jade);
+}
+
+.statusDot.offline {
+  background: var(--error, #ef4444);
+}
+
+.statusText {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.queueBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.queueBadge:hover {
+  background: var(--accent-dark);
+}
+
+.queueBadge:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.syncingIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Success Banner */
+.successBanner {
+  padding: 1rem 2rem;
+  background: var(--jade-light);
+  color: var(--jade);
+  text-align: center;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(61, 184, 138, 0.3);
+}
+
+/* Tab Navigation */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 80px;
+}
+
+.tab:hover {
+  border-color: var(--accent);
+  background: rgba(212, 98, 42, 0.05);
+}
+
+.tab.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.tabIcon {
+  font-size: 1.5rem;
+}
+
+.tabLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tab.active .tabLabel {
+  color: white;
+}
+
+.tabLabelHi {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.tab.active .tabLabelHi {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Mode Description */
+.modeDescription {
+  text-align: center;
+  padding: 0.75rem 1.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Footer */
+.footer {
+  padding: 1.5rem 2rem;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+}
+
+.tips {
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.tips strong {
+  color: var(--text);
+}
+
+.tips ul {
+  margin: 0.5rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.tips li {
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  .tabs {
+    justify-content: flex-start;
+    padding: 0.75rem;
+    gap: 0.375rem;
+  }
+
+  .tab {
+    min-width: 70px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tabIcon {
+    font-size: 1.25rem;
+  }
+
+  .tabLabel {
+    font-size: 0.75rem;
+  }
+
+  .tabLabelHi {
+    display: none;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+
+  .footer {
+    padding: 1rem;
+  }
+
+  .tips ul {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab {
+    min-width: 60px;
+    padding: 0.5rem;
+  }
+
+  .tabLabel {
+    font-size: 0.6875rem;
+  }
+}

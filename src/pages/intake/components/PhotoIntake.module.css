@@ -1,0 +1,462 @@
+/**
+ * Photo Intake Styles
+ * PRD: 5.1.2 Photo + AI Vision Intake
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  min-height: 500px;
+}
+
+.locationStatus {
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.locationStatus .loading {
+  color: var(--text-muted);
+}
+
+.locationStatus .success {
+  color: var(--jade);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  flex: 1;
+}
+
+/* Capture State */
+.captureState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.cameraContainer {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 4/3;
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.cameraPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hiddenCanvas {
+  display: none;
+}
+
+.captureButtons {
+  display: flex;
+  justify-content: center;
+}
+
+.captureButton {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.captureButton:hover {
+  transform: scale(1.05);
+}
+
+.captureButton:active {
+  transform: scale(0.95);
+}
+
+.captureRing {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.switchButton {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.switchButton:hover {
+  background: var(--bg-2);
+}
+
+/* Upload Area */
+.uploadArea {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 4/3;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.uploadArea:hover {
+  border-color: var(--accent);
+  background: rgba(212, 98, 42, 0.05);
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.uploadIcon {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+}
+
+/* Preview State */
+.previewState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.imagePreview {
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.imagePreview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.previewButtons {
+  display: flex;
+  gap: 1rem;
+}
+
+.retakeButton {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retakeButton:hover {
+  background: var(--bg-2);
+}
+
+.analyzeButton {
+  padding: 0.75rem 1.5rem;
+  background: var(--jade);
+  border: none;
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.analyzeButton:hover {
+  background: var(--jade-dark);
+}
+
+/* Analyzing State */
+.analyzingState,
+.submittingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.imagePreviewSmall {
+  width: 200px;
+  height: 150px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.imagePreviewSmall img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Confirm State */
+.confirmState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.categoryBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+
+.emoji {
+  font-size: 1.25rem;
+}
+
+.categoryLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.urgencyBadge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.urgencyBadge.critical {
+  background: #ef4444;
+  color: white;
+}
+
+.urgencyBadge.high {
+  background: #f97316;
+  color: white;
+}
+
+.urgencyBadge.medium {
+  background: #eab308;
+  color: #1c0e06;
+}
+
+.urgencyBadge.low {
+  background: var(--jade);
+  color: white;
+}
+
+.description {
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--text);
+  line-height: 1.6;
+  padding: 1rem;
+  background: var(--bg-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.peopleCount {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.signals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.signalsLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.signalChip {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--jade-light);
+  border: 1px solid rgba(61, 184, 138, 0.3);
+  color: var(--jade);
+  border-radius: var(--radius-pill);
+}
+
+.suggestedAction {
+  font-size: 0.875rem;
+  color: var(--accent);
+  font-style: italic;
+}
+
+.confidence {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.confirmButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.confirmButton {
+  padding: 0.75rem 2rem;
+  background: var(--jade);
+  border: none;
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmButton:hover {
+  background: var(--jade-dark);
+}
+
+/* Success State */
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--jade);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.successMessage {
+  font-size: 1.125rem;
+  color: var(--text);
+}
+
+.reportId {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.newReportButton {
+  padding: 0.75rem 2rem;
+  background: var(--accent);
+  border: none;
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.newReportButton:hover {
+  background: var(--accent-dark);
+}
+
+/* Error State */
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.errorIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.errorMessage {
+  text-align: center;
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.retryButton {
+  padding: 0.75rem 2rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background: var(--bg-3);
+}

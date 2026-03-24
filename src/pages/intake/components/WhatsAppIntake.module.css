@@ -1,0 +1,313 @@
+/**
+ * WhatsApp Intake Simulation Styles
+ * Mimics WhatsApp's familiar green chat interface
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+  max-height: 80vh;
+  background: #e5ddd5;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme */
+[data-theme="dark"] .container {
+  background: #0b141a;
+}
+
+/* Header - WhatsApp Green */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #075e54;
+  color: white;
+}
+
+[data-theme="dark"] .header {
+  background: #1f2c34;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.botName {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.status {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Messages Area */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .messages {
+  background-color: #0b141a;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Message */
+.message {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+
+.message.bot {
+  align-self: flex-start;
+}
+
+.message.user {
+  align-self: flex-end;
+}
+
+/* Message Bubble */
+.bubble {
+  padding: 0.625rem 0.875rem;
+  border-radius: 8px;
+  position: relative;
+}
+
+.message.bot .bubble {
+  background: white;
+  border-top-left-radius: 0;
+}
+
+.message.user .bubble {
+  background: #dcf8c6;
+  border-top-right-radius: 0;
+}
+
+[data-theme="dark"] .message.bot .bubble {
+  background: #1f2c34;
+}
+
+[data-theme="dark"] .message.user .bubble {
+  background: #005c4b;
+}
+
+.messageText {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: #303030;
+  white-space: pre-wrap;
+}
+
+[data-theme="dark"] .messageText {
+  color: #e9edef;
+}
+
+.timestamp {
+  display: block;
+  text-align: right;
+  font-size: 0.6875rem;
+  color: #667781;
+  margin-top: 0.25rem;
+}
+
+[data-theme="dark"] .timestamp {
+  color: #8696a0;
+}
+
+/* Quick Replies */
+.quickReplies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.quickReply {
+  padding: 0.5rem 1rem;
+  background: white;
+  color: #075e54;
+  border: 1px solid #075e54;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quickReply:hover {
+  background: #075e54;
+  color: white;
+}
+
+[data-theme="dark"] .quickReply {
+  background: #1f2c34;
+  color: #00a884;
+  border-color: #00a884;
+}
+
+[data-theme="dark"] .quickReply:hover {
+  background: #00a884;
+  color: #111b21;
+}
+
+/* Typing Indicator */
+.typingIndicator {
+  display: flex;
+  gap: 4px;
+  padding: 0.25rem 0;
+}
+
+.typingIndicator span {
+  width: 8px;
+  height: 8px;
+  background: #667781;
+  border-radius: 50%;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typingIndicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typingIndicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingIndicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Input Area */
+.inputArea {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f0f2f5;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .inputArea {
+  background: #1f2c34;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.inputArea input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 20px;
+  background: white;
+  color: #303030;
+  font-size: 0.9375rem;
+}
+
+.inputArea input:focus {
+  outline: none;
+}
+
+.inputArea input::placeholder {
+  color: #667781;
+}
+
+[data-theme="dark"] .inputArea input {
+  background: #2a3942;
+  color: #e9edef;
+}
+
+[data-theme="dark"] .inputArea input::placeholder {
+  color: #8696a0;
+}
+
+.inputArea input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: #075e54;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.sendButton:hover {
+  background: #054d44;
+}
+
+.sendButton:disabled {
+  background: #8696a0;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .sendButton {
+  background: #00a884;
+}
+
+[data-theme="dark"] .sendButton:hover {
+  background: #06cf9c;
+}
+
+[data-theme="dark"] .sendButton:disabled {
+  background: #374045;
+}
+
+.sendButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container {
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+}

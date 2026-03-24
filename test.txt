@@ -1,0 +1,946 @@
+phase 2:
+🧪 Manual Testing Checklist
+Please test the following in your browser:
+1. Landing Page (Home Route)
+URL: http://localhost:5173/
+Expected Behavior:
+- ✅ Full landing page loads with Hero section
+- ✅ Navbar shows all links: "How It Works", "The Map", "Report a Need", "For NGOs", "Crisis Mode"
+- ✅ Logo "SevaSetu" in navbar links to home
+- ✅ Smooth scroll works for section links ("How It Works", "For NGOs", "Crisis Mode")
+- ✅ Theme toggle button works
+- ✅ Section navigator appears on the left side
+---
+2. Intake Page Route
+URL: http://localhost:5173/intake
+Navigation Methods:
+1. Click "Report a Need" in navbar
+2. Or manually navigate to /intake
+Expected Behavior:
+- ✅ Page loads with 4 tabs: Voice, Photo, WhatsApp, Form
+- ✅ Navbar still visible at top
+- ✅ No Section Navigator (only on landing page)
+- ✅ Active navbar link highlights "Report a Need"
+- ✅ Can switch between tabs
+- ✅ Location picker shows at bottom
+- ✅ Offline sync indicator visible in bottom-right
+Tab Features to Verify:
+- Voice Tab: Orange mic button (press-to-hold)
+- Photo Tab: Camera/upload interface
+- WhatsApp Tab: Chat UI with conversation bubbles
+- Form Tab: Dropdown fields + 17 templates
+---
+3. Pulse Map Route
+URL: http://localhost:5173/pulse-map
+Navigation Methods:
+1. Click "The Map" in navbar
+2. Or manually navigate to /pulse-map
+Expected Behavior:
+- ✅ Map component loads (shows empty state since no seed data yet)
+- ✅ Navbar still visible at top
+- ✅ Active navbar link highlights "The Map"
+- ✅ Layer controls visible on left: Active, In-Progress, Resolved
+- ✅ Stats panel shows 0 reports (no seed data)
+- ✅ Google Maps API key error expected (not configured yet)
+Note: Map will show error until Google Maps API key is set in .env:
+VITE_GOOGLE_MAPS_API_KEY=your_key_here
+---
+### **4. Navbar Link Behavior**
+**Route Links (React Router):**
+- "The Map" → `/pulse-map` (full page navigation)
+- "Report a Need" → `/intake` (full page navigation)
+- Logo → `/` (full page navigation to home)
+**Section Links (Smooth Scroll):**
+- "How It Works" → Scrolls to `#three-pillars` (only on landing page)
+- "For NGOs" → Scrolls to `#intake-demo` (only on landing page)
+- "Crisis Mode" → Scrolls to `#crisis` (only on landing page)
+**Active Link Highlighting:**
+- Current route link gets blue highlight
+- Current section (on landing page) gets blue highlight during scroll
+---
+5. Mobile Menu Test
+Steps:
+1. Resize browser to mobile width (< 768px)
+2. Click hamburger menu (3 lines) in top-right
+3. Verify menu expands with circular animation
+4. Click any link
+5. Verify menu closes and navigation works
+Expected Behavior:
+- ✅ Hamburger icon visible on mobile
+- ✅ Menu opens with smooth animation
+- ✅ All 5 nav links visible
+- ✅ "Join Waitlist" and "For NGOs" buttons at bottom
+- ✅ Menu closes after clicking link
+- ✅ Navigation works for both route and section links
+---
+6. Browser Back/Forward
+Steps:
+1. Start at home /
+2. Click "The Map" → /pulse-map
+3. Click "Report a Need" → /intake
+4. Press browser back button (should go to /pulse-map)
+5. Press browser back button again (should go to /)
+6. Press browser forward button (should go to /pulse-map)
+Expected Behavior:
+- ✅ Browser history works correctly
+- ✅ URL updates in address bar
+- ✅ Navbar active link updates correctly
+---
+7. Direct URL Navigation
+Steps:
+1. Type http://localhost:5173/intake directly in address bar
+2. Type http://localhost:5173/pulse-map directly in address bar
+3. Type http://localhost:5173/invalid-route (404 scenario)
+Expected Behavior:
+- ✅ Direct URLs work correctly
+- ✅ Pages load on refresh
+- ✅ Invalid routes may show blank (no 404 page implemented yet)
+---
+🐛 Known Limitations (Expected):
+1. Google Maps API Error: Map won't load without API key configured
+2. Firebase Errors: Backend features won't work without Firebase credentials
+3. No 404 Page: Invalid routes show blank page
+4. No Seed Data: Map shows empty state until seed script is run
+5. Offline Features: Won't work without Service Worker (deferred)
+---
+✅ What Should Work:
+1. ✅ All 3 routes load and render
+2. ✅ Navigation between routes works smoothly
+3. ✅ Navbar links highlight correctly
+4. ✅ Logo links to home
+5. ✅ Theme toggle persists across routes
+6. ✅ Mobile menu works
+7. ✅ Browser history (back/forward) works
+8. ✅ Direct URL access works
+9. ✅ Layout and styling consistent across routes
+10. ✅ No console errors related to routing
+---
+📊 Testing Results:
+Please report:
+1. ✅ Which features work as expected
+2. ❌ Any errors in browser console
+3. ⚠️ Any unexpected behavior
+4. 💡 Suggestions for improvements
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+phase 3:
+🧪 Manual Testing Checklist
+Please test the following for SEVA Agent (PRD 03):
+
+1. Route and Page Load
+URL: http://localhost:5173/seva-agent
+Expected Behavior:
+- ✅ SEVA Agent dashboard loads without crash
+- ✅ Navbar visible and "SEVA Agent" link highlighted
+- ✅ "Dispatch Queue" and "Top Decisions" sections render
+- ✅ Buttons "Run Heartbeat" and "Refresh Tasks" are visible
+
+---
+
+2. Trigger Agent for a Report
+Precondition:
+- Backend running at http://localhost:3001
+- Need reports exist (from intake or seed)
+API:
+- POST /api/dispatch/trigger/:reportId
+Expected Behavior:
+- ✅ Response contains success and taskId
+- ✅ New dispatch task created in Firestore `dispatchTasks`
+- ✅ Top 3 candidate volunteers selected (if available)
+- ✅ Need report status updates to `dispatched` with assigned volunteer
+
+---
+
+3. Matching Score Verification
+What to verify in `dispatchTasks.rankedDecisions`:
+- ✅ Each decision has `totalScore` between 0 and 1
+- ✅ Component scores exist: proximity, skillFit, availability, reliability, equityBoost, needUrgency
+- ✅ Ranked order is descending by `totalScore`
+- ✅ Explanation string is human-readable and mentions why volunteer was matched
+
+---
+
+4. Auto-Cascade Flow
+API:
+- POST /api/dispatch/tasks/:taskId/respond with `{ volunteerId, action: "decline" }`
+Expected Behavior:
+- ✅ Current invitation marked declined in `invitationHistory`
+- ✅ Next ranked volunteer receives invitation
+- ✅ `currentInviteIndex` increments
+- ✅ If top 3 exhausted, task status becomes `escalated`
+
+---
+
+5. Volunteer Accept Flow
+API:
+- POST /api/dispatch/tasks/:taskId/respond with `{ volunteerId, action: "accept" }`
+Expected Behavior:
+- ✅ Task status becomes `accepted`
+- ✅ `acceptedVolunteerId` and `acceptedAt` are set
+- ✅ Need report status changes to `in_progress`
+
+---
+
+6. Coordinator Override
+API:
+- POST /api/dispatch/tasks/:taskId/override with `{ selectedVolunteerId, reason }`
+Expected Behavior:
+- ✅ Task `coordinatorOverride.overridden` becomes true
+- ✅ Override details (coordinatorId, reason, selectedVolunteerId) stored
+- ✅ Need report assigned volunteer updated to override selection
+- ✅ Task moves to accepted state
+
+---
+
+7. Decision Logs
+API:
+- GET /api/dispatch/tasks/:taskId/logs
+Expected Behavior:
+- ✅ Logs include initial dispatch reasoning
+- ✅ Logs include cascade/accept/escalation/override events
+- ✅ Each log entry has plain-language message and timestamp
+
+---
+
+8. Heartbeat Timeout Processing
+API:
+- POST /api/dispatch/heartbeat
+Expected Behavior:
+- ✅ Pending invites older than 5 min are expired and cascaded
+- ✅ Tasks exceeding 15 min without acceptance are escalated
+- ✅ Response returns processed/escalated counters
+
+---
+
+9. Notification Records
+What to verify in Firestore:
+- ✅ `notifications` entries created for invited volunteer
+- ✅ `notificationFallbacks` created with WhatsApp and SMS delays
+- ✅ Deep link present in notification payload (`/tasks/:reportId`)
+
+---
+
+10. Volunteer Seed Data
+Command:
+- `cd backend && npm run seed:volunteers -- --clear --count=120`
+Expected Behavior:
+- ✅ 120 volunteers created in `volunteers` collection
+- ✅ Volunteers include mixed availability states (free/in_task/offline)
+- ✅ Categories and skills populated for matching
+
+---
+
+🐛 Known Limitations (Expected):
+1. SkillFit currently uses token overlap proxy, not Gemini embeddings yet
+2. Notification channels are persisted as records; real FCM/WhatsApp/SMS delivery not yet wired
+3. Heartbeat is API-triggered; no background scheduler daemon yet
+4. Coordinator dashboard is basic and reads from backend task list endpoint
+
+---
+
+✅ What Should Work:
+1. ✅ End-to-end dispatch task creation from a need report
+2. ✅ Ranked top-3 candidate selection with score breakdown
+3. ✅ Accept/decline response flow
+4. ✅ Auto-cascade and escalation behavior
+5. ✅ Coordinator override and decision log tracking
+6. ✅ Route `/seva-agent` available in frontend
+
+---
+
+phase 4:
+🧪 Manual Testing Checklist
+Please test the following for NGO Intelligence Dashboard (PRD 04):
+
+1. Route and Shell
+URL: http://localhost:5173/ngo-dashboard
+Expected Behavior:
+- ✅ Dashboard page loads and navbar is visible
+- ✅ "NGO Dashboard" nav link is active
+- ✅ Hero stats render (Active Tasks, Stalled, Volunteers, Beneficiaries)
+
+---
+
+2. Overview API
+API:
+- GET /api/dashboard/overview
+Expected Behavior:
+- ✅ Returns all modules in one payload:
+  - liveOperations
+  - volunteerHealth
+  - needsPipeline
+  - impactAnalytics
+  - resourceInventory
+  - sdgAlignment
+  - surgeForecast
+  - crossNgoCoordination
+- ✅ Includes `generatedAt` timestamp
+
+---
+
+3. Live Operations Module
+Expected Behavior:
+- ✅ Active tasks list displays category, urgency, status, zone, and last activity
+- ✅ Tasks stale for >30 min are marked as stalled
+- ✅ Stalled tasks include reroute suggestion text
+
+---
+
+4. Volunteer Health Index
+Expected Behavior:
+- ✅ Volunteers include reliability score, active task count, skills
+- ✅ Burnout risk flagged when tasks exceed threshold
+- ✅ AI appreciation message appears per volunteer
+
+---
+
+5. Needs Pipeline Kanban
+Expected Behavior:
+- ✅ Four columns visible: Unassigned, Assigned, In-Progress, Resolved
+- ✅ Cards show time-in-stage
+- ✅ SLA breaches are highlighted
+- ✅ Escalation draft appears for overdue needs
+
+---
+
+6. Impact Analytics
+Expected Behavior:
+- ✅ Beneficiaries served and volunteer hours are displayed
+- ✅ Resolved-by-category list is rendered
+- ✅ Average response time and trend data are shown
+- ✅ Monthly impact narrative appears in English and Hindi
+
+---
+
+7. Resource Inventory + Depletion Alerts
+Expected Behavior:
+- ✅ Inventory items show quantity, unit, and location
+- ✅ Days remaining is calculated for each resource
+- ✅ Depletion alerts are shown when stock horizon is low
+- ✅ Recommendation message appears for low-stock items
+
+---
+
+8. SDG Alignment Report
+Expected Behavior:
+- ✅ SDG mapping counts are displayed (e.g., SDG 1/2/3/4/6/10/11)
+- ✅ BRSR/GRI summary text appears
+
+---
+
+9. Surge Forecast Panel
+Expected Behavior:
+- ✅ Forecast entries show zone, category, observed14d, projected14d
+- ✅ Pre-position recommendation text is present
+API:
+- GET /api/dashboard/surge-forecast returns forecast-only payload
+
+---
+
+10. Cross-NGO Coordination
+Expected Behavior:
+- ✅ Overlap alerts shown when multiple NGOs are active in same zone-category cluster
+- ✅ Alert text identifies overlapping NGOs and location
+API:
+- GET /api/dashboard/cross-ngo returns overlap-only payload
+
+---
+
+11. Resource CRUD Smoke Test
+API:
+- POST /api/dashboard/resources
+  payload: { name, quantity, location, usagePerDay, unit }
+Expected Behavior:
+- ✅ Resource item created in Firestore `resources`
+- ✅ Item appears in dashboard inventory on refresh
+
+---
+
+🐛 Known Limitations (Expected):
+1. Forecast logic is heuristic from recent patterns (not Vertex time-series model yet)
+2. Impact/SDG narratives are generated rule-based templates (Gemini generation not wired yet)
+3. Cross-NGO overlaps depend on `assignedNgoId` availability in reports
+4. Live operations map is list-based in dashboard (detailed geo-canvas can be enhanced later)
+
+---
+
+✅ What Should Work:
+1. ✅ `/ngo-dashboard` route and responsive layout
+2. ✅ Unified overview endpoint powering all modules
+3. ✅ Kanban pipeline with SLA signals
+4. ✅ Burnout risk and volunteer health indicators
+5. ✅ Inventory depletion alerts and SDG/BRSR summary
+6. ✅ Surge forecast and cross-NGO coordination alerts
+
+---
+
+phase 5:
+🧪 Manual Testing Checklist
+Please test the following for Volunteer Experience App (PRD 05):
+
+1. Route and Mobile-first UI
+URL: http://localhost:5173/volunteer-app
+Expected Behavior:
+- ✅ Page renders in phone-shell layout centered on desktop
+- ✅ Tabs visible: onboarding, tasks, chat, rewards
+- ✅ "Volunteer App" nav link is active
+
+---
+
+2. Onboarding + Profile Card
+APIs:
+- GET /api/volunteer-app/profile/:volunteerId
+- POST /api/volunteer-app/onboarding/assess
+- PATCH /api/volunteer-app/onboarding/preferences
+Expected Behavior:
+- ✅ Profile auto-created if missing
+- ✅ Skill assessment updates skills/certifications
+- ✅ SDG interests and availability calendar can be saved
+- ✅ Identity verification status shown as optional/not mandatory
+
+---
+
+3. Task Experience Feed
+API:
+- GET /api/volunteer-app/tasks/:volunteerId
+Expected Behavior:
+- ✅ Task cards show summary, distance, estimated time, required skills, what to bring
+- ✅ Navigation link opens Google Maps directions
+- ✅ Checklist generated based on task category
+- ✅ Urgency multiplier visible on task card
+
+---
+
+4. Task Accept Flow
+API:
+- POST /api/volunteer-app/tasks/:taskId/accept
+Expected Behavior:
+- ✅ Need report status moves to in_progress
+- ✅ assignedVolunteerId is set
+- ✅ Volunteer availability changes to in_task
+- ✅ Volunteer assigned/active task counters increment
+
+---
+
+5. In-task Coordinator Chat
+APIs:
+- GET /api/volunteer-app/tasks/:taskId/chat
+- POST /api/volunteer-app/tasks/:taskId/chat
+Expected Behavior:
+- ✅ Volunteer can send message to coordinator
+- ✅ Messages persist in `taskChats` collection
+- ✅ Chat list loads in chronological order
+
+---
+
+6. Completion + Evidence + Voice Debrief
+API:
+- POST /api/volunteer-app/tasks/complete
+Expected Behavior:
+- ✅ Photo evidence URLs and voice debrief text saved on report
+- ✅ Need report status moves to resolved
+- ✅ Volunteer active tasks decrement and availability returns to free
+
+---
+
+7. Gamification Engine
+API:
+- GET /api/volunteer-app/gamification/:volunteerId
+Expected Behavior:
+- ✅ Seva Points awarded based on urgency multiplier and rating
+- ✅ Impact milestone text updates with beneficiaries impacted
+- ✅ Skill badges unlock by thresholds
+- ✅ Squad mode data (name/rank/challenge) is returned
+- ✅ Corporate league leaderboard is returned
+
+---
+
+8. Seva Passport
+Expected Behavior:
+- ✅ Passport credential ID generated
+- ✅ Anchored flag true
+- ✅ Shareable summary text displayed for LinkedIn/career profile
+
+---
+
+9. End-to-end Volunteer Journey
+Flow:
+1) run onboarding assessment
+2) save preferences
+3) accept task
+4) send chat message
+5) complete task with evidence
+6) verify rewards tab
+Expected Behavior:
+- ✅ Entire flow succeeds without data loss
+- ✅ Points and stats reflect completed task
+
+---
+
+🐛 Known Limitations (Expected):
+1. Skill assessment uses rules-based inference (Gemini conversational model to be wired later)
+2. Voice debrief currently submitted as text payload (audio transcription pipeline can be layered next)
+3. Real-time chat polling/WebSocket is not enabled yet (API-based refresh)
+4. Seva Passport is generated credential metadata, not blockchain anchoring yet
+
+---
+
+✅ What Should Work:
+1. ✅ `/volunteer-app` route and mobile-first interface
+2. ✅ Onboarding profile creation and preference updates
+3. ✅ Task accept/in-progress/complete lifecycle
+4. ✅ Coordinator chat persistence
+5. ✅ Gamification (points, badges, milestones, squad, league, passport)
+
+---
+
+phase 6:
+🧪 Manual Testing Checklist
+Please test the following for Gemini-Powered Features (PRD 06):
+
+1. Route and Feature Lab Shell
+URL: http://localhost:5173/gemini-lab
+Expected Behavior:
+- ✅ Gemini Lab page loads and navbar "Gemini Lab" link is active
+- ✅ Sections visible: Copilot, Skill Match, Impact Report, Surge RAG, Burnout Detect, Crisis Draft
+- ✅ Each section has input controls + output panel
+
+---
+
+2. Coordinator Copilot Query
+API:
+- POST /api/gemini/copilot/query
+payload: { query }
+Expected Behavior:
+- ✅ Returns natural language answer + recommended filters + explanation
+- ✅ Response includes graceful degradation marker when fallback is used
+- ✅ Query can drive dashboard-style filtering intent
+
+---
+
+3. Skill Matching Embeddings Proxy
+API:
+- POST /api/gemini/skill-match
+payload: { volunteerSkills: string[], needDescription: string }
+Expected Behavior:
+- ✅ Returns semanticSimilarityScore (0-1)
+- ✅ Returns matchedKeywords list
+- ✅ Includes explainability/degraded note
+
+---
+
+4. Impact Report Generation
+API:
+- POST /api/gemini/impact-report
+payload: { ngoName, periodLabel, rawActivityLogs, language }
+Expected Behavior:
+- ✅ Returns title, narrative, sdgHighlights, keyStats
+- ✅ Works for both English and Hindi
+- ✅ Graceful fallback output appears if model parsing fails
+
+---
+
+5. Surge Forecasting RAG
+API:
+- POST /api/gemini/surge-rag
+payload: { historicalSummary, weatherSignals, socialSignals }
+Expected Behavior:
+- ✅ Returns 14-day forecast object with zone/category entries
+- ✅ Each entry has demand score + confidence + recommendation
+- ✅ Graceful fallback available
+
+---
+
+6. Coordinator Burnout Detection (Opt-in)
+API:
+- POST /api/gemini/burnout-detect
+payload: { messageToneSample, usageSummary, optIn }
+Expected Behavior:
+- ✅ If optIn=false, returns not_applicable and no analysis
+- ✅ If optIn=true, returns burnoutRisk + workload suggestion
+- ✅ Output explicitly indicates rules-based fallback when model not wired
+
+---
+
+7. Crisis Escalation Draft
+API:
+- POST /api/gemini/crisis-escalation
+payload: { zone, needsSummary, evidenceSummary }
+Expected Behavior:
+- ✅ Returns subject + formal letter + recommended attachments
+- ✅ Letter is usable as government escalation draft
+- ✅ Graceful fallback available
+
+---
+
+8. Explainability + Degradation Contract
+What to verify across all phase 6 responses:
+- ✅ Output includes clear explanation text
+- ✅ Degradation does not break endpoint shape
+- ✅ Core workflows continue when model output is unavailable
+
+---
+
+🐛 Known Limitations (Expected):
+1. Some endpoints use rule-based/proxy fallbacks until full Vertex/Gemini pipelines are wired
+2. Skill matching currently proxy-based (token overlap) instead of true embedding API
+3. Burnout detection currently rules-based; tone model integration can be added later
+4. RAG endpoint uses structured prompt inputs, not yet connected to external weather/social data sources
+
+---
+
+✅ What Should Work:
+1. ✅ `/gemini-lab` route with interactive AI registry modules
+2. ✅ Backend Gemini endpoints responding with stable JSON contracts
+3. ✅ Explainable outputs across modules
+4. ✅ Graceful degradation without breaking platform core loops
+
+---
+
+phase 7:
+🧪 Manual Testing Checklist
+Please test the following for Corporate CSR Portal (PRD 07):
+
+1. Route and Portal Shell
+URL: http://localhost:5173/csr-portal
+Expected Behavior:
+- ✅ CSR portal page loads and navbar "CSR Portal" link is active
+- ✅ Pricing badge shows enterprise tier and monthly pricing
+- ✅ All key modules visible (onboarding, pool, leaderboard, compliance, certificates, challenges, vetting, audit)
+
+---
+
+2. Employee Bulk Onboarding
+API:
+- POST /api/csr/employees/bulk-onboard
+payload: { companyId, companyName, rows[] }
+Expected Behavior:
+- ✅ Employee records created in `companyEmployees`
+- ✅ Volunteer profiles auto-created in `volunteers`
+- ✅ Response returns created profile count
+
+---
+
+3. Dedicated Company Volunteer Pool
+API:
+- GET /api/csr/volunteer-pool/:companyId?sdgAreas=...&preferredNgoIds=...
+Expected Behavior:
+- ✅ Returns company-linked volunteer pool
+- ✅ Includes SDG alignment score
+- ✅ Includes preferred NGO match flag
+
+---
+
+4. Live Leaderboard
+API:
+- GET /api/csr/leaderboard/:companyId
+Expected Behavior:
+- ✅ Division-level volunteering hours are returned
+- ✅ Top employees list is returned and sorted
+
+---
+
+5. BRSR / GRI Compliance Automation
+API:
+- GET /api/csr/compliance/brsr/:companyId
+Expected Behavior:
+- ✅ BRSR Section C social-capital payload returned
+- ✅ GRI 413 fields auto-populated
+- ✅ Methodology notes included
+
+---
+
+6. Impact Certificates
+API:
+- GET /api/csr/certificates/:companyId
+Expected Behavior:
+- ✅ Named certificate records generated per employee
+- ✅ Each includes certificateId + PDF URL
+
+---
+
+7. Team Challenges
+APIs:
+- POST /api/csr/challenges
+- GET /api/csr/challenges/:companyId
+Expected Behavior:
+- ✅ Challenge can be created with target + due date
+- ✅ Challenge list includes active status and progress fields
+
+---
+
+8. NGO Vetting Report
+API:
+- POST /api/csr/ngo-vetting
+payload: { ngoName, fcraStatus, darpanRating, pastProjects, mediaCoverageNotes }
+Expected Behavior:
+- ✅ Returns due-diligence score and recommendation
+- ✅ Returns risk flags and verified input summary
+- ✅ Produces concise vetting brief text
+
+---
+
+9. Compliance Audit Trail
+API:
+- GET /api/csr/compliance/audit-trail/:companyId
+Expected Behavior:
+- ✅ Returns cryptographic signatures per tracked record
+- ✅ Includes timestamp + summary per audit row
+- ✅ Count reflects generated trail entries
+
+---
+
+10. Pricing Endpoint
+API:
+- GET /api/csr/pricing
+Expected Behavior:
+- ✅ Returns enterprise pricing at INR 50,000/month
+- ✅ Lists included features and monetization note
+
+---
+
+🐛 Known Limitations (Expected):
+1. PDF certificate URLs are mock placeholders until PDF generation service is wired
+2. NGO vetting uses structured heuristics, not external registry/API verification yet
+3. Audit signatures are SHA-256 hashes (application-level) rather than external notarization
+4. Company-linked report attribution depends on `needReports.companyId` availability
+
+---
+
+✅ What Should Work:
+1. ✅ `/csr-portal` route with enterprise CSR dashboard modules
+2. ✅ Bulk employee onboarding and company volunteer pool creation
+3. ✅ Leaderboard + team challenge workflows
+4. ✅ BRSR/GRI automation payload generation
+5. ✅ NGO vetting summaries and signed audit trail outputs
+
+---
+
+phase 8:
+🧪 Manual Testing Checklist
+Please test the following for Panchayat Interface (PRD 08):
+
+1. Route and UI Basics
+URL: http://localhost:5173/panchayat
+Expected Behavior:
+- ✅ Panchayat page loads and navbar "Panchayat" link is active
+- ✅ Hindi-first cues and mobile-friendly layout are visible
+- ✅ Modules visible: need flagging, overview, duplication/history, scheme gap finder, monthly report, GatiShakti overlay
+
+---
+
+2. Direct Need Flagging by Sarpanch
+API:
+- POST /api/panchayat/needs/flag
+payload: { panchayatId, description, category?, urgency?, location }
+Expected Behavior:
+- ✅ New need report is created with `sourceChannel: panchayat_direct`
+- ✅ Record tagged with panchayatId and sarpanch reporterId
+- ✅ Success response includes reportId
+
+---
+
+3. Panchayat Overview + NGO Visibility
+API:
+- GET /api/panchayat/overview/:panchayatId
+Expected Behavior:
+- ✅ Active needs count returned
+- ✅ Active NGOs in jurisdiction returned
+- ✅ Duplicate cluster summary returned
+- ✅ Recurring need summary returned
+
+---
+
+4. Duplication Prevention
+Expected Behavior:
+- ✅ Duplicate clusters identify zone + category overlap
+- ✅ Cluster marks potential duplicates when multiple NGOs are active
+- ✅ Supports decision-making before calling more NGOs
+
+---
+
+5. Village Need History
+API:
+- GET /api/panchayat/history/:panchayatId?months=6
+Expected Behavior:
+- ✅ Month-wise category breakdown returned
+- ✅ Recurring trend visibility for gram-level planning
+
+---
+
+6. Scheme Gap Finder (Gemini-style)
+API:
+- POST /api/panchayat/scheme-gap-finder
+payload: { panchayatId, needsSummary, enrolledSchemes[] }
+Expected Behavior:
+- ✅ Eligible schemes list returned with priority and reasoning
+- ✅ Unenrolled risk groups identified
+- ✅ Hindi action-plan text generated
+- ✅ Graceful fallback works if model unavailable
+
+---
+
+7. Monthly Village Health One-Pager
+API:
+- GET /api/panchayat/monthly-health-report/:panchayatId?monthLabel=...
+Expected Behavior:
+- ✅ One-pager style payload with highlights and Hindi recommendations
+- ✅ Includes monthly category summary
+- ✅ Ready to present in gram sabha context
+
+---
+
+8. PM GatiShakti Overlay (Proxy)
+API:
+- GET /api/panchayat/pm-gatishakti/:panchayatId
+Expected Behavior:
+- ✅ Infrastructure-linked signals returned
+- ✅ Includes severity + notes for planning
+- ✅ Degraded/proxy flag visible until direct integration is wired
+
+---
+
+9. Access Model Sanity
+Expected Behavior:
+- ✅ Read-mostly behavior for general government users (policy)
+- ✅ Write action (need flagging) intended for verified sarpanch pathway only
+
+---
+
+🐛 Known Limitations (Expected):
+1. PRD marks this as V2+ post-launch; current implementation is preview-mode
+2. SMS/WhatsApp channels are represented at workflow level; direct gateway integration pending
+3. PM GatiShakti integration is proxy data model, not live government API
+4. Verified-sarpanch role enforcement is policy-level and should be hardened in auth/roles middleware
+
+---
+
+✅ What Should Work:
+1. ✅ `/panchayat` route and government-facing mobile pattern
+2. ✅ Direct need flagging + jurisdiction overview
+3. ✅ Duplication prevention + recurring history visibility
+4. ✅ Scheme gap finder and monthly health report generation
+5. ✅ Infrastructure signal overlay (proxy) for planning support
+
+---
+
+phase 9:
+🧪 Manual Testing Checklist
+Please test the following for SEVA Crisis Mode (PRD 09):
+
+1. Route and Crisis Command UI
+URL: http://localhost:5173/crisis-mode
+Expected Behavior:
+- ✅ Crisis mode command page loads with full-screen style coordination layout
+- ✅ Navbar "Crisis Mode" route works
+- ✅ Panels visible for activation, surge queue, resources, media bulletin, post-crisis report
+
+---
+
+2. Crisis Activation Threshold Evaluation
+API:
+- POST /api/crisis/evaluate
+payload: { zoneId, imdAlert }
+Expected Behavior:
+- ✅ Detects activation when either condition is true:
+  - 5+ emergency reports in 5km within 2h
+  - IMD alert present
+- ✅ Returns evidence object with trigger details
+
+---
+
+3. Crisis Mode Activation
+API:
+- POST /api/crisis/activate
+payload: { zoneId, reason, evidenceSummary }
+Expected Behavior:
+- ✅ Crisis state created/updated with active status
+- ✅ Crisis-mode weights returned (proximity-dominant profile)
+- ✅ Dispatch target returned as 60 sec
+- ✅ Volunteer notification radius returned as 25km
+
+---
+
+4. Volunteer Surge Alert
+Expected Behavior:
+- ✅ Surge notifications created for broad volunteer radius logic
+- ✅ Response reports count of volunteers notified
+- ✅ Queue entries include ETA and skills in dashboard payload
+
+---
+
+5. Cross-NGO Resource Requisition
+Expected Behavior:
+- ✅ Requests generated for 3 nearest active NGOs (proxy selection)
+- ✅ Resource request records created with requested kit types
+- ✅ Requisition details appear in activation output
+
+---
+
+6. Government Notification Draft
+Expected Behavior:
+- ✅ Auto-generated District Collector/SDRF draft is returned
+- ✅ Includes subject, letter body, and attachment suggestions
+- ✅ Fallback still returns structured draft if model unavailable
+
+---
+
+7. Crisis Dashboard Metrics
+API:
+- GET /api/crisis/dashboard/:zoneId
+Expected Behavior:
+- ✅ Mode toggles to crisis when active state exists
+- ✅ Live operations summary includes active/high-urgency deployments
+- ✅ Volunteer surge queue and resource tracking returned
+- ✅ Media bulletin payload returned
+
+---
+
+8. Resolve Crisis + Post-Crisis Report
+APIs:
+- POST /api/crisis/resolve
+- POST /api/crisis/post-report
+Expected Behavior:
+- ✅ Crisis status moves to resolved
+- ✅ Post-crisis report due in ~48h field is set
+- ✅ After-action report generated with timeline, summary metrics, lessons, donor-ready narrative
+
+---
+
+9. Parameter Shift Validation (Standard vs Crisis)
+Expected Behavior:
+- ✅ Notification radius: 5km -> 25km
+- ✅ Matching weights reflect crisis values (w1=0.50, w2=0.15)
+- ✅ Operational target shifts from 15 min to 60 sec
+- ✅ Government notification path is automatic
+
+---
+
+🐛 Known Limitations (Expected):
+1. IMD trigger is currently API-input flag; live weather feed wiring is pending
+2. 5km cluster detection uses in-app report geospatial computation (no external GIS index yet)
+3. NGO "nearest 3" selection is active-list proxy; can be upgraded to true distance-based routing
+4. Post-crisis report generation can be further enriched with timeline event stream ingestion
+
+---
+
+✅ What Should Work:
+1. ✅ `/crisis-mode` route with crisis coordination command view
+2. ✅ Activation evaluate/activate/resolve lifecycle APIs
+3. ✅ Surge alerts + resource requisition + government draft generation
+4. ✅ Crisis dashboard aggregation (operations, volunteers, resources, media)
+5. ✅ Post-crisis after-action report generation

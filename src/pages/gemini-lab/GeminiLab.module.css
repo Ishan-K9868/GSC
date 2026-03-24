@@ -1,0 +1,101 @@
+.page {
+  min-height: 100vh;
+  padding: 6.3rem 1rem 2rem;
+  background:
+    radial-gradient(circle at 8% 7%, rgba(74, 142, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(45, 157, 120, 0.1), transparent 35%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: linear-gradient(155deg, rgba(74, 142, 255, 0.15), rgba(45, 157, 120, 0.08));
+}
+
+.title {
+  margin: 0;
+  font-family: 'Bricolage Grotesque', Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.06;
+}
+
+.sub {
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.span6 { grid-column: span 6; }
+.span4 { grid-column: span 4; }
+.span8 { grid-column: span 8; }
+.span12 { grid-column: span 12; }
+
+.input,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 0.55rem 0.65rem;
+}
+
+.textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.output {
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-2) 58%, transparent);
+  padding: 0.65rem;
+  white-space: pre-wrap;
+  font-size: 0.86rem;
+}
+
+.pill {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 1080px) {
+  .span4,
+  .span6,
+  .span8 {
+    grid-column: span 12;
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../context/ThemeContext';
 import { WaitlistModal } from '../shared';
@@ -10,25 +11,36 @@ const springWarm = { type: 'spring', stiffness: 220, damping: 16 } as const;
 
 interface NavLink {
   label: string;
-  sectionId: string;
+  sectionId?: string; // For anchor links
+  path?: string; // For route links
+  type: 'section' | 'route';
 }
 
 const navLinks: NavLink[] = [
-  { label: 'How It Works', sectionId: 'three-pillars' },
-  { label: 'The Map', sectionId: 'pulse-map' },
-  { label: 'For NGOs', sectionId: 'intake-demo' },
-  { label: 'For Corporates', sectionId: 'csr' },
-  { label: 'Crisis Mode', sectionId: 'crisis' },
+  { label: 'How It Works', sectionId: 'three-pillars', type: 'section' },
+  { label: 'The Map', path: '/pulse-map', type: 'route' },
+  { label: 'Report a Need', path: '/intake', type: 'route' },
+  { label: 'SEVA Agent', path: '/seva-agent', type: 'route' },
+  { label: 'NGO Dashboard', path: '/ngo-dashboard', type: 'route' },
+  { label: 'Volunteer App', path: '/volunteer-app', type: 'route' },
+  { label: 'Gemini Lab', path: '/gemini-lab', type: 'route' },
+  { label: 'CSR Portal', path: '/csr-portal', type: 'route' },
+  { label: 'Panchayat', path: '/panchayat', type: 'route' },
+  { label: 'Crisis Mode', path: '/crisis-mode', type: 'route' },
+  { label: 'For NGOs', sectionId: 'intake-demo', type: 'section' },
 ];
 
 function Navbar() {
   const { theme, toggle } = useTheme();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
+
+  const isLandingPage = location.pathname === '/';
 
   // Scroll detection
   useEffect(() => {
@@ -37,11 +49,15 @@ function Navbar() {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
-  // Active section detection
+  // Active section detection (only on landing page)
   useEffect(() => {
+    if (!isLandingPage) return;
+
     const observers: IntersectionObserver[] = [];
 
-    navLinks.forEach(({ sectionId }) => {
+    navLinks.forEach(({ sectionId, type }) => {
+      if (type !== 'section' || !sectionId) return;
+
       const element = document.getElementById(sectionId);
       if (!element) return;
 
@@ -63,7 +79,7 @@ function Navbar() {
     return () => {
       observers.forEach((observer) => observer.disconnect());
     };
-  }, []);
+  }, [isLandingPage]);
 
   // Mobile menu focus trap and escape key
   useEffect(() => {
@@ -123,13 +139,6 @@ function Navbar() {
     setMobileMenuOpen(false);
   }, []);
 
-  const scrollToHero = useCallback(() => {
-    const element = document.getElementById('hero');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, []);
-
   return (
     <>
       <motion.nav
@@ -139,14 +148,10 @@ function Navbar() {
         transition={springSnap}
       >
         {/* Logo Lockup */}
-        <a
-          href="#hero"
+        <Link
+          to="/"
           className={styles.logoLockup}
-          onClick={(e) => {
-            e.preventDefault();
-            scrollToHero();
-          }}
-          aria-label="SevaSetu - Go to top"
+          aria-label="SevaSetu - Go to home"
         >
           <svg
             viewBox="0 0 28 20"
@@ -169,24 +174,40 @@ function Navbar() {
             <span className={styles.brandName}>SevaSetu</span>
             <span className={styles.brandSubtitle}>सेवासेतु</span>
           </div>
-        </a>
+        </Link>
 
         {/* Center Navigation Links */}
         <div className={styles.navLinks}>
-          {navLinks.map(({ label, sectionId }) => (
-            <a
-              key={sectionId}
-              href={`#${sectionId}`}
-              className={`${styles.navLink} ${activeSection === sectionId ? styles.active : ''}`}
-              aria-label={`Go to ${label} section`}
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToSection(sectionId);
-              }}
-            >
-              {label}
-            </a>
-          ))}
+          {navLinks.map(({ label, sectionId, path, type }, index) => {
+            if (type === 'route' && path) {
+              return (
+                <Link
+                  key={index}
+                  to={path}
+                  className={`${styles.navLink} ${location.pathname === path ? styles.active : ''}`}
+                  aria-label={`Go to ${label}`}
+                >
+                  {label}
+                </Link>
+              );
+            } else if (type === 'section' && sectionId) {
+              return (
+                <a
+                  key={sectionId}
+                  href={`#${sectionId}`}
+                  className={`${styles.navLink} ${activeSection === sectionId ? styles.active : ''}`}
+                  aria-label={`Go to ${label} section`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection(sectionId);
+                  }}
+                >
+                  {label}
+                </a>
+              );
+            }
+            return null;
+          })}
         </div>
 
         {/* Right Action Group */}
@@ -310,26 +331,46 @@ function Navbar() {
             transition={{ duration: 0.5, ease: [0.76, 0, 0.24, 1] }}
           >
             <div className={styles.mobileOverlayContent}>
-              {navLinks.map(({ label, sectionId }, index) => (
-                <motion.a
-                  key={sectionId}
-                  href={`#${sectionId}`}
-                  className={styles.mobileLink}
-                  aria-label={`Go to ${label} section`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(sectionId);
-                  }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    ...springWarm,
-                    delay: 0.2 + index * 0.1,
-                  }}
-                >
-                  {label}
-                </motion.a>
-              ))}
+              {navLinks.map(({ label, sectionId, path, type }, index) => {
+                const key = sectionId || path || `link-${index}`;
+                
+                if (type === 'route' && path) {
+                  return (
+                    <motion.div key={key}>
+                      <Link
+                        to={path}
+                        className={styles.mobileLink}
+                        aria-label={`Go to ${label}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {label}
+                      </Link>
+                    </motion.div>
+                  );
+                } else if (type === 'section' && sectionId) {
+                  return (
+                    <motion.a
+                      key={key}
+                      href={`#${sectionId}`}
+                      className={styles.mobileLink}
+                      aria-label={`Go to ${label} section`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        scrollToSection(sectionId);
+                      }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        ...springWarm,
+                        delay: 0.2 + index * 0.1,
+                      }}
+                    >
+                      {label}
+                    </motion.a>
+                  );
+                }
+                return null;
+              })}
               <motion.div
                 className={styles.mobileActions}
                 initial={{ opacity: 0, y: 20 }}
