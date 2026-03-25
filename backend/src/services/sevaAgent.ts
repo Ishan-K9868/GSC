@@ -59,7 +59,7 @@ export async function triggerSevaAgentForReport(reportId: string): Promise<Agent
     await notifyVolunteer(firstDecision, reportId, 'primary');
   }
 
-  await taskRef.set(task);
+  await taskRef.set(toFirestoreSafe(task));
 
   await logAgentDecision({
     reportId,
@@ -152,7 +152,7 @@ export async function respondToDispatchInvite(
   }
 
   task.updatedAt = now;
-  await taskRef.set(task, { merge: true });
+  await taskRef.set(toFirestoreSafe(task), { merge: true });
 
   return {
     success: true,
@@ -198,7 +198,7 @@ export async function runDispatchHeartbeat(): Promise<{ processed: number; escal
       }
 
       task.updatedAt = new Date().toISOString();
-      await doc.ref.set(task, { merge: true });
+      await doc.ref.set(toFirestoreSafe(task), { merge: true });
       processed += 1;
     }
   }
@@ -267,7 +267,7 @@ export async function coordinatorOverrideDispatch(
   task.status = DispatchTaskStatus.ACCEPTED;
   task.updatedAt = now;
 
-  await taskRef.set(task, { merge: true });
+  await taskRef.set(toFirestoreSafe(task), { merge: true });
   await db.collection('needReports').doc(task.needReportId).update({
     assignedVolunteerId: selectedVolunteerId,
     status: ReportStatus.IN_PROGRESS,
@@ -332,4 +332,8 @@ async function logAgentDecision(input: {
     ...input,
     createdAt: new Date().toISOString(),
   });
+}
+
+function toFirestoreSafe<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
 }

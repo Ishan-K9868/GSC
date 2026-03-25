@@ -17,8 +17,10 @@ import { createError } from '../middleware/errorHandler';
 import { 
   CreateNeedReportSchema, 
   NeedReport, 
+  NeedCategoryType,
   ReportStatus,
   NeedCategory,
+  UrgencyLevelType,
   UrgencyLevel,
   CategoryMetadata,
 } from '../models/NeedReport';
@@ -47,7 +49,11 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
     const now = new Date().toISOString();
 
     // Run AI classification if category/urgency not provided
-    let classification = {
+    let classification: {
+      category: NeedCategoryType;
+      urgency: UrgencyLevelType;
+      geminiExtraction?: any;
+    } = {
       category: input.category || NeedCategory.HEALTH,
       urgency: input.urgency || UrgencyLevel.MEDIUM,
       geminiExtraction: undefined as any,
@@ -74,7 +80,6 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
       id: reportId,
       reporterId: uid,
       category: classification.category,
-      subCategory: classification.geminiExtraction?.subCategory,
       urgency: classification.urgency,
       description: input.description,
       estimatedPeopleAffected: input.estimatedPeopleAffected || classification.geminiExtraction?.estimatedCount,
@@ -91,9 +96,24 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
       updatedAt: now,
     };
 
+    if (classification.geminiExtraction?.subCategory) {
+      report.subCategory = classification.geminiExtraction.subCategory;
+    }
+    if (classification.geminiExtraction) {
+      report.geminiExtraction = classification.geminiExtraction;
+    }
+    if (report.estimatedPeopleAffected === undefined) {
+      delete (report as Partial<NeedReport>).estimatedPeopleAffected;
+    }
+    if (!report.audioUrl) {
+      delete (report as Partial<NeedReport>).audioUrl;
+    }
+
+    const firestoreSafeReport = JSON.parse(JSON.stringify(report));
+
     // Save to Firestore
     const db = getFirestore();
-    await db.collection('needReports').doc(reportId).set(report);
+    await db.collection('needReports').doc(reportId).set(firestoreSafeReport);
 
     // Increment user's report count
     await db.collection('users').doc(uid).update({
@@ -109,7 +129,7 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
     }
 
     // Get category metadata for response
-    const categoryMeta = CategoryMetadata[classification.category];
+    const categoryMeta = CategoryMetadata[classification.category as NeedCategoryType];
 
     res.status(201).json({
       success: true,

@@ -16,6 +16,7 @@ import dotenv from 'dotenv';
 
 import { getFirebaseStatus, initializeFirebase, verifyFirebaseRuntimeAvailability } from './config/firebase';
 import { errorHandler } from './middleware/errorHandler';
+import { aiLimiter, authLimiter, globalApiLimiter, uploadLimiter } from './middleware/rateLimit';
 import { authRouter } from './routes/auth';
 import { intakeRouter } from './routes/intake';
 import { uploadRouter } from './routes/upload';
@@ -65,15 +66,16 @@ app.get('/api/health/deps', (req, res) => {
 });
 
 // API Routes
-app.use('/api/auth', authRouter);
+app.use('/api', globalApiLimiter);
+app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/intake', intakeRouter);
-app.use('/api/upload', uploadRouter);
-app.use('/api/classification', classificationRouter);
+app.use('/api/upload', uploadLimiter, uploadRouter);
+app.use('/api/classification', aiLimiter, classificationRouter);
 app.use('/api/map', mapRouter);
 app.use('/api/dispatch', dispatchRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/volunteer-app', volunteerAppRouter);
-app.use('/api/gemini', geminiRouter);
+app.use('/api/gemini', aiLimiter, geminiRouter);
 app.use('/api/csr', csrRouter);
 app.use('/api/panchayat', panchayatRouter);
 app.use('/api/crisis', crisisRouter);
