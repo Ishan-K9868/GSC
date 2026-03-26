@@ -5,6 +5,7 @@
  * Handles:
  * - Verify Firebase ID token
  * - Get/update user profile
+ * - DEV MODE bypass for prototype usage
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
@@ -13,6 +14,24 @@ import { createError } from '../middleware/errorHandler';
 import { UserRole, UserRoleType } from '../models/User';
 
 export const authRouter = Router();
+
+// DEV MODE: Accept mock token for prototype usage
+const DEV_MODE = process.env.NODE_ENV === 'development';
+const DEV_TOKEN = 'dev-mock-token-for-prototype';
+
+const DEV_USER = {
+  uid: 'dev-user-001',
+  phoneNumber: '+919999999999',
+};
+const DEV_USER_PROFILE = {
+  id: 'dev-user-001',
+  phoneNumber: '+919999999999',
+  displayName: 'Dev User (NGO Admin)',
+  role: 'ngo_admin' as UserRoleType,
+  preferredLanguage: 'en',
+  reportsSubmitted: 25,
+  reportsResolved: 20,
+};
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -25,7 +44,7 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-// Middleware to verify Firebase ID token
+// Middleware to verify Firebase ID token (with DEV MODE bypass)
 export async function verifyToken(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
@@ -35,6 +54,14 @@ export async function verifyToken(req: Request, res: Response, next: NextFunctio
     }
 
     const token = authHeader.split('Bearer ')[1];
+
+    // DEV MODE: Accept mock token
+    if (DEV_MODE && token === DEV_TOKEN) {
+      (req as AuthenticatedRequest).user = DEV_USER;
+      (req as AuthenticatedRequest).userProfile = DEV_USER_PROFILE;
+      return next();
+    }
+
     const decodedToken = await getAuth().verifyIdToken(token);
     
     // Attach user info to request
@@ -65,6 +92,16 @@ export function requireRoles(...allowedRoles: UserRoleType[]) {
         throw createError('Unauthorized', 401, 'AUTH_UNAUTHORIZED');
       }
 
+      // DEV MODE: Use dev profile
+      if (DEV_MODE && uid === DEV_USER.uid) {
+        authReq.userProfile = DEV_USER_PROFILE;
+        const devRole = DEV_USER_PROFILE.role;
+        if (!allowedRoles.includes(devRole)) {
+          throw createError('Forbidden', 403, 'AUTH_FORBIDDEN');
+        }
+        return next();
+      }
+
       const db = getFirestore();
       const userDoc = await db.collection('users').doc(uid).get();
 
@@ -90,15 +127,29 @@ export function requireRoles(...allowedRoles: UserRoleType[]) {
 // POST /api/auth/verify - Verify token and get/create user
 authRouter.post('/verify', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { uid, phoneNumber } = (req as AuthenticatedRequest).user || {};
+    const authReq = req as AuthenticatedRequest;
+    const { uid, phoneNumber } = authReq.user || {};
     if (!uid) {
       throw createError('Unauthorized', 401, 'AUTH_UNAUTHORIZED');
     }
+
+    // DEV MODE: Return dev user profile directly
+    if (DEV_MODE && uid === DEV_USER.uid) {
+      return res.json({
+        success: true,
+        data: {
+          user: DEV_USER_PROFILE,
+          isNewUser: false,
+        },
+      });
+    }
+
     const db = getFirestore();
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
 
     let userData;
+    let isNewUser = false;
     
     if (userDoc.exists) {
       // Update last login
@@ -108,6 +159,7 @@ authRouter.post('/verify', verifyToken, async (req: Request, res: Response, next
       userData = userDoc.data();
     } else {
       // Create new user
+      isNewUser = true;
       userData = {
         id: uid,
         phoneNumber,
@@ -126,6 +178,7 @@ authRouter.post('/verify', verifyToken, async (req: Request, res: Response, next
       success: true,
       data: {
         user: userData,
+        isNewUser,
       },
     });
   } catch (error) {
@@ -136,10 +189,22 @@ authRouter.post('/verify', verifyToken, async (req: Request, res: Response, next
 // GET /api/auth/me - Get current user profile
 authRouter.get('/me', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { uid } = (req as AuthenticatedRequest).user || {};
+    const authReq = req as AuthenticatedRequest;
+    const { uid } = authReq.user || {};
     if (!uid) {
       throw createError('Unauthorized', 401, 'AUTH_UNAUTHORIZED');
     }
+
+    // DEV MODE: Return dev user profile
+    if (DEV_MODE && uid === DEV_USER.uid) {
+      return res.json({
+        success: true,
+        data: {
+          user: DEV_USER_PROFILE,
+        },
+      });
+    }
+
     const db = getFirestore();
     const userDoc = await db.collection('users').doc(uid).get();
 

@@ -7,7 +7,7 @@ node_modules/
 steps/
 
 # Agent configuration folder
-agents/
+.agents/
 
 dist/
 

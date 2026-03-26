@@ -151,7 +151,7 @@ export function VolunteerExperience() {
               </div>
 
               <div className={styles.card}>
-                <strong>5-Min Skill Assessment (Gemini-style)</strong>
+                <strong>5-Min Skill Assessment</strong>
                 <textarea
                   className={styles.textarea}
                   value={assessmentAnswer}

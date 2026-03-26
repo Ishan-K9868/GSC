@@ -215,7 +215,7 @@ export function CsrPortalPage() {
           </section>
 
           <section className={`${styles.card} ${styles.span6}`}>
-            <h2>NGO Vetting (Gemini-style Due Diligence)</h2>
+            <h2>NGO Vetting</h2>
             <button className="btn btn-primary" type="button" onClick={() => void runNgoVetting()}>
               Generate Vetting Brief
             </button>

@@ -118,7 +118,7 @@ export function PanchayatInterface() {
           </section>
 
           <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Government Scheme Gap Finder (Gemini-style)</h2>
+            <h2>Government Scheme Gap Finder</h2>
             <textarea className={styles.textarea} value={schemeInput} onChange={(e) => setSchemeInput(e.target.value)} />
             <button className="btn btn-primary" type="button" onClick={() => void onRunSchemeGapFinder()}>
               Run Gap Finder

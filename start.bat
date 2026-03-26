@@ -4,8 +4,11 @@ color 0A
 
 echo ============================================
 echo        SevaSetu Application Launcher
+echo            (Background Mode)
 echo ============================================
 echo.
+
+cd /d "%~dp0"
 
 :: Check if Node.js is installed
 where node >nul 2>nul
@@ -61,13 +64,13 @@ echo.
 echo [INFO] Starting SevaSetu application...
 echo.
 
-:: Create a PID file directory if it doesn't exist
-if not exist ".pids" mkdir .pids
+:: Create logs directory if needed
+if not exist "logs" mkdir logs
 
 :: Start Backend Server
 echo [1/2] Starting Backend Server (Port 3001)...
 cd backend
-start /B cmd /c "npm run dev > ..\logs\backend.log 2>&1 & echo %errorlevel%"
+start /B cmd /c "npm run dev > ..\logs\backend.log 2>&1"
 cd ..
 
 :: Give backend time to start
@@ -76,9 +79,6 @@ timeout /t 3 /nobreak >nul
 :: Start Frontend Server
 echo [2/2] Starting Frontend Server (Port 5173)...
 start /B cmd /c "npm run dev > logs\frontend.log 2>&1"
-
-:: Create logs directory if needed
-if not exist "logs" mkdir logs
 
 echo.
 echo ============================================

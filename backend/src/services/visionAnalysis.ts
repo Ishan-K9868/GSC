@@ -5,18 +5,23 @@
  * Uses Gemini Vision to analyze photos and extract need information.
  */
 
-import { VertexAI } from '@google-cloud/vertexai';
 import { NeedCategory, UrgencyLevel } from '../models/NeedReport';
+import { buildFallbackMeta, geminiSchema, generateStructuredJsonFromImage } from './geminiClient';
 
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'sevasetu-dev',
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-});
-
-const visionModel = vertexAI.getGenerativeModel({
-  model: 'gemini-1.5-flash',
-});
+const VISION_SCHEMA = geminiSchema.object(
+  {
+    category: geminiSchema.enum(Object.values(NeedCategory), 'Best-fit need category'),
+    subCategory: geminiSchema.string('Specific observation label', true),
+    urgency: geminiSchema.enum(Object.values(UrgencyLevel), 'Best-fit urgency level'),
+    estimatedPeopleCount: geminiSchema.integer('Estimated visible affected people', true),
+    description: geminiSchema.string('Detailed description of the scene'),
+    visibleDistressSignals: geminiSchema.array(geminiSchema.string('Visible distress signal')),
+    locationContext: geminiSchema.string('Environmental or locality context', true),
+    confidence: geminiSchema.number('Vision confidence from 0 to 1'),
+    suggestedAction: geminiSchema.string('Immediate recommended response action', true),
+  },
+  ['category', 'urgency', 'description', 'visibleDistressSignals', 'confidence']
+);
 
 // Vision analysis prompt
 const VISION_PROMPT = `You are an AI assistant for SevaSetu, an NGO coordination platform in India.
@@ -43,11 +48,11 @@ Respond ONLY with valid JSON:
   "category": "category_name",
   "subCategory": "specific observation",
   "urgency": "critical|high|medium|low",
-  "estimatedPeopleCount": number or null,
+  "estimatedPeopleCount": null,
   "description": "detailed description of what you see",
   "visibleDistressSignals": ["signal1", "signal2"],
   "locationContext": "urban/rural/specific description",
-  "confidence": 0.0-1.0,
+  "confidence": 0.85,
   "suggestedAction": "recommended immediate action"
 }`;
 
@@ -61,6 +66,10 @@ export interface VisionAnalysisResult {
   locationContext?: string;
   confidence: number;
   suggestedAction?: string;
+  provider?: string;
+  model?: string;
+  degraded?: boolean;
+  warning?: string;
 }
 
 export async function analyzeImageWithGemini(
@@ -68,58 +77,46 @@ export async function analyzeImageWithGemini(
   mimeType: string
 ): Promise<VisionAnalysisResult> {
   try {
-    const base64Image = imageBuffer.toString('base64');
-    
-    const result = await visionModel.generateContent({
-      contents: [{
-        role: 'user',
-        parts: [
-          {
-            inline_data: {
-              mime_type: mimeType,
-              data: base64Image,
-            },
-          },
-          { text: VISION_PROMPT },
-        ],
-      }],
-      generation_config: {
-        temperature: 0.2,
-        max_output_tokens: 800,
-      },
-    } as any);
-
-    const response = result.response;
-    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Extract JSON from response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in vision response');
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
+    const { data, meta } = await generateStructuredJsonFromImage<Record<string, unknown>>({
+      task: 'photo vision analysis',
+      prompt: VISION_PROMPT,
+      imageBuffer,
+      mimeType,
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 1200,
+      schema: VISION_SCHEMA,
+    });
     
     return {
-      category: validateCategory(parsed.category),
-      subCategory: parsed.subCategory,
-      urgency: validateUrgency(parsed.urgency),
-      estimatedPeopleCount: parsed.estimatedPeopleCount,
-      description: parsed.description || 'Image analyzed',
-      visibleDistressSignals: parsed.visibleDistressSignals || [],
-      locationContext: parsed.locationContext,
-      confidence: Math.min(1, Math.max(0, parsed.confidence || 0.7)),
-      suggestedAction: parsed.suggestedAction,
+      category: validateCategory(String(data.category || '')),
+      subCategory: typeof data.subCategory === 'string' ? data.subCategory : undefined,
+      urgency: validateUrgency(String(data.urgency || '')),
+      estimatedPeopleCount: typeof data.estimatedPeopleCount === 'number' ? data.estimatedPeopleCount : undefined,
+      description: typeof data.description === 'string' ? data.description : 'Image analyzed',
+      visibleDistressSignals: Array.isArray(data.visibleDistressSignals)
+        ? data.visibleDistressSignals.filter((item): item is string => typeof item === 'string')
+        : [],
+      locationContext: typeof data.locationContext === 'string' ? data.locationContext : undefined,
+      confidence: Math.min(1, Math.max(0, Number(data.confidence || 0.7))),
+      suggestedAction: typeof data.suggestedAction === 'string' ? data.suggestedAction : undefined,
+      provider: meta.provider,
+      model: meta.model,
+      degraded: meta.degraded,
     };
   } catch (error) {
     console.error('Vision analysis error:', error);
-    // Return default on error
+    const meta = buildFallbackMeta('photo vision analysis', error, 'flash');
     return {
       category: NeedCategory.HEALTH,
       urgency: UrgencyLevel.MEDIUM,
       description: 'Unable to analyze image automatically',
       visibleDistressSignals: [],
       confidence: 0.1,
+      provider: meta.provider,
+      model: meta.model,
+      degraded: meta.degraded,
+      warning: meta.warning,
     };
   }
 }
@@ -142,6 +139,10 @@ export async function mockAnalyzeImage(
     locationContext: 'Urban area',
     confidence: 0.8,
     suggestedAction: 'Deploy food distribution team',
+    provider: 'fallback',
+    model: 'heuristic-fallback',
+    degraded: true,
+    warning: 'Vision analysis used local mock fallback output.',
   };
 }
 

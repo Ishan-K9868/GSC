@@ -304,6 +304,10 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
               <p className={styles.description}>{classification.description}</p>
             )}
 
+            {classification?.warning && (
+              <p className={styles.error}>{classification.warning}</p>
+            )}
+
             <div className={styles.confirmButtons}>
               <button
                 className={styles.confirmButton}

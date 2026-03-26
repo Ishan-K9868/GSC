@@ -1,13 +1,24 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { getFirestore } from '../config/firebase';
 import { NeedCategory, ReportStatus, UrgencyLevel, type NeedReport } from '../models/NeedReport';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
 
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'sevasetu-dev',
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-});
-
-const flashModel = vertexAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const SCHEME_GAP_SCHEMA = geminiSchema.object(
+  {
+    eligibleSchemes: geminiSchema.array(
+      geminiSchema.object(
+        {
+          scheme: geminiSchema.string('Scheme name'),
+          reason: geminiSchema.string('Reason for eligibility'),
+          priority: geminiSchema.enum(['high', 'medium', 'low']),
+        },
+        ['scheme', 'reason', 'priority']
+      )
+    ),
+    unenrolledRiskGroups: geminiSchema.array(geminiSchema.string('Unenrolled risk group')),
+    actionPlanHindi: geminiSchema.string('Short Hindi action plan'),
+  },
+  ['eligibleSchemes', 'unenrolledRiskGroups', 'actionPlanHindi']
+);
 
 export async function flagNeedBySarpanch(input: {
   panchayatId: string;
@@ -133,20 +144,19 @@ Return JSON only:
     unenrolledRiskGroups: ['low-income households', 'single-women households', 'elderly with chronic illness'],
     actionPlanHindi:
       'ग्राम सचिव और आशा कार्यकर्ताओं के साथ संयुक्त शिविर लगाकर पात्र परिवारों की सूची सत्यापित करें और 15 दिनों में नामांकन पूरा करें।',
-    degraded: true,
   };
 
   try {
-    const result = await flashModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generation_config: { temperature: 0.2, max_output_tokens: 700 },
-    } as any);
-    const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'panchayat scheme gap finder',
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 1200,
+      schema: SCHEME_GAP_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('panchayat scheme gap finder', error, 'flash') };
   }
 }
 
@@ -238,14 +248,4 @@ function detectDuplicateClusters(reports: NeedReport[]) {
         needsCount: items.length,
       };
     });
-}
-
-function safeParseJson(text: string): any | null {
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) return null;
-  try {
-    return JSON.parse(m[0]);
-  } catch {
-    return null;
-  }
 }

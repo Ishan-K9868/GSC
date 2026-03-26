@@ -9,12 +9,16 @@
  * - Authentication via Firebase
  */
 
+// Load environment variables FIRST before any imports
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 
 import { getFirebaseStatus, initializeFirebase, verifyFirebaseRuntimeAvailability } from './config/firebase';
+import { getModelName, hasGeminiApiKey } from './services/geminiClient';
 import { errorHandler } from './middleware/errorHandler';
 import { aiLimiter, authLimiter, globalApiLimiter, uploadLimiter } from './middleware/rateLimit';
 import { authRouter } from './routes/auth';
@@ -29,9 +33,6 @@ import geminiRouter from './routes/gemini';
 import csrRouter from './routes/csr';
 import panchayatRouter from './routes/panchayat';
 import crisisRouter from './routes/crisis';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -59,6 +60,11 @@ app.get('/api/health/deps', (req, res) => {
     success: true,
     data: {
       firebase: getFirebaseStatus(),
+      gemini: {
+        configured: hasGeminiApiKey(),
+        flashModel: getModelName('flash'),
+        proModel: getModelName('pro'),
+      },
       nodeEnv: process.env.NODE_ENV || 'development',
     },
     timestamp: new Date().toISOString(),

@@ -13,7 +13,15 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
+// DEV MODE: Same check as AuthContext
+const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+const DEV_TOKEN = 'dev-mock-token-for-prototype';
+
 async function getAuthToken(): Promise<string | null> {
+  // In dev mode, always return the dev token
+  if (DEV_MODE) {
+    return DEV_TOKEN;
+  }
   const user = auth.currentUser;
   if (!user) return null;
   return user.getIdToken();

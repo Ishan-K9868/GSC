@@ -119,6 +119,10 @@ export interface GeminiExtraction {
   confidence: number;
   language?: string;
   rawTranscript?: string;
+  provider?: string;
+  model?: string;
+  degraded?: boolean;
+  warning?: string;
 }
 
 // Need Report

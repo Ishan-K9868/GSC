@@ -1,6 +1,25 @@
 import crypto from 'crypto';
 import { getFirestore } from '../config/firebase';
 import { NeedCategory, ReportStatus, type NeedReport } from '../models/NeedReport';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
+
+const NGO_VETTING_SCHEMA = geminiSchema.object(
+  {
+    dueDiligenceScore: geminiSchema.integer('Score from 0 to 100'),
+    recommendation: geminiSchema.string('Recommendation label'),
+    summary: geminiSchema.string('2-3 sentence assessment'),
+    riskFlags: geminiSchema.array(geminiSchema.string('Risk flag')),
+    verifiedInputs: geminiSchema.object(
+      {
+        fcraStatus: geminiSchema.string('FCRA status'),
+        darpanRating: geminiSchema.string('DARPAN rating'),
+        projectCount: geminiSchema.integer('Project count'),
+      },
+      ['fcraStatus', 'darpanRating', 'projectCount']
+    ),
+  },
+  ['dueDiligenceScore', 'recommendation', 'summary', 'riskFlags', 'verifiedInputs']
+);
 
 type EmployeeRosterRow = {
   employeeId: string;
@@ -271,30 +290,55 @@ export async function generateNgoVettingReport(input: {
   pastProjects: string[];
   mediaCoverageNotes: string;
 }) {
-  const riskFlags: string[] = [];
-  if (input.fcraStatus.toLowerCase() !== 'active') riskFlags.push('FCRA status requires attention');
-  if (input.darpanRating.toLowerCase().includes('low')) riskFlags.push('Low DARPAN rating');
-  if (input.mediaCoverageNotes.toLowerCase().includes('controversy')) riskFlags.push('Adverse media indicator');
+  const fallback = buildNgoVettingFallback(input);
+  const prompt = [
+    'Assess this NGO for CSR partnership due diligence.',
+    'Use the provided schema only.',
+    'Recommendation must be one of: Recommended for partnership, Proceed with safeguards, Needs deeper review.',
+    `NGO: ${input.ngoName}`,
+    `FCRA status: ${input.fcraStatus}`,
+    `DARPAN rating: ${input.darpanRating}`,
+    `Past projects: ${input.pastProjects.join('; ')}`,
+    `Media coverage notes: ${input.mediaCoverageNotes}`,
+  ].join('\n');
 
-  const scoreBase = 78;
-  const score = Math.max(35, scoreBase - riskFlags.length * 12 + Math.min(12, input.pastProjects.length * 2));
+  try {
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'ngo vetting',
+      model: 'pro',
+      temperature: 0.2,
+      maxOutputTokens: 1600,
+      schema: NGO_VETTING_SCHEMA,
+    });
 
-  return {
-    ngoName: input.ngoName,
-    dueDiligenceScore: score,
-    recommendation:
-      score >= 75 ? 'Recommended for partnership' : score >= 55 ? 'Proceed with safeguards' : 'Needs deeper review',
-    summary:
-      `${input.ngoName} shows ${input.fcraStatus} FCRA status with DARPAN ${input.darpanRating}. ` +
-      `${input.pastProjects.length} past projects reviewed.`,
-    riskFlags,
-    verifiedInputs: {
-      fcraStatus: input.fcraStatus,
-      darpanRating: input.darpanRating,
-      projectCount: input.pastProjects.length,
-    },
-    generatedAt: new Date().toISOString(),
-  };
+    return {
+      ngoName: input.ngoName,
+      dueDiligenceScore: normalizeScore(data.dueDiligenceScore, fallback.dueDiligenceScore),
+      recommendation: typeof data.recommendation === 'string' ? data.recommendation : fallback.recommendation,
+      summary: typeof data.summary === 'string' ? data.summary : fallback.summary,
+      riskFlags: Array.isArray(data.riskFlags)
+        ? data.riskFlags.filter((item): item is string => typeof item === 'string')
+        : fallback.riskFlags,
+      verifiedInputs: {
+        fcraStatus:
+          typeof (data.verifiedInputs as Record<string, unknown> | undefined)?.fcraStatus === 'string'
+            ? String((data.verifiedInputs as Record<string, unknown>).fcraStatus)
+            : input.fcraStatus,
+        darpanRating:
+          typeof (data.verifiedInputs as Record<string, unknown> | undefined)?.darpanRating === 'string'
+            ? String((data.verifiedInputs as Record<string, unknown>).darpanRating)
+            : input.darpanRating,
+        projectCount:
+          typeof (data.verifiedInputs as Record<string, unknown> | undefined)?.projectCount === 'number'
+            ? Number((data.verifiedInputs as Record<string, unknown>).projectCount)
+            : input.pastProjects.length,
+      },
+      generatedAt: new Date().toISOString(),
+      ...meta,
+    };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('ngo vetting', error, 'pro') };
+  }
 }
 
 export async function getComplianceAuditTrail(companyId: string) {
@@ -348,4 +392,46 @@ function mapCategoriesToSdg(categories: string[]) {
 function estimateGeographies(reports: NeedReport[]) {
   const zones = new Set(reports.map((report) => report.location?.district || report.location?.state || 'Unknown'));
   return zones.size;
+}
+
+function buildNgoVettingFallback(input: {
+  ngoName: string;
+  fcraStatus: string;
+  darpanRating: string;
+  pastProjects: string[];
+  mediaCoverageNotes: string;
+}) {
+  const riskFlags: string[] = [];
+  if (input.fcraStatus.toLowerCase() !== 'active') riskFlags.push('FCRA status requires attention');
+  if (input.darpanRating.toLowerCase().includes('low')) riskFlags.push('Low DARPAN rating');
+  if (input.mediaCoverageNotes.toLowerCase().includes('controversy')) riskFlags.push('Adverse media indicator');
+
+  const scoreBase = 78;
+  const score = Math.max(35, scoreBase - riskFlags.length * 12 + Math.min(12, input.pastProjects.length * 2));
+
+  return {
+    ngoName: input.ngoName,
+    dueDiligenceScore: score,
+    recommendation:
+      score >= 75 ? 'Recommended for partnership' : score >= 55 ? 'Proceed with safeguards' : 'Needs deeper review',
+    summary:
+      `${input.ngoName} shows ${input.fcraStatus} FCRA status with DARPAN ${input.darpanRating}. ` +
+      `${input.pastProjects.length} past projects reviewed.`,
+    riskFlags,
+    verifiedInputs: {
+      fcraStatus: input.fcraStatus,
+      darpanRating: input.darpanRating,
+      projectCount: input.pastProjects.length,
+    },
+    generatedAt: new Date().toISOString(),
+    degraded: true,
+  };
+}
+
+function normalizeScore(value: unknown, fallback: number): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+  return Math.max(0, Math.min(100, Math.round(numeric)));
 }

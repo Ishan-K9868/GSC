@@ -403,6 +403,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
               AI suggests: <strong>{aiSuggestion.category}</strong> 
               (Urgency: {aiSuggestion.urgency || aiSuggestion.severity})
             </p>
+            {aiSuggestion.warning && <p className={styles.error}>{aiSuggestion.warning}</p>}
             <div className={styles.aiButtons}>
               <button type="button" onClick={handleApplySuggestion}>
                 Apply

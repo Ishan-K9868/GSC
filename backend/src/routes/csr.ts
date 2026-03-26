@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
+import { aiLimiter } from '../middleware/rateLimit';
 import {
   bulkOnboardEmployees,
   createTeamChallenge,
@@ -122,7 +123,7 @@ csrRouter.get('/challenges/:companyId', verifyToken, async (req: Request, res: R
   }
 });
 
-csrRouter.post('/ngo-vetting', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+csrRouter.post('/ngo-vetting', verifyToken, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { ngoName, fcraStatus, darpanRating, pastProjects, mediaCoverageNotes } = req.body as {
       ngoName?: string;

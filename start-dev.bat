@@ -8,6 +8,8 @@ echo          (Separate Windows Mode)
 echo ============================================
 echo.
 
+cd /d "%~dp0"
+
 :: Check if Node.js is installed
 where node >nul 2>nul
 if %errorlevel% neq 0 (
@@ -25,7 +27,9 @@ if not exist "node_modules" (
 
 if not exist "backend\node_modules" (
     echo [INFO] Installing backend dependencies...
-    cd backend && call npm install && cd ..
+    cd backend
+    call npm install
+    cd ..
 )
 
 :: Warn about missing env files
@@ -44,14 +48,14 @@ echo.
 
 :: Start Backend in new window
 echo [1/2] Starting Backend...
-start "SevaSetu Backend (Port 3001)" cmd /k "cd /d %~dp0backend && npm run dev"
+start "SevaSetu Backend (Port 3001)" cmd /k "cd /d "%~dp0backend" && npm run dev"
 
 :: Wait for backend to initialize
 timeout /t 3 /nobreak >nul
 
 :: Start Frontend in new window
 echo [2/2] Starting Frontend...
-start "SevaSetu Frontend (Port 5173)" cmd /k "cd /d %~dp0 && npm run dev"
+start "SevaSetu Frontend (Port 5173)" cmd /k "cd /d "%~dp0" && npm run dev"
 
 echo.
 echo ============================================

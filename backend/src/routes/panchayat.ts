@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
+import { aiLimiter } from '../middleware/rateLimit';
 import {
   flagNeedBySarpanch,
   generateMonthlyVillageHealthReport,
@@ -61,7 +62,7 @@ panchayatRouter.get('/history/:panchayatId', verifyToken, async (req: Request, r
   }
 });
 
-panchayatRouter.post('/scheme-gap-finder', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+panchayatRouter.post('/scheme-gap-finder', verifyToken, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { panchayatId, needsSummary, enrolledSchemes } = req.body as {
       panchayatId?: string;

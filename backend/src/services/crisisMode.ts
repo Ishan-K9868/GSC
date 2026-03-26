@@ -1,13 +1,24 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { getFirestore } from '../config/firebase';
 import { ReportStatus, NeedCategory, type NeedReport } from '../models/NeedReport';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
 
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'sevasetu-dev',
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-});
+const ALERT_LETTER_SCHEMA = geminiSchema.object(
+  {
+    subject: geminiSchema.string('Letter subject'),
+    letter: geminiSchema.string('Formal government alert letter'),
+    attachments: geminiSchema.array(geminiSchema.string('Attachment name')),
+  },
+  ['subject', 'letter', 'attachments']
+);
 
-const flashModel = vertexAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const MEDIA_BULLETIN_SCHEMA = geminiSchema.object(
+  {
+    bulletin: geminiSchema.string('Public bulletin text'),
+    hashtags: geminiSchema.array(geminiSchema.string('Hashtag')),
+    tone: geminiSchema.string('Message tone'),
+  },
+  ['bulletin', 'hashtags', 'tone']
+);
 
 export async function evaluateCrisisActivation(input: {
   zoneId: string;
@@ -305,20 +316,19 @@ Return JSON only:
       `To District Collector and SDRF,\n\nCrisis Mode has been activated in ${input.zoneId}. ` +
       `Evidence summary: ${input.evidenceSummary}. Immediate support requested for coordinated relief operations.\n\nRegards,\nSevaSetu Crisis Desk`,
     attachments: ['Incident heatmap', 'Emergency needs list', 'Resource gap matrix'],
-    degraded: true,
   };
 
   try {
-    const result = await flashModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generation_config: { temperature: 0.15, max_output_tokens: 900 },
-    } as any);
-    const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'government crisis alert letter',
+      model: 'flash',
+      temperature: 0.15,
+      maxOutputTokens: 1600,
+      schema: ALERT_LETTER_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('government crisis alert letter', error, 'flash') };
   }
 }
 
@@ -340,20 +350,19 @@ Return JSON only:
       `Crisis response is active in ${zoneId}. Teams are deployed on priority needs and volunteer mobilization is underway. Please rely on verified updates and avoid rumor sharing.`,
     hashtags: ['#SevaSetu', '#CrisisResponse', '#CommunityFirst'],
     tone: 'assuring',
-    degraded: true,
   };
 
   try {
-    const result = await flashModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generation_config: { temperature: 0.2, max_output_tokens: 300 },
-    } as any);
-    const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'crisis media bulletin',
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 300,
+      schema: MEDIA_BULLETIN_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('crisis media bulletin', error, 'flash') };
   }
 }
 
@@ -440,14 +449,4 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-function safeParseJson(text: string): any | null {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
-  }
 }

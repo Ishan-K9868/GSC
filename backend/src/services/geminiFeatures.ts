@@ -1,13 +1,78 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { getDashboardOverview } from './dashboardIntelligence';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
 
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'sevasetu-dev',
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-});
+const COPILOT_SCHEMA = geminiSchema.object(
+  {
+    answer: geminiSchema.string('Short natural language answer'),
+    recommendedFilters: geminiSchema.object(
+      {
+        status: geminiSchema.string('Recommended status filter', true),
+        category: geminiSchema.string('Recommended category filter', true),
+        state: geminiSchema.string('Recommended state filter', true),
+      },
+      [],
+      'Recommended dashboard filters'
+    ),
+    explanation: geminiSchema.string('Reason for the recommendation'),
+  },
+  ['answer', 'recommendedFilters', 'explanation']
+);
 
-const flashModel = vertexAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-const proModel = vertexAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+const SKILL_MATCH_SCHEMA = geminiSchema.object(
+  {
+    semanticSimilarityScore: geminiSchema.number('Semantic similarity score from 0 to 1'),
+    matchedKeywords: geminiSchema.array(geminiSchema.string('Matched skill keyword')),
+    explanation: geminiSchema.string('One-sentence rationale'),
+  },
+  ['semanticSimilarityScore', 'matchedKeywords', 'explanation']
+);
+
+const IMPACT_REPORT_SCHEMA = geminiSchema.object(
+  {
+    title: geminiSchema.string('Report title'),
+    narrative: geminiSchema.string('3-5 sentence concise narrative'),
+    sdgHighlights: geminiSchema.array(geminiSchema.string('SDG identifier')),
+    keyStats: geminiSchema.array(geminiSchema.string('Key stat line')),
+  },
+  ['title', 'narrative', 'sdgHighlights', 'keyStats']
+);
+
+const SURGE_FORECAST_SCHEMA = geminiSchema.object(
+  {
+    horizonDays: geminiSchema.integer('Forecast horizon in days'),
+    forecasts: geminiSchema.array(
+      geminiSchema.object(
+        {
+          zone: geminiSchema.string('Zone name'),
+          category: geminiSchema.string('Affected category'),
+          demandScore: geminiSchema.number('Demand score from 0 to 1'),
+          confidence: geminiSchema.number('Confidence from 0 to 1'),
+          recommendation: geminiSchema.string('Action recommendation'),
+        },
+        ['zone', 'category', 'demandScore', 'confidence', 'recommendation']
+      )
+    ),
+  },
+  ['horizonDays', 'forecasts']
+);
+
+const BURNOUT_SCHEMA = geminiSchema.object(
+  {
+    burnoutRisk: geminiSchema.enum(['low', 'medium', 'high']),
+    suggestion: geminiSchema.string('Short actionable recommendation'),
+    explanation: geminiSchema.string('Why this level was chosen'),
+  },
+  ['burnoutRisk', 'suggestion', 'explanation']
+);
+
+const ESCALATION_SCHEMA = geminiSchema.object(
+  {
+    subject: geminiSchema.string('Letter subject'),
+    letter: geminiSchema.string('Formal concise letter'),
+    recommendedAttachments: geminiSchema.array(geminiSchema.string('Attachment name')),
+  },
+  ['subject', 'letter', 'recommendedAttachments']
+);
 
 export async function coordinatorCopilotQuery(input: { query: string }) {
   const dashboard = await getDashboardOverview();
@@ -35,16 +100,18 @@ Return JSON only:
       state: 'all',
     },
     explanation: 'Fallback used due to model unavailability. Prioritize stalled tasks first.',
-    degraded: true,
   };
 
   try {
-    const text = await generateJsonTextWithModel(flashModel, prompt, 600);
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'coordinator copilot',
+      model: 'flash',
+      maxOutputTokens: 600,
+      schema: COPILOT_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('coordinator copilot', error, 'flash') };
   }
 }
 
@@ -52,18 +119,39 @@ export async function skillMatchingEmbeddingProxy(input: {
   volunteerSkills: string[];
   needDescription: string;
 }) {
-  const skills = tokenize(input.volunteerSkills.join(' '));
-  const need = tokenize(input.needDescription);
-  const overlap = [...skills].filter((token) => need.has(token)).length;
-  const union = new Set([...skills, ...need]).size || 1;
-  const proxyScore = overlap / union;
+  const prompt = `You are a volunteer-to-need skill matching assistant.
+Volunteer skills: ${input.volunteerSkills.join(', ')}
+Need description: ${input.needDescription}
 
-  return {
-    semanticSimilarityScore: Number(proxyScore.toFixed(3)),
-    matchedKeywords: [...skills].filter((token) => need.has(token)),
-    degraded: true,
-    explanation: 'Using lexical proxy until Gemini Embedding API wiring is enabled.',
-  };
+Return JSON only:
+{
+  "semanticSimilarityScore": 0.0,
+  "matchedKeywords": ["..."],
+  "explanation": "one sentence rationale"
+}`;
+
+  const fallback = buildSkillMatchFallback(input.volunteerSkills, input.needDescription);
+
+  try {
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'skill matching',
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 300,
+      schema: SKILL_MATCH_SCHEMA,
+    });
+
+    return {
+      semanticSimilarityScore: clampScore(data.semanticSimilarityScore),
+      matchedKeywords: Array.isArray(data.matchedKeywords)
+        ? data.matchedKeywords.filter((item): item is string => typeof item === 'string')
+        : fallback.matchedKeywords,
+      explanation: typeof data.explanation === 'string' ? data.explanation : fallback.explanation,
+      ...meta,
+    };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('skill matching', error, 'flash') };
+  }
 }
 
 export async function generateImpactNarrative(input: {
@@ -94,16 +182,18 @@ Return JSON only:
         : 'The team sustained field operations with strong focus on urgent cases, especially health, nutrition, and rapid response support.',
     sdgHighlights: ['SDG 2', 'SDG 3', 'SDG 11'],
     keyStats: ['Use dashboard totals for beneficiary and response metrics.'],
-    degraded: true,
   };
 
   try {
-    const text = await generateJsonTextWithModel(proModel, prompt, 900);
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'impact narrative generation',
+      model: 'pro',
+      maxOutputTokens: 1600,
+      schema: IMPACT_REPORT_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('impact narrative generation', error, 'pro') };
   }
 }
 
@@ -134,16 +224,18 @@ Return JSON only:
         recommendation: 'Pre-position 20 food kits by next Wednesday.',
       },
     ],
-    degraded: true,
   };
 
   try {
-    const text = await generateJsonTextWithModel(flashModel, prompt, 900);
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'surge forecast',
+      model: 'flash',
+      maxOutputTokens: 1200,
+      schema: SURGE_FORECAST_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('surge forecast', error, 'flash') };
   }
 }
 
@@ -156,31 +248,44 @@ export async function coordinatorBurnoutDetection(input: {
     return {
       burnoutRisk: 'not_applicable',
       suggestion: 'Coordinator burnout detection is opt-in only.',
+      provider: 'gemini_api_key',
+      model: 'not-run',
       degraded: false,
     };
   }
 
   const signalText = `${input.messageToneSample} ${input.usageSummary}`.toLowerCase();
-  const risk =
-    signalText.includes('overwhelmed') || signalText.includes('exhausted') || signalText.includes('late night')
-      ? 'high'
-      : signalText.includes('stress') || signalText.includes('delay')
-        ? 'medium'
-        : 'low';
+  const fallback = buildBurnoutFallback(signalText);
 
-  const suggestion =
-    risk === 'high'
-      ? 'Redistribute high-urgency queue for next 24 hours and assign deputy coordinator.'
-      : risk === 'medium'
-        ? 'Schedule half-day rota support and reduce non-critical escalations.'
-        : 'No immediate intervention needed.';
+  const prompt = `You are a wellbeing triage assistant for NGO coordinators.
+Message tone sample: ${input.messageToneSample}
+Usage summary: ${input.usageSummary}
 
-  return {
-    burnoutRisk: risk,
-    suggestion,
-    degraded: true,
-    explanation: 'Rule-based detector used until tone-analysis model is connected.',
-  };
+Return JSON only:
+{
+  "burnoutRisk": "low|medium|high",
+  "suggestion": "short actionable recommendation",
+  "explanation": "why this level was chosen"
+}`;
+
+  try {
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'burnout detection',
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 300,
+      schema: BURNOUT_SCHEMA,
+    });
+
+    return {
+      burnoutRisk: validateBurnoutRisk(data.burnoutRisk),
+      suggestion: typeof data.suggestion === 'string' ? data.suggestion : fallback.suggestion,
+      explanation: typeof data.explanation === 'string' ? data.explanation : fallback.explanation,
+      ...meta,
+    };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('burnout detection', error, 'flash') };
+  }
 }
 
 export async function crisisEscalationDraft(input: {
@@ -207,38 +312,18 @@ Return JSON only:
       `Current field evidence indicates a concentrated rise in high-urgency needs. ${input.needsSummary} ` +
       `Evidence snapshot: ${input.evidenceSummary}.\n\nKindly support immediate response coordination.\n\nRegards,\nSevaSetu Coordinator`,
     recommendedAttachments: ['Need cluster map snapshot', 'Top incident list', 'Resource gap summary'],
-    degraded: true,
   };
 
   try {
-    const text = await generateJsonTextWithModel(proModel, prompt, 1000);
-    const parsed = safeParseJson(text);
-    if (!parsed) return fallback;
-    return { ...parsed, degraded: false };
-  } catch {
-    return fallback;
-  }
-}
-
-async function generateJsonTextWithModel(model: any, prompt: string, maxTokens: number) {
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generation_config: {
-      temperature: 0.2,
-      max_output_tokens: maxTokens,
-    },
-  } as any);
-
-  return result.response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-function safeParseJson(text: string): any | null {
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) return null;
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    return null;
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'crisis escalation draft',
+      model: 'pro',
+      maxOutputTokens: 1600,
+      schema: ESCALATION_SCHEMA,
+    });
+    return { ...data, ...meta };
+  } catch (error) {
+    return { ...fallback, ...buildFallbackMeta('crisis escalation draft', error, 'pro') };
   }
 }
 
@@ -250,4 +335,52 @@ function tokenize(text: string) {
       .split(/\s+/)
       .filter((token) => token.length > 2)
   );
+}
+
+function buildSkillMatchFallback(volunteerSkills: string[], needDescription: string) {
+  const skills = tokenize(volunteerSkills.join(' '));
+  const need = tokenize(needDescription);
+  const overlap = [...skills].filter((token) => need.has(token));
+  const union = new Set([...skills, ...need]).size || 1;
+
+  return {
+    semanticSimilarityScore: Number((overlap.length / union).toFixed(3)),
+    matchedKeywords: overlap,
+    explanation: 'Lexical fallback used because Gemini matching was unavailable.',
+  };
+}
+
+function clampScore(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
+}
+
+function buildBurnoutFallback(signalText: string) {
+  const risk =
+    signalText.includes('overwhelmed') || signalText.includes('exhausted') || signalText.includes('late night')
+      ? 'high'
+      : signalText.includes('stress') || signalText.includes('delay')
+        ? 'medium'
+        : 'low';
+
+  return {
+    burnoutRisk: risk,
+    suggestion:
+      risk === 'high'
+        ? 'Redistribute high-urgency queue for next 24 hours and assign deputy coordinator.'
+        : risk === 'medium'
+          ? 'Schedule half-day rota support and reduce non-critical escalations.'
+          : 'No immediate intervention needed.',
+    explanation: 'Rule-based fallback used because Gemini burnout analysis was unavailable.',
+  };
+}
+
+function validateBurnoutRisk(value: unknown): 'low' | 'medium' | 'high' {
+  if (value === 'high' || value === 'medium' || value === 'low') {
+    return value;
+  }
+  return 'medium';
 }

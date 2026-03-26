@@ -3,6 +3,7 @@
  * PRD: Firebase Phone OTP Authentication
  * 
  * Provides auth state and methods for the entire app.
+ * Includes DEV_MODE bypass for prototype usage.
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -15,6 +16,23 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+
+// DEV MODE: Set to true to bypass authentication for prototype usage
+const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+
+// Mock user for dev mode
+const DEV_USER: User = {
+  id: 'dev-user-001',
+  phoneNumber: '+919999999999',
+  displayName: 'Dev User (NGO Admin)',
+  role: 'ngo_admin',
+  preferredLanguage: 'en',
+  reportsSubmitted: 25,
+  reportsResolved: 20,
+};
+
+// Mock Firebase token for dev mode
+const DEV_TOKEN = 'dev-mock-token-for-prototype';
 
 // User type from our backend
 interface User {
@@ -39,6 +57,9 @@ interface AuthContextType {
   // State
   isAuthenticated: boolean;
   confirmationResult: ConfirmationResult | null;
+  // Dev mode
+  isDevMode: boolean;
+  getAuthToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,14 +68,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(DEV_MODE ? DEV_USER : null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!DEV_MODE);
   const [error, setError] = useState<string | null>(null);
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  // Listen to auth state changes
+  // Get auth token (for API calls)
+  const getAuthToken = async (): Promise<string | null> => {
+    if (DEV_MODE) {
+      return DEV_TOKEN;
+    }
+    if (firebaseUser) {
+      return await firebaseUser.getIdToken();
+    }
+    return null;
+  };
+
+  // Listen to auth state changes (skip in dev mode)
   useEffect(() => {
+    if (DEV_MODE) {
+      console.log('🔧 DEV MODE: Auto-logged in as', DEV_USER.displayName);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       
@@ -147,6 +185,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign out
   const signOut = async () => {
+    if (DEV_MODE) {
+      // In dev mode, just toggle off (can re-enable by refreshing)
+      setUser(null);
+      return;
+    }
     try {
       await firebaseSignOut(auth);
       setUser(null);
@@ -167,6 +210,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     isAuthenticated: !!user,
     confirmationResult,
+    isDevMode: DEV_MODE,
+    getAuthToken,
   };
 
   return (

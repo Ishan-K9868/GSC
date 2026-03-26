@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
+import { aiLimiter } from '../middleware/rateLimit';
 import {
   activateCrisisMode,
   evaluateCrisisActivation,
@@ -25,7 +26,7 @@ crisisRouter.post('/evaluate', verifyToken, async (req: Request, res: Response, 
   }
 });
 
-crisisRouter.post('/activate', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+crisisRouter.post('/activate', verifyToken, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { zoneId, reason, evidenceSummary } = req.body as {
       zoneId?: string;
@@ -60,7 +61,7 @@ crisisRouter.post('/resolve', verifyToken, async (req: Request, res: Response, n
   }
 });
 
-crisisRouter.get('/dashboard/:zoneId', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+crisisRouter.get('/dashboard/:zoneId', verifyToken, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await getCrisisDashboard(req.params.zoneId);
     res.json({ success: true, data });

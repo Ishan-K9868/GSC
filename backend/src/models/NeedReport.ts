@@ -82,6 +82,10 @@ export const GeminiExtractionSchema = z.object({
   confidence: z.number().min(0).max(1),
   language: z.string().optional(),
   rawTranscript: z.string().optional(),
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  degraded: z.boolean().optional(),
+  warning: z.string().optional(),
 });
 
 export type GeminiExtraction = z.infer<typeof GeminiExtractionSchema>;

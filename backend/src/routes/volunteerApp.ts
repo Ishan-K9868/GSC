@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
+import { aiLimiter } from '../middleware/rateLimit';
 import {
   completeVolunteerTask,
   getGamificationSummary,
@@ -26,7 +27,7 @@ volunteerAppRouter.get('/profile/:volunteerId', verifyToken, async (req: Request
   }
 });
 
-volunteerAppRouter.post('/onboarding/assess', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+volunteerAppRouter.post('/onboarding/assess', verifyToken, aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { volunteerId, answers } = req.body as { volunteerId?: string; answers?: string[] };
     if (!volunteerId || !answers || !Array.isArray(answers) || answers.length === 0) {

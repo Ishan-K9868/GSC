@@ -78,7 +78,7 @@ export function GeminiLab() {
           </section>
 
           <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Skill Matching Embeddings (Proxy)</h2>
+            <h2>Skill Matching</h2>
             <input className={styles.input} value={skills} onChange={(e) => setSkills(e.target.value)} />
             <textarea className={styles.textarea} value={needDesc} onChange={(e) => setNeedDesc(e.target.value)} />
             <button

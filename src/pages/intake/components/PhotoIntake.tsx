@@ -31,6 +31,10 @@ interface VisionAnalysis {
   locationContext?: string;
   confidence: number;
   suggestedAction?: string;
+  warning?: string;
+  model?: string;
+  provider?: string;
+  degraded?: boolean;
 }
 
 export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
@@ -366,6 +370,10 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
             )}
 
             <p className={styles.description}>{analysis.description}</p>
+
+            {analysis.warning && (
+              <p className={styles.errorMessage}>{analysis.warning}</p>
+            )}
 
             {analysis.estimatedPeopleCount && (
               <p className={styles.peopleCount}>

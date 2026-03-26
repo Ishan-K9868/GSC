@@ -6,107 +6,68 @@
  * Supports 8 Indian languages as specified in PRD 5.1.1
  */
 
-import { VertexAI } from '@google-cloud/vertexai';
 import { NeedCategory, UrgencyLevel, GeminiExtraction } from '../models/NeedReport';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
 
-// Initialize Vertex AI
-const vertexAI = new VertexAI({
-  project: process.env.GOOGLE_CLOUD_PROJECT || 'sevasetu-dev',
-  location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1',
-});
+const CLASSIFICATION_SCHEMA = geminiSchema.object(
+  {
+    category: geminiSchema.enum(Object.values(NeedCategory), 'Best-fit need category'),
+    subCategory: geminiSchema.string('Specific sub-category', true),
+    severity: geminiSchema.enum(Object.values(UrgencyLevel), 'Best-fit urgency level'),
+    estimatedCount: geminiSchema.integer('Estimated affected people count', true),
+    description: geminiSchema.string('Brief English summary of the need'),
+    keywords: geminiSchema.array(geminiSchema.string('Keyword'), 'Key supporting keywords'),
+    confidence: geminiSchema.number('Classification confidence from 0 to 1'),
+    language: geminiSchema.string('Detected language code'),
+  },
+  ['category', 'severity', 'description', 'keywords', 'confidence', 'language']
+);
 
-const generativeModel = vertexAI.getGenerativeModel({
-  model: 'gemini-1.5-flash',
-});
-
-// Classification prompt template
-const CLASSIFICATION_PROMPT = `You are an AI assistant for SevaSetu, an NGO coordination platform in India.
-Analyze the following need report and classify it.
-
-CATEGORIES (choose one):
-- emergency: Medical emergency, drowning, fire, accident, missing person
-- food_nutrition: Acute hunger, malnutrition, food insecurity, mid-day meal disruption
-- health: Medicines, doctor visit, ambulance, mental health, maternal care
-- education: School dropout risk, learning material, teacher absence, infrastructure
-- water_sanitation: Drinking water scarcity, open defecation, sewage overflow
-- shelter: Displacement, roof damage, homelessness, temporary shelter
-- women_child: Domestic violence, child labour, trafficking risk, maternity (REQUIRES PRIVACY)
-- environment: Deforestation, pollution, waste, water body contamination
-
-URGENCY LEVELS:
-- critical: Immediate danger to life, requires response within 1 hour
-- high: Serious situation, requires response within 6 hours
-- medium: Important but not immediately dangerous, 24-72 hour window
-- low: Can be addressed within a week
-
-INPUT TEXT (may be in Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, or Odia):
-"""
-{text}
-"""
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "category": "category_name",
-  "subCategory": "specific sub-category",
-  "severity": "urgency_level",
-  "estimatedCount": number or null,
-  "description": "brief English summary of the need",
-  "keywords": ["keyword1", "keyword2"],
-  "confidence": 0.0-1.0,
-  "language": "detected language code (hi/ta/te/bn/mr/gu/kn/or/en)"
-}`;
+function buildClassificationPrompt(text: string): string {
+  return [
+    'Classify this community need report for an NGO response platform in India.',
+    'Use only the allowed enum values from the schema.',
+    'Allowed category values: emergency, food_nutrition, health, education, water_sanitation, shelter, women_child, environment.',
+    'Allowed severity values: critical, high, medium, low.',
+    'description must be a brief English summary.',
+    'language must be the detected language code.',
+    'Report text:',
+    text,
+  ].join('\n');
+}
 
 export async function classifyNeedReport(
   text: string,
   language: string = 'en'
 ): Promise<GeminiExtraction> {
   try {
-    const prompt = CLASSIFICATION_PROMPT.replace('{text}', text);
-    
-    const result = await generativeModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generation_config: {
-        temperature: 0.1, // Low temperature for consistent classification
-        max_output_tokens: 500,
-      },
-    } as any);
+    const { data, meta } = await generateStructuredJson<Record<string, unknown>>(buildClassificationPrompt(text), {
+      task: 'need classification',
+      model: 'flash',
+      temperature: 0.1,
+      maxOutputTokens: 400,
+      schema: CLASSIFICATION_SCHEMA,
+    });
 
-    const response = result.response;
-    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Extract JSON from response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    
-    // Validate and map to our types
     const classification: GeminiExtraction = {
-      category: validateCategory(parsed.category),
-      subCategory: parsed.subCategory,
-      severity: validateUrgency(parsed.severity),
-      estimatedCount: parsed.estimatedCount || undefined,
-      description: parsed.description || text.substring(0, 200),
-      keywords: parsed.keywords || [],
-      confidence: Math.min(1, Math.max(0, parsed.confidence || 0.8)),
-      language: parsed.language || language,
+      category: validateCategory(String(data.category || '')),
+      subCategory: typeof data.subCategory === 'string' ? data.subCategory : undefined,
+      severity: validateUrgency(String(data.severity || '')),
+      estimatedCount: typeof data.estimatedCount === 'number' ? data.estimatedCount : undefined,
+      description: typeof data.description === 'string' ? data.description : text.substring(0, 200),
+      keywords: Array.isArray(data.keywords) ? data.keywords.filter((item): item is string => typeof item === 'string') : [],
+      confidence: Math.min(1, Math.max(0, Number(data.confidence || 0.8))),
+      language: typeof data.language === 'string' ? data.language : language,
       rawTranscript: text,
+      provider: meta.provider,
+      model: meta.model,
+      degraded: meta.degraded,
     };
 
     return classification;
   } catch (error) {
     console.error('Classification error:', error);
-    // Return default classification on error
-    return {
-      category: NeedCategory.HEALTH,
-      severity: UrgencyLevel.MEDIUM,
-      description: text.substring(0, 200),
-      confidence: 0.3,
-      language,
-      rawTranscript: text,
-    };
+    return buildFallbackClassification(text, language, error);
   }
 }
 
@@ -190,5 +151,25 @@ export async function mockClassifyNeedReport(
     confidence: 0.75,
     language,
     rawTranscript: text,
+    provider: 'fallback',
+    model: 'heuristic-fallback',
+    degraded: true,
+    warning: 'Voice classification used local fallback heuristic output.',
+  };
+}
+
+function buildFallbackClassification(text: string, language: string, error?: unknown): GeminiExtraction {
+  const meta = buildFallbackMeta('need classification', error, 'flash');
+  return {
+    category: NeedCategory.HEALTH,
+    severity: UrgencyLevel.MEDIUM,
+    description: text.substring(0, 200),
+    confidence: 0.3,
+    language,
+    rawTranscript: text,
+    provider: meta.provider,
+    model: meta.model,
+    degraded: meta.degraded,
+    warning: meta.warning,
   };
 }

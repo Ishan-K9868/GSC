@@ -1,6 +1,7 @@
 import { getFirestore } from '../config/firebase';
 import { NeedCategory, type NeedReport, ReportStatus } from '../models/NeedReport';
 import { VolunteerAvailability, type Volunteer } from '../models/Volunteer';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson, getModelName } from './geminiClient';
 import {
   IdentityVerificationStatus,
   VolunteerTaskState,
@@ -9,6 +10,15 @@ import {
 } from '../models/VolunteerApp';
 
 const DEFAULT_SDG_INTERESTS = ['SDG 2', 'SDG 3', 'SDG 4'];
+
+const VOLUNTEER_ASSESSMENT_SCHEMA = geminiSchema.object(
+  {
+    skills: geminiSchema.array(geminiSchema.string('snake_case skill')),
+    certifications: geminiSchema.array(geminiSchema.string('snake_case certification')),
+    profileCardText: geminiSchema.string('Short profile summary line'),
+  },
+  ['skills', 'certifications', 'profileCardText']
+);
 
 export async function getOrCreateVolunteerProfile(volunteerId: string, fallbackName = 'Volunteer') {
   const db = getFirestore();
@@ -55,8 +65,38 @@ export async function runSkillAssessment(volunteerId: string, answers: string[])
   const db = getFirestore();
   const normalized = answers.map((a) => a.toLowerCase()).join(' ');
 
-  const skills = inferSkills(normalized);
-  const certifications = inferCertifications(normalized);
+  const fallbackSkills = inferSkills(normalized);
+  const fallbackCertifications = inferCertifications(normalized);
+  const prompt = `You are assessing a volunteer's field readiness for an NGO response platform.
+Volunteer freeform answers: ${answers.join(' | ')}
+
+Return JSON only:
+{
+  "skills": ["snake_case_skill"],
+  "certifications": ["snake_case_certification"],
+  "profileCardText": "short summary line"
+}`;
+
+  let skills = fallbackSkills;
+  let certifications = fallbackCertifications;
+  let profileCardText: string | null = null;
+  let warning: string | null = null;
+
+  try {
+    const { data } = await generateStructuredJson<Record<string, unknown>>(prompt, {
+      task: 'volunteer skill assessment',
+      model: 'flash',
+      temperature: 0.2,
+      maxOutputTokens: 300,
+      schema: VOLUNTEER_ASSESSMENT_SCHEMA,
+    });
+
+    skills = normalizeStringArray(data.skills, fallbackSkills);
+    certifications = normalizeStringArray(data.certifications, fallbackCertifications);
+    profileCardText = typeof data.profileCardText === 'string' ? data.profileCardText : null;
+  } catch (error) {
+    warning = buildFallbackMeta('volunteer skill assessment', error, 'flash').warning || null;
+  }
 
   const ref = db.collection('volunteerProfiles').doc(volunteerId);
   const profile = await getOrCreateVolunteerProfile(volunteerId);
@@ -73,7 +113,10 @@ export async function runSkillAssessment(volunteerId: string, answers: string[])
   return {
     skills,
     certifications,
-    profileCardText: `${updated.displayName} · ${skills.join(', ')} · ${updated.languages.join(', ')}`,
+    profileCardText: profileCardText || `${updated.displayName} · ${skills.join(', ')} · ${updated.languages.join(', ')}`,
+    ...(warning
+      ? { warning, degraded: true, provider: 'fallback' as const, model: getModelName('flash') }
+      : { degraded: false, provider: 'gemini_api_key' as const, model: getModelName('flash') }),
   };
 }
 
@@ -302,6 +345,19 @@ function inferCertifications(answerBlob: string): string[] {
   if (answerBlob.includes('child')) certs.push('child_safety_trained');
   if (answerBlob.includes('flood')) certs.push('flood_relief_ready');
   return certs;
+}
+
+function normalizeStringArray(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const items = value
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  return items.length > 0 ? Array.from(new Set(items)) : fallback;
 }
 
 function buildTaskCard(report: NeedReport, volunteer: Volunteer | null) {
