@@ -66,6 +66,167 @@ async function apiFetch<T>(
   }
 }
 
+function mapVolunteerProfileData(data: any) {
+  const profile = data?.profile || data;
+  if (!profile) return data;
+
+  return {
+    ...profile,
+    name: profile.displayName || profile.name || 'Volunteer',
+    zone: profile.zone || profile.languages?.join(', ') || 'Delhi NCR',
+    reliabilityScore: profile.reliabilityScore || 0,
+  };
+}
+
+function mapVolunteerTask(task: any) {
+  if (!task) return task;
+
+  const state = task.state || task.status || 'available';
+  const normalizedStatus =
+    state === 'available' ? 'pending' : state === 'accepted' ? 'accepted' : state;
+
+  return {
+    ...task,
+    taskId: task.taskId || task.id,
+    status: normalizedStatus,
+    description: task.description || task.summary,
+    distance: task.distance ?? task.distanceKm,
+    eta: task.eta || (typeof task.estimatedTimeMinutes === 'number' ? `${task.estimatedTimeMinutes} min` : ''),
+  };
+}
+
+function mapVolunteerChatMessage(message: any) {
+  if (!message) return message;
+  return {
+    ...message,
+    sender: message.sender || message.senderType,
+    text: message.text || message.message,
+    timestamp: message.timestamp || message.createdAt,
+  };
+}
+
+function mapVolunteerGamification(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    totalPoints: data.totalPoints ?? data.sevaPoints ?? 0,
+    streak: data.streak ?? 0,
+    level: data.level ?? Math.max(1, Math.floor((data.sevaPoints || 0) / 500) + 1),
+    completedMissions: data.completedMissions ?? data.tasksCompleted ?? 0,
+  };
+}
+
+function mapCompanyLeaderboard(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    divisions: (data.divisionLeaderboard || []).map((division: any) => ({
+      ...division,
+      divisionId: division.division,
+      name: division.division,
+      totalHours: division.hours,
+    })),
+  };
+}
+
+function mapCompanyBRSR(data: any) {
+  if (!data) return data;
+  const section = data.brsrSectionC?.socialCapital || {};
+  return {
+    ...data,
+    brsrStatus: 'generated',
+    reportsFiled: data.brsrSectionC?.gri413?.localCommunityEngagements || 0,
+    auditScore: section.totalNeedsResolved || 0,
+    narrative: section.methodologyNotes,
+    metrics: {
+      volunteer_hours: section.totalVolunteerHours || 0,
+      needs_resolved: section.totalNeedsResolved || 0,
+      beneficiaries: section.totalBeneficiaries || 0,
+    },
+  };
+}
+
+function mapCsrPricing(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    currentTier: {
+      name: data.tier,
+      priceMonthlyInr: data.priceMonthlyInr,
+    },
+  };
+}
+
+function mapPanchayatOverview(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    totalNeeds: data.totalNeeds ?? data.activeNeedsCount ?? 0,
+    resolved: data.resolved ?? 0,
+    activeNgos: Array.isArray(data.activeNgos) ? data.activeNgos : [],
+    coverageNgos: data.coverageNgos || data.activeNgos || [],
+  };
+}
+
+function mapPanchayatHistory(data: any) {
+  if (!data) return data;
+  const history = data.history || [];
+  return {
+    ...data,
+    events: history.map((entry: any) => ({
+      ...entry,
+      title: entry.month,
+      summary: Object.entries(entry.categories || {})
+        .map(([category, count]) => `${category}: ${count}`)
+        .join(', '),
+      date: entry.month,
+    })),
+  };
+}
+
+function mapPanchayatMonthlyReport(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    month: data.month || data.title,
+    summary: data.summary || (Array.isArray(data.highlights) ? data.highlights.join(' · ') : ''),
+  };
+}
+
+function mapPanchayatOverlay(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    summary: data.summary || (Array.isArray(data.infrastructureSignals)
+      ? data.infrastructureSignals.map((item: any) => item.note).join(' · ')
+      : ''),
+    projects: data.projects || data.infrastructureSignals,
+  };
+}
+
+function mapCrisisDashboard(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    crisis: data.crisis || null,
+  };
+}
+
+function mapPostCrisisReport(data: any) {
+  if (!data) return data;
+  return {
+    ...data,
+    title: data.title || `Post-crisis report for ${data.zoneId || 'zone'}`,
+    summary:
+      typeof data.summary === 'string'
+        ? data.summary
+        : data.summary
+          ? Object.entries(data.summary).map(([key, value]) => `${key}: ${value}`).join(' · ')
+          : '',
+    highlights: data.highlights || data.lessonsLearned || [],
+  };
+}
+
 // ============ INTAKE API ============
 
 /**
@@ -315,7 +476,11 @@ export async function getCrossNgoCoordination(): Promise<ApiResponse<any>> {
 // ============ VOLUNTEER EXPERIENCE API ============
 
 export async function getVolunteerProfile(volunteerId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/volunteer-app/profile/${volunteerId}`);
+  const response = await apiFetch(`/volunteer-app/profile/${volunteerId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapVolunteerProfileData(response.data) };
+  }
+  return response;
 }
 
 export async function runVolunteerSkillAssessment(volunteerId: string, answers: string[]): Promise<ApiResponse<any>> {
@@ -338,7 +503,18 @@ export async function updateVolunteerPreferences(input: {
 }
 
 export async function getVolunteerTasks(volunteerId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/volunteer-app/tasks/${volunteerId}`);
+  const response = await apiFetch(`/volunteer-app/tasks/${volunteerId}`);
+  const data = response.data as any;
+  if (response.success && data?.tasks) {
+    return {
+      ...response,
+      data: {
+        ...data,
+        tasks: data.tasks.map(mapVolunteerTask),
+      },
+    };
+  }
+  return response;
 }
 
 export async function acceptVolunteerTask(taskId: string, volunteerId: string): Promise<ApiResponse<any>> {
@@ -349,7 +525,18 @@ export async function acceptVolunteerTask(taskId: string, volunteerId: string): 
 }
 
 export async function getVolunteerTaskChat(taskId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/volunteer-app/tasks/${taskId}/chat`);
+  const response = await apiFetch(`/volunteer-app/tasks/${taskId}/chat`);
+  const data = response.data as any;
+  if (response.success && data?.messages) {
+    return {
+      ...response,
+      data: {
+        ...data,
+        messages: data.messages.map(mapVolunteerChatMessage),
+      },
+    };
+  }
+  return response;
 }
 
 export async function sendVolunteerTaskMessage(
@@ -376,7 +563,11 @@ export async function completeVolunteerTask(payload: {
 }
 
 export async function getVolunteerGamification(volunteerId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/volunteer-app/gamification/${volunteerId}`);
+  const response = await apiFetch(`/volunteer-app/gamification/${volunteerId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapVolunteerGamification(response.data) };
+  }
+  return response;
 }
 
 // ============ GEMINI FEATURES API ============
@@ -443,7 +634,11 @@ export async function generateCrisisEscalationDraft(input: {
 // ============ CSR PORTAL API ============
 
 export async function getCsrPricing(): Promise<ApiResponse<any>> {
-  return apiFetch('/csr/pricing');
+  const response = await apiFetch('/csr/pricing');
+  if (response.success && response.data) {
+    return { ...response, data: mapCsrPricing(response.data) };
+  }
+  return response;
 }
 
 export async function bulkOnboardEmployees(
@@ -476,11 +671,19 @@ export async function getCompanyVolunteerPool(
 }
 
 export async function getCompanyLeaderboard(companyId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/csr/leaderboard/${companyId}`);
+  const response = await apiFetch(`/csr/leaderboard/${companyId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapCompanyLeaderboard(response.data) };
+  }
+  return response;
 }
 
 export async function getCompanyBRSR(companyId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/csr/compliance/brsr/${companyId}`);
+  const response = await apiFetch(`/csr/compliance/brsr/${companyId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapCompanyBRSR(response.data) };
+  }
+  return response;
 }
 
 export async function getCompanyAuditTrail(companyId: string): Promise<ApiResponse<any>> {
@@ -537,11 +740,19 @@ export async function flagPanchayatNeed(input: {
 }
 
 export async function getPanchayatOverview(panchayatId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/panchayat/overview/${panchayatId}`);
+  const response = await apiFetch(`/panchayat/overview/${panchayatId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapPanchayatOverview(response.data) };
+  }
+  return response;
 }
 
 export async function getPanchayatHistory(panchayatId: string, months = 6): Promise<ApiResponse<any>> {
-  return apiFetch(`/panchayat/history/${panchayatId}?months=${months}`);
+  const response = await apiFetch(`/panchayat/history/${panchayatId}?months=${months}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapPanchayatHistory(response.data) };
+  }
+  return response;
 }
 
 export async function runPanchayatSchemeGapFinder(input: {
@@ -559,11 +770,19 @@ export async function getPanchayatMonthlyReport(
   panchayatId: string,
   monthLabel = 'Current Month'
 ): Promise<ApiResponse<any>> {
-  return apiFetch(`/panchayat/monthly-health-report/${panchayatId}?monthLabel=${encodeURIComponent(monthLabel)}`);
+  const response = await apiFetch(`/panchayat/monthly-health-report/${panchayatId}?monthLabel=${encodeURIComponent(monthLabel)}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapPanchayatMonthlyReport(response.data) };
+  }
+  return response;
 }
 
 export async function getPanchayatPmGatiShaktiOverlay(panchayatId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/panchayat/pm-gatishakti/${panchayatId}`);
+  const response = await apiFetch(`/panchayat/pm-gatishakti/${panchayatId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapPanchayatOverlay(response.data) };
+  }
+  return response;
 }
 
 // ============ CRISIS MODE API ============
@@ -594,12 +813,20 @@ export async function resolveCrisisMode(crisisId: string): Promise<ApiResponse<a
 }
 
 export async function getCrisisDashboard(zoneId: string): Promise<ApiResponse<any>> {
-  return apiFetch(`/crisis/dashboard/${zoneId}`);
+  const response = await apiFetch(`/crisis/dashboard/${zoneId}`);
+  if (response.success && response.data) {
+    return { ...response, data: mapCrisisDashboard(response.data) };
+  }
+  return response;
 }
 
 export async function generatePostCrisisReport(crisisId: string, zoneId: string): Promise<ApiResponse<any>> {
-  return apiFetch('/crisis/post-report', {
+  const response = await apiFetch('/crisis/post-report', {
     method: 'POST',
     body: JSON.stringify({ crisisId, zoneId }),
   });
+  if (response.success && response.data) {
+    return { ...response, data: mapPostCrisisReport(response.data) };
+  }
+  return response;
 }

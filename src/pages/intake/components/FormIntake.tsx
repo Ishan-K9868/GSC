@@ -27,6 +27,7 @@ import type {
   UrgencyLevelType 
 } from '../../../types';
 import { REPORT_TEMPLATES, getTemplateById } from '../../../data/reportTemplates';
+import { AppIcon } from '../../../components/shared';
 import styles from './FormIntake.module.css';
 
 interface FormIntakeProps {
@@ -290,7 +291,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
     <form className={styles.form} onSubmit={handleSubmit}>
       {/* Template Selection */}
       <div className={styles.formGroup}>
-        <label htmlFor="template">📋 Quick Templates / टेम्पलेट्स</label>
+        <label htmlFor="template">Quick Templates / टेम्पलेट्स</label>
         <select
           id="template"
           value={selectedTemplate}
@@ -299,7 +300,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
           <option value="">Choose a template (optional)...</option>
           {REPORT_TEMPLATES.map((template) => (
             <option key={template.id} value={template.id}>
-              {template.icon} {template.name} / {template.nameHi}
+              {template.name} / {template.nameHi}
             </option>
           ))}
         </select>
@@ -338,7 +339,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
             const meta = CategoryMetadata[value];
             return (
               <option key={key} value={value}>
-                {meta.emoji} {meta.label} / {meta.labelHi}
+                {meta.label} / {meta.labelHi}
               </option>
             );
           })}
@@ -531,7 +532,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
 
       {step === 'success' && (
         <div className={styles.successState}>
-          <div className={styles.successIcon}>✓</div>
+          <div className={styles.successIcon}><AppIcon name="check" size={28} /></div>
           <p className={styles.successMessage}>
             Report submitted successfully!<br />
             <span className={styles.successHi}>रिपोर्ट सफलतापूर्वक जमा की गई!</span>

@@ -22,7 +22,7 @@ interface UseVoiceRecordingReturn {
   transcript: string;
   error: string | null;
   startRecording: () => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: () => Promise<Blob | null>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   resetRecording: () => void;
@@ -48,6 +48,7 @@ export function useVoiceRecording(
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const recognitionRef = useRef<any>(null);
+  const stopResolverRef = useRef<((blob: Blob | null) => void) | null>(null);
 
   // Check browser support
   const isSupported = typeof navigator !== 'undefined' && 
@@ -132,8 +133,21 @@ export function useVoiceRecording(
         const blob = new Blob(chunksRef.current, { 
           type: mediaRecorder.mimeType 
         });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
+        const finalBlob = blob.size > 0 ? blob : null;
+        setAudioBlob(finalBlob);
+
+        if (audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+        }
+
+        if (finalBlob) {
+          setAudioUrl(URL.createObjectURL(finalBlob));
+        } else {
+          setAudioUrl(null);
+        }
+
+        stopResolverRef.current?.(finalBlob);
+        stopResolverRef.current = null;
       };
 
       // Start recording
@@ -171,29 +185,39 @@ export function useVoiceRecording(
   }, [isSupported, maxDuration, initSpeechRecognition]);
 
   // Stop recording
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
+  const stopRecording = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      if (!mediaRecorderRef.current || !isRecording) {
+        resolve(audioBlob);
+        return;
+      }
+
+      stopResolverRef.current = resolve;
+
+      try {
+        mediaRecorderRef.current.requestData();
+      } catch {
+        // Some browsers may not support requestData here.
+      }
+
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsPaused(false);
 
-      // Stop timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
 
-      // Stop speech recognition
       try {
         recognitionRef.current?.stop();
       } catch {
         // Ignore
       }
 
-      // Stop all tracks
       streamRef.current?.getTracks().forEach(track => track.stop());
-    }
-  }, [isRecording]);
+    });
+  }, [isRecording, audioBlob]);
 
   // Pause recording
   const pauseRecording = useCallback(() => {

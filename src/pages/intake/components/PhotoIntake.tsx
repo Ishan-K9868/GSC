@@ -12,6 +12,8 @@ import { useGeolocation } from '../../../hooks/useGeolocation';
 import { uploadPhoto, submitReport } from '../../../services/api';
 import { IntakeSource, CategoryMetadata } from '../../../types';
 import type { Location, NeedCategoryType } from '../../../types';
+import { AppIcon } from '../../../components/shared';
+import { getCategoryIcon } from '../../../utils/categoryIcons';
 import styles from './PhotoIntake.module.css';
 
 interface PhotoIntakeProps {
@@ -253,10 +255,10 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
     <div className={styles.container}>
       {/* Location status */}
       <div className={styles.locationStatus}>
-        {locationLoading && <span className={styles.loading}>📍 Getting location...</span>}
+        {locationLoading && <span className={styles.loading}>Getting location...</span>}
         {location && (
           <span className={styles.success}>
-            📍 {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
+            {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
           </span>
         )}
       </div>
@@ -290,7 +292,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
                     setUseCamera(false);
                   }}
                 >
-                  📁 Choose from gallery
+                  Choose from gallery
                 </button>
               </>
             ) : (
@@ -315,7 +317,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
                   className={styles.switchButton}
                   onClick={() => setUseCamera(true)}
                 >
-                  📷 Use camera
+                  Use camera
                 </button>
               </>
             )}
@@ -359,7 +361,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
 
             {categoryMeta && (
               <div className={styles.categoryBadge}>
-                <span className={styles.emoji}>{categoryMeta.emoji}</span>
+                <span className={styles.iconBadge}><AppIcon name={getCategoryIcon(analysis.category)} size={18} /></span>
                 <span className={styles.categoryLabel}>
                   {categoryMeta.label}
                 </span>
@@ -392,7 +394,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
 
             {analysis.suggestedAction && (
               <p className={styles.suggestedAction}>
-                💡 {analysis.suggestedAction}
+                {analysis.suggestedAction}
               </p>
             )}
 
@@ -422,7 +424,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
         {/* Success step */}
         {step === 'success' && (
           <div className={styles.successState}>
-            <div className={styles.successIcon}>✓</div>
+            <div className={styles.successIcon}><AppIcon name="check" size={28} /></div>
             <p className={styles.successMessage}>Report submitted successfully!</p>
             {reportId && (
               <p className={styles.reportId}>Report ID: {reportId.slice(0, 8)}...</p>
@@ -436,7 +438,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
         {/* Error step */}
         {step === 'error' && (
           <div className={styles.errorState}>
-            <div className={styles.errorIcon}>✕</div>
+            <div className={styles.errorIcon}><AppIcon name="alert" size={22} /></div>
             <p className={styles.errorMessage}>{errorMessage}</p>
             <button className={styles.retryButton} onClick={handleReset}>
               Try Again

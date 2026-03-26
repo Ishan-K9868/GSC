@@ -13,6 +13,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getFirestore } from '../config/firebase';
 import { verifyToken } from './auth';
+import { ensureUserProfile } from './auth';
 import { createError } from '../middleware/errorHandler';
 import { 
   CreateNeedReportSchema, 
@@ -115,10 +116,12 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
     const db = getFirestore();
     await db.collection('needReports').doc(reportId).set(firestoreSafeReport);
 
-    // Increment user's report count
-    await db.collection('users').doc(uid).update({
+    // Increment user's report count without assuming the profile document already exists
+    const { userRef } = await ensureUserProfile(uid, (req as any).user?.phoneNumber);
+    await userRef.set({
       reportsSubmitted: (await import('firebase-admin')).firestore.FieldValue.increment(1),
-    });
+      updatedAt: now,
+    }, { merge: true });
 
     // Trigger auto-dispatch for critical/high urgency
     if (classification.urgency === UrgencyLevel.CRITICAL || classification.urgency === UrgencyLevel.HIGH) {

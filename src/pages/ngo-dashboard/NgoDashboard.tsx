@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getDashboardOverview } from '../../services/api';
+import { AppIcon } from '../../components/shared';
 import styles from './NgoDashboard.module.css';
 
 type DashboardOverview = {
@@ -16,10 +17,7 @@ type DashboardOverview = {
       lastActivity: string;
       stalled: boolean;
       rerouteSuggestion?: string;
-      location: {
-        district: string | null;
-        state: string | null;
-      };
+      location: { district: string | null; state: string | null };
     }>;
   };
   volunteerHealth: {
@@ -102,28 +100,6 @@ function formatCategory(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
-function PipelineColumn({ title, items }: { title: string; items: any[] }) {
-  return (
-    <div className={styles.column}>
-      <h3 className={styles.columnTitle}>{title} ({items.length})</h3>
-      <div className={styles.list}>
-        {items.slice(0, 6).map((item) => (
-          <div className={styles.item} key={item.reportId}>
-            <strong>{formatCategory(item.category)}</strong>
-            <div className={styles.meta}>
-              <span className={styles.pill}>{item.urgency}</span>
-              {item.slaBreached ? <span className={styles.pill}>SLA Breach</span> : null}
-            </div>
-            <small>{item.timeInStageHours}h in stage</small>
-            {item.escalationDraft ? <p>{item.escalationDraft}</p> : null}
-          </div>
-        ))}
-        {items.length === 0 ? <div className={styles.empty}>No records</div> : null}
-      </div>
-    </div>
-  );
-}
-
 export function NgoDashboard() {
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -136,208 +112,257 @@ export function NgoDashboard() {
   async function loadDashboard() {
     setLoading(true);
     setError(null);
-
     const response = await getDashboardOverview();
     if (!response.success || !response.data) {
       setError(response.error?.message || 'Failed to load dashboard');
       setLoading(false);
       return;
     }
-
     setData(response.data as DashboardOverview);
     setLoading(false);
   }
 
-  const topLiveTasks = useMemo(() => data?.liveOperations.activeTasks.slice(0, 6) || [], [data]);
+  const topLiveTasks = useMemo(() => data?.liveOperations.activeTasks.slice(0, 5) || [], [data]);
   const topBurnout = useMemo(
-    () => data?.volunteerHealth.volunteers.filter((item) => item.burnoutRisk).slice(0, 6) || [],
+    () => data?.volunteerHealth.volunteers.filter((v) => v.burnoutRisk).slice(0, 4) || [],
+    [data]
+  );
+  const pipelineColumns = useMemo(
+    () => [
+      { title: 'Unassigned', items: data?.needsPipeline.unassigned || [] },
+      { title: 'Assigned', items: data?.needsPipeline.assigned || [] },
+      { title: 'In Progress', items: data?.needsPipeline.inProgress || [] },
+      { title: 'Resolved', items: data?.needsPipeline.resolved || [] },
+    ],
     [data]
   );
 
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <div>
-            <h1 className={styles.title}>NGO Intelligence Dashboard</h1>
-            <p className={styles.subtitle}>
-              Coordinator command center for live operations, volunteer health, analytics, and forecasting.
-            </p>
-            {data ? <p className={styles.subtitle}>Last sync: {niceDate(data.generatedAt)}</p> : null}
+      {/* Hero */}
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.eyebrow}>NGO Intelligence</div>
+          <h1 className={styles.heroTitle}>
+            Command the field, the volunteer pulse,<br />
+            and the donor story from one surface.
+          </h1>
+          <p className={styles.heroSub}>
+            Live operations first, then health, supplies, impact, and coordination.
+          </p>
+        </div>
+        <div className={styles.heroActions}>
+          <div className={styles.liveCard}>
+            <span className={styles.liveDot} />
+            Synced {data ? niceDate(data.generatedAt) : 'just now'}
           </div>
-          <div className={styles.stats}>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Active Tasks</div>
-              <div className={styles.statValue}>{data?.liveOperations.activeCount ?? 0}</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Stalled</div>
-              <div className={styles.statValue}>{data?.liveOperations.stalledCount ?? 0}</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Volunteers</div>
-              <div className={styles.statValue}>{data?.volunteerHealth.totalVolunteers ?? 0}</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statLabel}>Beneficiaries</div>
-              <div className={styles.statValue}>{data?.impactAnalytics.beneficiariesServed ?? 0}</div>
-            </div>
-          </div>
-        </section>
+          <button className={styles.btnPrimary} type="button" onClick={() => void loadDashboard()}>
+            Refresh
+          </button>
+        </div>
+      </section>
 
-        {loading ? <div className={styles.card}>Loading dashboard...</div> : null}
-        {error ? <div className={styles.card}>Error: {error}</div> : null}
+      {/* Metric Strip */}
+      <section className={styles.metricStrip}>
+        <article className={styles.metricCard}>
+          <span>Active deployments</span>
+          <strong>{data?.liveOperations.activeCount ?? 0}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <span>Stalled attention</span>
+          <strong>{data?.liveOperations.stalledCount ?? 0}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <span>Volunteer base</span>
+          <strong>{data?.volunteerHealth.totalVolunteers ?? 0}</strong>
+        </article>
+        <article className={styles.metricCard}>
+          <span>Beneficiaries</span>
+          <strong>{data?.impactAnalytics.beneficiariesServed ?? 0}</strong>
+        </article>
+      </section>
 
-        {data ? (
-          <div className={styles.grid}>
-            <section className={`${styles.card} ${styles.span7}`}>
-              <h2>Live Operations</h2>
-              <p>Real-time active deployments and stalled-task rerouting suggestions.</p>
-              <div className={styles.list}>
-                {topLiveTasks.map((task) => (
-                  <div className={styles.item} key={task.reportId}>
-                    <strong>{formatCategory(task.category)} · {task.urgency}</strong>
-                    <div className={styles.meta}>
-                      <span className={styles.pill}>{task.status}</span>
-                      {task.stalled ? <span className={styles.pill}>Stalled</span> : null}
-                      <span>{task.location.district || 'Unknown zone'}</span>
-                      <span>{niceDate(task.lastActivity)}</span>
+      {loading ? <div className={styles.notice}>Loading NGO dashboard...</div> : null}
+      {error ? <div className={styles.notice}>{error}</div> : null}
+
+      {data ? (
+        <section className={styles.grid}>
+          {/* Live Operations */}
+          <article className={`${styles.panel} ${styles.span7}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="dispatch" size={15} /> Live operations
+            </div>
+            <div className={styles.panelBody}>
+              {topLiveTasks.map((task) => (
+                <div key={task.reportId} className={styles.taskCard}>
+                  <div className={styles.taskTop}>
+                    <strong>{formatCategory(task.category)}</strong>
+                    <span className={`${styles.badge} ${task.stalled ? styles.badgeAlert : ''}`}>{task.urgency}</span>
+                  </div>
+                  <div className={styles.taskMeta}>
+                    <span>{task.status}</span>
+                    <span>{task.location.district || 'Unknown zone'}</span>
+                    <span>{niceDate(task.lastActivity)}</span>
+                  </div>
+                  <p>{task.rerouteSuggestion || 'On track with current assignment.'}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          {/* Volunteer Health */}
+          <article className={`${styles.panel} ${styles.span5}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="volunteer" size={15} /> Volunteer health
+            </div>
+            <div className={styles.panelBody}>
+              {topBurnout.length > 0 ? (
+                topBurnout.map((vol) => (
+                  <div key={vol.volunteerId} className={styles.healthCard}>
+                    <strong>{vol.name}</strong>
+                    <div className={styles.taskMeta}>
+                      <span>{Math.round(vol.reliabilityScore * 100)}% reliability</span>
+                      <span>{vol.tasksLast7d} tasks/7d</span>
                     </div>
-                    {task.rerouteSuggestion ? <p>{task.rerouteSuggestion}</p> : null}
+                    <p>{vol.appreciationMessage}</p>
                   </div>
-                ))}
-                {topLiveTasks.length === 0 ? <div className={styles.empty}>No active operations.</div> : null}
-              </div>
-            </section>
+                ))
+              ) : (
+                <p className={styles.helper}>No burnout-risk volunteers right now.</p>
+              )}
+            </div>
+          </article>
 
-            <section className={`${styles.card} ${styles.span5}`}>
-              <h2>Volunteer Health Index</h2>
-              <p>Burnout risk detection and AI appreciation prompts.</p>
-              <div className={styles.list}>
-                {topBurnout.map((volunteer) => (
-                  <div className={styles.item} key={volunteer.volunteerId}>
-                    <strong>{volunteer.name}</strong>
-                    <div className={styles.meta}>
-                      <span className={styles.pill}>Reliability {Math.round(volunteer.reliabilityScore * 100)}%</span>
-                      <span className={styles.pill}>{volunteer.tasksLast7d} tasks/7d</span>
+          {/* Pipeline */}
+          <article className={`${styles.panel} ${styles.span12}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="layers" size={15} /> Needs pipeline
+            </div>
+            <div className={styles.pipelineGrid}>
+              {pipelineColumns.map((col) => (
+                <div key={col.title} className={styles.pipelineCol}>
+                  <div className={styles.pipelineColHeader}>{col.title} ({col.items.length})</div>
+                  {col.items.slice(0, 4).map((item) => (
+                    <div key={item.reportId} className={styles.pipelineCard}>
+                      <strong>{formatCategory(item.category)}</strong>
+                      <div className={styles.taskMeta}>
+                        <span>{item.urgency}</span>
+                        <span>{item.timeInStageHours}h in stage</span>
+                      </div>
+                      {item.escalationDraft ? <p>{item.escalationDraft}</p> : null}
                     </div>
-                    <p>{volunteer.appreciationMessage}</p>
-                  </div>
-                ))}
-                {topBurnout.length === 0 ? <div className={styles.empty}>No burnout-risk volunteers right now.</div> : null}
-              </div>
-            </section>
+                  ))}
+                  {col.items.length === 0 ? <p className={styles.helper}>No records</p> : null}
+                </div>
+              ))}
+            </div>
+          </article>
 
-            <section className={`${styles.card} ${styles.span12}`}>
-              <h2>Needs Pipeline</h2>
-              <p>Kanban flow with SLA breach alerts and escalation drafts.</p>
-              <div className={styles.kanban}>
-                <PipelineColumn title="Unassigned" items={data.needsPipeline.unassigned} />
-                <PipelineColumn title="Assigned" items={data.needsPipeline.assigned} />
-                <PipelineColumn title="In-Progress" items={data.needsPipeline.inProgress} />
-                <PipelineColumn title="Resolved" items={data.needsPipeline.resolved} />
+          {/* Impact */}
+          <article className={`${styles.panel} ${styles.span6}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="spark" size={15} /> Impact + reporting
+            </div>
+            <div className={styles.panelBody}>
+              <div className={styles.splitMetric}>
+                <div><span>Avg response</span><strong>{data.impactAnalytics.averageResponseTimeHours}h</strong></div>
+                <div><span>Volunteer hours</span><strong>{data.impactAnalytics.volunteerHours}</strong></div>
               </div>
-            </section>
-
-            <section className={`${styles.card} ${styles.span6}`}>
-              <h2>Impact Analytics</h2>
-              <p>Beneficiaries, volunteer effort, category outcomes, and response trend.</p>
-              <div className={styles.meta}>
-                <span className={styles.pill}>Avg response {data.impactAnalytics.averageResponseTimeHours}h</span>
-                <span className={styles.pill}>Volunteer hours {data.impactAnalytics.volunteerHours}</span>
-              </div>
-              <div className={styles.list}>
-                {Object.entries(data.impactAnalytics.resolvedByCategory).map(([category, count]) => (
-                  <div className={styles.item} key={category}>
-                    <strong>{formatCategory(category)}</strong>
-                    <div>{count} resolved</div>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.narrative}>
-                <strong>Impact Narrative (EN)</strong>
+              <div className={styles.storyBlock}>
+                <strong>Donor-ready narrative</strong>
                 <p>{data.impactAnalytics.impactNarrativeEn}</p>
-                <strong>Impact Narrative (HI)</strong>
                 <p>{data.impactAnalytics.impactNarrativeHi}</p>
               </div>
-            </section>
-
-            <section className={`${styles.card} ${styles.span6}`}>
-              <h2>Resource Inventory</h2>
-              <p>Stock levels with predictive depletion alerts.</p>
-              <div className={styles.list}>
-                {data.resourceInventory.items.map((item) => (
-                  <div className={styles.item} key={item.id}>
-                    <strong>{item.name}</strong>
-                    <div className={styles.meta}>
-                      <span>{item.quantity} {item.unit}</span>
-                      <span>{item.location}</span>
-                      <span>{item.daysRemaining} days left</span>
-                      {item.depletionAlert ? <span className={styles.pill}>Depletion Alert</span> : null}
-                    </div>
-                    {item.recommendation ? <p>{item.recommendation}</p> : null}
+              <div className={styles.kvList}>
+                {Object.entries(data.impactAnalytics.resolvedByCategory).map(([cat, count]) => (
+                  <div key={cat} className={styles.kvRow}>
+                    <span>{formatCategory(cat)}</span><strong>{count}</strong>
                   </div>
                 ))}
               </div>
-            </section>
+            </div>
+          </article>
 
-            <section className={`${styles.card} ${styles.span4}`}>
-              <h2>SDG Alignment</h2>
-              <p>Activity linkage to SDG goals and BRSR/GRI summary.</p>
-              <div className={styles.list}>
-                {Object.entries(data.sdgAlignment.mapping).map(([sdg, count]) => (
-                  <div className={styles.item} key={sdg}>
-                    <strong>{sdg}</strong>
-                    <div>{count} linked activities</div>
+          {/* Supplies */}
+          <article className={`${styles.panel} ${styles.span6}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="shield" size={15} /> Supplies + compliance
+            </div>
+            <div className={styles.panelBody}>
+              {data.resourceInventory.items.slice(0, 5).map((item) => (
+                <div key={item.id} className={styles.supplyCard}>
+                  <strong>{item.name}</strong>
+                  <div className={styles.taskMeta}>
+                    <span>{item.quantity} {item.unit}</span>
+                    <span>{item.location}</span>
+                    <span>{item.daysRemaining}d left</span>
                   </div>
-                ))}
-              </div>
-              <div className={styles.narrative}>
+                  {item.recommendation ? <p>{item.recommendation}</p> : null}
+                </div>
+              ))}
+              <div className={styles.storyBlock}>
+                <strong>BRSR / SDG framing</strong>
                 <p>{data.sdgAlignment.brsrSummary}</p>
               </div>
-            </section>
+            </div>
+          </article>
 
-            <section className={`${styles.card} ${styles.span4}`}>
-              <h2>Surge Forecast</h2>
-              <p>{data.surgeForecast.horizonDays}-day predictive demand by zone and category.</p>
-              <div className={styles.list}>
-                {data.surgeForecast.forecasts.map((forecast, index) => (
-                  <div className={styles.item} key={`${forecast.zone}-${forecast.category}-${index}`}>
-                    <strong>{forecast.zone} · {formatCategory(forecast.category)}</strong>
-                    <div className={styles.meta}>
-                      <span>{forecast.observed14d} observed</span>
-                      <span>{forecast.projected14d} projected</span>
+          {/* Bottom Row: Surge + Cross-NGO + SDG */}
+          <article className={`${styles.panel} ${styles.span4}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="alert" size={15} /> Surge forecast
+            </div>
+            <div className={styles.panelBody}>
+              {data.surgeForecast.forecasts.map((f, i) => (
+                <div key={`${f.zone}-${i}`} className={styles.compactCard}>
+                  <strong>{f.zone}</strong>
+                  <div className={styles.taskMeta}>
+                    <span>{formatCategory(f.category)}</span>
+                    <span>{f.projected14d} projected</span>
+                  </div>
+                  <p>{f.recommendation}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className={`${styles.panel} ${styles.span4}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="network" size={15} /> Cross-NGO coordination
+            </div>
+            <div className={styles.panelBody}>
+              {data.crossNgoCoordination.overlaps.length > 0 ? (
+                data.crossNgoCoordination.overlaps.map((o, i) => (
+                  <div key={`${o.zone}-${i}`} className={styles.compactCard}>
+                    <strong>{o.zone}</strong>
+                    <div className={styles.chipRow}>
+                      {o.ngos.map((ngo) => <span key={ngo} className={styles.chip}>{ngo}</span>)}
                     </div>
-                    <p>{forecast.recommendation}</p>
+                    <p>{o.alert}</p>
+                  </div>
+                ))
+              ) : (
+                <p className={styles.helper}>No overlap alerts.</p>
+              )}
+            </div>
+          </article>
+
+          <article className={`${styles.panel} ${styles.span4}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="csr" size={15} /> SDG footprint
+            </div>
+            <div className={styles.panelBody}>
+              <div className={styles.kvList}>
+                {Object.entries(data.sdgAlignment.mapping).map(([sdg, count]) => (
+                  <div key={sdg} className={styles.kvRow}>
+                    <span>{sdg}</span><strong>{count}</strong>
                   </div>
                 ))}
-                {data.surgeForecast.forecasts.length === 0 ? <div className={styles.empty}>No surge signal yet.</div> : null}
               </div>
-            </section>
-
-            <section className={`${styles.card} ${styles.span4}`}>
-              <h2>Cross-NGO Coordination</h2>
-              <p>Overlap visibility and duplicate response alerts.</p>
-              <div className={styles.list}>
-                {data.crossNgoCoordination.overlaps.map((overlap, index) => (
-                  <div className={styles.item} key={`${overlap.zone}-${overlap.category}-${index}`}>
-                    <strong>{overlap.zone} · {formatCategory(overlap.category)}</strong>
-                    <div className={styles.meta}>
-                      {overlap.ngos.map((ngo) => (
-                        <span className={styles.pill} key={ngo}>{ngo}</span>
-                      ))}
-                    </div>
-                    <p>{overlap.alert}</p>
-                  </div>
-                ))}
-                {data.crossNgoCoordination.overlaps.length === 0 ? (
-                  <div className={styles.empty}>No overlap alerts right now.</div>
-                ) : null}
-              </div>
-            </section>
-          </div>
-        ) : null}
-      </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
     </div>
   );
 }

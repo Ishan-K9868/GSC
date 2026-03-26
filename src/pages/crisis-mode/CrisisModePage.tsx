@@ -6,13 +6,10 @@ import {
   resolveCrisisMode,
   generatePostCrisisReport,
 } from '../../services/api';
+import { AppIcon } from '../../components/shared';
 import styles from './CrisisModePage.module.css';
 
 const ZONE_ID = 'zone_4b';
-
-function pretty(v: unknown) {
-  return JSON.stringify(v, null, 2);
-}
 
 export function CrisisModePage() {
   const [evaluation, setEvaluation] = useState<any>(null);
@@ -58,100 +55,194 @@ export function CrisisModePage() {
     setPostReport(res.data || res.error);
   }
 
+  const governmentNotice = activation?.governmentNotification || dashboard?.governmentNotification;
+  const requisitionRequests = Array.isArray(activation?.resourceRequisition?.requests)
+    ? activation.resourceRequisition.requests
+    : [];
+  const resourceRows = Array.isArray(dashboard?.resourceTracking?.resources) ? dashboard.resourceTracking.resources : [];
+  const postHighlights = Array.isArray(postReport?.highlights) ? postReport.highlights : [];
+
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>SEVA Crisis Mode Command</h1>
-          <p className={styles.sub}>
-            Disaster response overlay with rapid dispatch, surge mobilization, cross-NGO requisition, and auto government escalation.
+      {/* Hero + Alert Strip */}
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.eyebrow}>Crisis Command</div>
+          <h1 className={styles.heroTitle}>
+            Incident activation, live response,<br />
+            and controlled resolution.
+          </h1>
+          <p className={styles.heroSub}>
+            Mode state, surge queue, government notice, and response levers in one console.
           </p>
-          <div className={styles.row}>
-            <span className={styles.pill}>Dispatch target: 60 sec</span>
-            <span className={styles.pill}>Volunteer radius: 25km</span>
-            <span className={styles.pill}>Proximity weight: 0.50</span>
+        </div>
+        <div className={styles.alertStrip}>
+          <span className={styles.alertBadge}>{ZONE_ID}</span>
+          <span className={styles.alertBadge} data-mode={dashboard?.mode || 'standard'}>
+            {dashboard?.mode || 'standard'}
+          </span>
+          <span className={styles.alertBadge}>
+            {dashboard?.liveOperations?.activeDeployments || 0} deployments
+          </span>
+        </div>
+      </section>
+
+      {/* Grid */}
+      <section className={styles.grid}>
+        {/* Activation Panel */}
+        <article className={`${styles.panel} ${styles.span5}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="alert" size={15} />
+            Activation thresholds
           </div>
-        </section>
-
-        <div className={styles.grid}>
-          <section className={`${styles.card} ${styles.span5}`}>
-            <h2>Activation Thresholds</h2>
-            <p>Triggers: 5+ emergency reports in 5km/2h OR IMD alert.</p>
+          <div className={styles.panelBody}>
             <textarea className={styles.textarea} value={evidence} onChange={(e) => setEvidence(e.target.value)} />
-            <div className={styles.row}>
-              <button className="btn btn-ghost" type="button" onClick={() => void onEvaluate()}>
-                Evaluate Threshold
+            <div className={styles.btnRow}>
+              <button className={styles.btnGhost} type="button" onClick={() => void onEvaluate()}>
+                Evaluate threshold
               </button>
-              <button className="btn btn-primary" type="button" onClick={() => void onActivate()}>
-                Activate Crisis Mode
+              <button className={styles.btnPrimary} type="button" onClick={() => void onActivate()}>
+                Activate crisis
               </button>
             </div>
-            <div className={styles.output}>{pretty(evaluation || { info: 'Run threshold evaluation first' })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span7}`}>
-            <h2>Crisis Dashboard (Full-screen equivalent)</h2>
-            <div className={styles.meta}>
-              <span className={styles.pill}>Mode: {dashboard?.mode || 'standard'}</span>
-              <span className={styles.pill}>Active deployments: {dashboard?.liveOperations?.activeDeployments || 0}</span>
-              <span className={styles.pill}>High urgency: {dashboard?.liveOperations?.highUrgencyDeployments || 0}</span>
+            <div className={styles.storyBlock}>
+              <strong>Evaluation</strong>
+              <p>{evaluation?.reason || evaluation?.message || 'Run the threshold evaluation to inspect trigger conditions.'}</p>
             </div>
-            <div className={styles.output}>{pretty(dashboard || { info: 'Dashboard not loaded yet' })}</div>
-          </section>
+            {typeof evaluation?.score === 'number' ? (
+              <div className={styles.inlineMetric}>
+                <span>Trigger score</span>
+                <strong>{evaluation.score}</strong>
+              </div>
+            ) : null}
+          </div>
+        </article>
 
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Volunteer Surge Queue</h2>
-            <div className={styles.list}>
+        {/* Incident Overview */}
+        <article className={`${styles.panel} ${styles.span7}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="dashboard" size={15} />
+            Incident overview
+          </div>
+          <div className={styles.panelBody}>
+            <div className={styles.metricRow}>
+              <div className={styles.metricTile}>
+                <span>Mode</span>
+                <strong>{dashboard?.mode || 'standard'}</strong>
+              </div>
+              <div className={styles.metricTile}>
+                <span>High urgency</span>
+                <strong>{dashboard?.liveOperations?.highUrgencyDeployments || 0}</strong>
+              </div>
+              <div className={styles.metricTile}>
+                <span>Resource alerts</span>
+                <strong>{dashboard?.resourceTracking?.replenishmentAlerts || 0}</strong>
+              </div>
+            </div>
+            <div className={styles.storyBlock}>
+              <strong>Government notice</strong>
+              <p>{governmentNotice?.subject || 'Notice is auto-generated once crisis mode is live.'}</p>
+              {governmentNotice?.letter ? <p>{governmentNotice.letter}</p> : null}
+            </div>
+          </div>
+        </article>
+
+        {/* Volunteer Surge */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="volunteer" size={15} />
+            Volunteer surge queue
+          </div>
+          <div className={styles.panelBody}>
+            <div className={styles.cardList}>
               {(dashboard?.volunteerSurgeQueue?.queue || []).slice(0, 6).map((vol: any) => (
-                <div className={styles.item} key={vol.volunteerId}>
+                <div key={vol.volunteerId} className={styles.itemCard}>
                   <strong>{vol.name}</strong>
-                  <div className={styles.meta}>
+                  <div className={styles.cardMeta}>
                     <span>ETA {vol.etaMinutes} min</span>
                     <span>{(vol.skills || []).slice(0, 3).join(', ') || 'general support'}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
+        </article>
 
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Resource Tracking + Requisition</h2>
-            <div className={styles.output}>{pretty({
-              activation,
-              resourceTracking: dashboard?.resourceTracking,
-            })}</div>
-          </section>
+        {/* Resource Requisition */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="network" size={15} />
+            Resource requisition
+          </div>
+          <div className={styles.panelBody}>
+            {requisitionRequests.length > 0 ? (
+              <div className={styles.chipRow}>
+                {requisitionRequests.map((req: any) => (
+                  <span key={req.ngoId} className={styles.chip}>{req.ngoName}</span>
+                ))}
+              </div>
+            ) : null}
+            <div className={styles.cardList}>
+              {requisitionRequests.map((req: any) => (
+                <div key={req.ngoId} className={styles.itemCard}>
+                  <strong>{req.ngoName}</strong>
+                  <p>{(req.requestedResources || []).join(', ')}</p>
+                </div>
+              ))}
+              {resourceRows.slice(0, 4).map((res: any) => (
+                <div key={res.resourceId} className={styles.itemCard}>
+                  <strong>{res.name}</strong>
+                  <div className={styles.cardMeta}>
+                    <span>{res.remaining} remaining</span>
+                    <span>{res.replenishmentEtaHours}h ETA</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
 
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Media Bulletin</h2>
-            <div className={styles.output}>{pretty(dashboard?.mediaBulletin || { info: 'Bulletin unavailable' })}</div>
-          </section>
+        {/* Media Bulletin */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="spark" size={15} />
+            Media bulletin
+          </div>
+          <div className={styles.panelBody}>
+            <div className={styles.storyBlock}>
+              <strong>{dashboard?.mediaBulletin?.tone || 'assuring'}</strong>
+              <p>{dashboard?.mediaBulletin?.bulletin || 'Bulletin appears once crisis mode is live.'}</p>
+            </div>
+          </div>
+        </article>
 
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Government Notification + Post-Crisis Report</h2>
-            <div className={styles.row}>
-              <button className="btn btn-ghost" type="button" onClick={() => void onResolve()}>
-                Resolve Crisis
+        {/* Resolution */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}>
+            <AppIcon name="shield" size={15} />
+            Resolution + report
+          </div>
+          <div className={styles.panelBody}>
+            <div className={styles.btnRow}>
+              <button className={styles.btnGhost} type="button" onClick={() => void onResolve()}>
+                Resolve crisis
               </button>
-              <button className="btn btn-primary" type="button" onClick={() => void onGeneratePostReport()}>
-                Generate Post-Crisis Report
+              <button className={styles.btnPrimary} type="button" onClick={() => void onGeneratePostReport()}>
+                Generate post-crisis report
               </button>
             </div>
-            <div className={styles.output}>{pretty(postReport || activation?.governmentNotification || { info: 'No report generated yet' })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span12}`}>
-            <h2>Crisis vs Standard Parameters</h2>
-            <div className={styles.row}>
-              <span className={styles.pill}>Notification radius: 5km → 25km</span>
-              <span className={styles.pill}>Proximity weight: 0.30 → 0.50</span>
-              <span className={styles.pill}>Skill weight: 0.25 → 0.15</span>
-              <span className={styles.pill}>Dispatch target: 15 min → 60 sec</span>
-              <span className={styles.pill}>Government notification: Manual → Automatic</span>
+            <div className={styles.storyBlock}>
+              <strong>Post-crisis output</strong>
+              <p>{postReport?.summary || postReport?.title || 'Generate a report once response stabilises.'}</p>
             </div>
-          </section>
-        </div>
-      </div>
+            {postHighlights.length > 0 ? (
+              <div className={styles.chipRow}>
+                {postHighlights.map((item: string) => <span key={item} className={styles.chip}>{item}</span>)}
+              </div>
+            ) : null}
+          </div>
+        </article>
+      </section>
     </div>
   );
 }

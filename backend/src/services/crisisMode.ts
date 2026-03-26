@@ -84,6 +84,17 @@ export async function activateCrisisMode(input: { zoneId: string; reason: string
     generateGovernmentAlertLetter({ zoneId: input.zoneId, evidenceSummary: input.evidenceSummary }),
   ]);
 
+  const db = getFirestore();
+  await db.collection('crisisStates').doc(state.crisisId).set(
+    {
+      resourceRequisition: requisition,
+      governmentNotification: governmentLetter,
+      surgeAlert: surge,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+
   return {
     crisisId: state.crisisId,
     mode: 'crisis',
@@ -107,6 +118,11 @@ export async function resolveCrisisMode(input: { crisisId: string; closedBy: str
   const db = getFirestore();
   const ref = db.collection('crisisStates').doc(input.crisisId);
   const now = new Date().toISOString();
+  const existing = await ref.get();
+
+  if (!existing.exists) {
+    throw new Error('Crisis state not found');
+  }
 
   await ref.set(
     {
@@ -135,7 +151,8 @@ export async function getCrisisDashboard(zoneId: string) {
     .limit(1)
     .get();
 
-  const crisis = crisisSnapshot.docs[0]?.data() as any;
+  const crisisDoc = crisisSnapshot.docs[0];
+  const crisis = crisisDoc ? ({ id: crisisDoc.id, ...crisisDoc.data() } as any) : null;
 
   const reportsSnapshot = await db.collection('needReports').where('status', 'in', [ReportStatus.DISPATCHED, ReportStatus.IN_PROGRESS]).limit(2000).get();
   const volunteersSnapshot = await db.collection('volunteers').limit(3000).get();
@@ -151,7 +168,7 @@ export async function getCrisisDashboard(zoneId: string) {
 
   return {
     mode: crisis ? 'crisis' : 'standard',
-    crisis: crisis || null,
+    crisis,
     liveOperations: {
       activeDeployments: activeReports.length,
       highUrgencyDeployments: activeReports.filter((r) => r.urgency === 'critical' || r.urgency === 'high').length,
@@ -160,6 +177,8 @@ export async function getCrisisDashboard(zoneId: string) {
     volunteerSurgeQueue: surgeQueue,
     resourceTracking,
     mediaBulletin,
+    governmentNotification: crisis?.governmentNotification || null,
+    resourceRequisition: crisis?.resourceRequisition || null,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -187,6 +206,11 @@ export async function generatePostCrisisReport(input: { crisisId: string; zoneId
       'Proximity-heavy matching reduced first response delay in dense clusters.',
       'Cross-NGO requisition improved supply continuity for health and food kits.',
       'Automated government drafts reduced escalation prep time significantly.',
+    ],
+    highlights: [
+      `${dashboard.liveOperations.activeDeployments} deployments handled`,
+      `${dashboard.volunteerSurgeQueue.totalInbound} inbound volunteers mobilized`,
+      `${dashboard.resourceTracking.deployedCount} resource lines deployed`,
     ],
     donorReadyNarrative:
       'Within the crisis window, SevaSetu shifted into high-speed dispatch mode, scaled volunteer mobilization, and sustained inter-NGO resource flow while maintaining traceable response records.',

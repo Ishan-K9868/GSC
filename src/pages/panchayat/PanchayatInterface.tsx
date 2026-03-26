@@ -1,152 +1,189 @@
 import { useEffect, useState } from 'react';
 import {
-  flagPanchayatNeed,
   getPanchayatOverview,
   getPanchayatHistory,
-  runPanchayatSchemeGapFinder,
   getPanchayatMonthlyReport,
   getPanchayatPmGatiShaktiOverlay,
+  flagPanchayatNeed,
+  runPanchayatSchemeGapFinder,
 } from '../../services/api';
+import { AppIcon } from '../../components/shared';
 import styles from './PanchayatInterface.module.css';
-
-const PANCHAYAT_ID = 'panchayat_demo_001';
-
-function pretty(value: unknown) {
-  return JSON.stringify(value, null, 2);
-}
 
 export function PanchayatInterface() {
   const [overview, setOverview] = useState<any>(null);
-  const [history, setHistory] = useState<any>(null);
-  const [schemeGap, setSchemeGap] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
   const [monthlyReport, setMonthlyReport] = useState<any>(null);
-  const [gatiOverlay, setGatiOverlay] = useState<any>(null);
-  const [needDesc, setNeedDesc] = useState('हमारे गांव के पूर्वी हिस्से में पेयजल की गंभीर कमी है।');
-  const [schemeInput, setSchemeInput] = useState(
-    'Recurring water scarcity and maternal health service gaps in two hamlets.'
-  );
+  const [gatiShakti, setGatiShakti] = useState<any>(null);
+  const [schemeGap, setSchemeGap] = useState<any>(null);
+
+  const [flagDesc, setFlagDesc] = useState('');
+  const [flagCat, setFlagCat] = useState('water_sanitation');
+  const [flagResult, setFlagResult] = useState<any>(null);
 
   useEffect(() => {
-    void loadData();
+    void loadAll();
   }, []);
 
-  async function loadData() {
-    const [ov, hs, mr, gt] = await Promise.all([
-      getPanchayatOverview(PANCHAYAT_ID),
-      getPanchayatHistory(PANCHAYAT_ID, 6),
-      getPanchayatMonthlyReport(PANCHAYAT_ID, 'March 2026'),
-      getPanchayatPmGatiShaktiOverlay(PANCHAYAT_ID),
+  async function loadAll() {
+    const [ovRes, histRes, mrRes, gsRes] = await Promise.all([
+      getPanchayatOverview('panchayat_001'),
+      getPanchayatHistory('panchayat_001'),
+      getPanchayatMonthlyReport('panchayat_001', '2025-03'),
+      getPanchayatPmGatiShaktiOverlay('panchayat_001'),
     ]);
-    if (ov.success) setOverview(ov.data);
-    if (hs.success) setHistory(hs.data);
-    if (mr.success) setMonthlyReport(mr.data);
-    if (gt.success) setGatiOverlay(gt.data);
+
+    if (ovRes.success) setOverview(ovRes.data);
+    if (histRes.success) setHistory(histRes.data?.events || []);
+    if (mrRes.success) setMonthlyReport(mrRes.data);
+    if (gsRes.success) setGatiShakti(gsRes.data);
   }
 
-  async function onFlagNeed() {
-    await flagPanchayatNeed({
-      panchayatId: PANCHAYAT_ID,
-      description: needDesc,
-      category: 'water_sanitation',
+  async function onFlag() {
+    if (!flagDesc.trim()) return;
+    const res = await flagPanchayatNeed({
+      panchayatId: 'panchayat_001',
+      description: flagDesc,
+      category: flagCat,
       urgency: 'high',
-      location: {
-        latitude: 28.58,
-        longitude: 77.31,
-        district: 'Demo District',
-        state: 'Uttar Pradesh',
-        address: 'Ward 3, East Hamlet',
-      },
+      location: { latitude: 28.6, longitude: 77.2, district: 'Delhi', state: 'Delhi' },
     });
-    await loadData();
+    setFlagResult(res.data || res.error);
+    setFlagDesc('');
   }
 
-  async function onRunSchemeGapFinder() {
-    const res = await runPanchayatSchemeGapFinder({
-      panchayatId: PANCHAYAT_ID,
-      needsSummary: schemeInput,
-      enrolledSchemes: ['PM Kisan', 'Jan Dhan'],
-    });
-    setSchemeGap(res.data || res.error);
+  async function onFindSchemeGap() {
+    const res = await runPanchayatSchemeGapFinder({ panchayatId: 'panchayat_001', needsSummary: 'current needs', enrolledSchemes: [] });
+    setSchemeGap(res.data);
   }
 
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>Panchayat Interface</h1>
-          <p className={styles.sub}>
-            Hindi-first civic coordination view for sarpanches and local officials with duplication checks and scheme-gap insights.
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.eyebrow}>Panchayat Coordination</div>
+          <h1 className={styles.heroTitle}>
+            Civic dashboard for village officials,<br />
+            scheme matching, and local history.
+          </h1>
+          <p className={styles.heroSub}>
+            Hindi-first civic coordination with scheme gap analysis and infrastructure overlay.
           </p>
-        </section>
-
-        <div className={styles.grid}>
-          <section className={`${styles.card} ${styles.span5}`}>
-            <h2>Direct Need Flagging (Verified Sarpanch)</h2>
-            <textarea className={styles.textarea} value={needDesc} onChange={(e) => setNeedDesc(e.target.value)} />
-            <button className="btn btn-primary" type="button" onClick={() => void onFlagNeed()}>
-              Flag Need on Map
-            </button>
-            <p>Write access should be verified-sarpanch only; others stay read-only by policy.</p>
-          </section>
-
-          <section className={`${styles.card} ${styles.span7}`}>
-            <h2>Jurisdiction Overview</h2>
-            <div className={styles.meta}>
-              <span className={styles.pill}>Active needs: {overview?.activeNeedsCount || 0}</span>
-              <span className={styles.pill}>Active NGOs: {(overview?.activeNgos || []).length}</span>
-            </div>
-            <div className={styles.list}>
-              {(overview?.activeNgos || []).slice(0, 6).map((ngo: any) => (
-                <div key={ngo.ngoId} className={styles.item}>
-                  <strong>{ngo.name}</strong>
-                  <div className={styles.meta}>
-                    <span>{ngo.activeCases} active cases</span>
-                    <span>{(ngo.categories || []).join(', ') || 'general'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Duplication Prevention + Need History</h2>
-            <div className={styles.output}>{pretty({
-              duplicateClusters: overview?.duplicateClusters || [],
-              recurringNeeds: overview?.recurringNeeds || [],
-              history: history?.history || [],
-            })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Government Scheme Gap Finder</h2>
-            <textarea className={styles.textarea} value={schemeInput} onChange={(e) => setSchemeInput(e.target.value)} />
-            <button className="btn btn-primary" type="button" onClick={() => void onRunSchemeGapFinder()}>
-              Run Gap Finder
-            </button>
-            <div className={styles.output}>{pretty(schemeGap || { info: 'Run analysis to view eligible but unenrolled groups' })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Monthly Village Health One-Pager</h2>
-            <div className={styles.output}>{pretty(monthlyReport || { info: 'Report unavailable' })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>PM GatiShakti Overlay (Infrastructure Signals)</h2>
-            <div className={styles.output}>{pretty(gatiOverlay || { info: 'Overlay unavailable' })}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span12}`}>
-            <h2>Design Principles Coverage</h2>
-            <div className={styles.row}>
-              <span className={styles.pill}>Hindi-first UI</span>
-              <span className={styles.pill}>SMS/WhatsApp-compatible workflows</span>
-              <span className={styles.pill}>No training required mobile patterns</span>
-              <span className={styles.pill}>Read-only by default (policy)</span>
-            </div>
-          </section>
         </div>
-      </div>
+      </section>
+
+      <section className={styles.grid}>
+        {/* Issue Flagging */}
+        <article className={`${styles.panel} ${styles.span5}`}>
+          <div className={styles.panelHeader}><AppIcon name="alert" size={15} /> Flag a need</div>
+          <div className={styles.panelBody}>
+            <select className={styles.select} value={flagCat} onChange={(e) => setFlagCat(e.target.value)}>
+               <option value="water_sanitation">Water</option>
+               <option value="health">Health</option>
+               <option value="shelter">Shelter</option>
+               <option value="food_nutrition">Food</option>
+               <option value="women_child">Women and child</option>
+               <option value="education">Education</option>
+            </select>
+            <textarea className={styles.textarea} placeholder="Describe the need..." value={flagDesc} onChange={(e) => setFlagDesc(e.target.value)} />
+            <button className={styles.btnPrimary} type="button" onClick={() => void onFlag()}>
+              <AppIcon name="check" size={14} /> Submit flag
+            </button>
+            {flagResult ? (
+              <div className={styles.storyBlock}>
+                <strong>Flag result</strong>
+                <p>{flagResult.reportId || flagResult.message || JSON.stringify(flagResult)}</p>
+              </div>
+            ) : null}
+          </div>
+        </article>
+
+        {/* Jurisdiction Overview */}
+        <article className={`${styles.panel} ${styles.span7}`}>
+          <div className={styles.panelHeader}><AppIcon name="civic" size={15} /> Jurisdiction overview</div>
+          <div className={styles.panelBody}>
+            {overview ? (
+              <>
+                <div className={styles.metricRow}>
+                  <div className={styles.metricTile}><span>Total needs</span><strong>{overview.totalNeeds || 0}</strong></div>
+                  <div className={styles.metricTile}><span>Resolved</span><strong>{overview.resolved || 0}</strong></div>
+                  <div className={styles.metricTile}><span>NGOs active</span><strong>{overview.coverageNgos?.length || 0}</strong></div>
+                </div>
+                {overview.coverageNgos?.slice(0, 3).map((ngo: any) => (
+                  <div key={ngo.ngoId || ngo.name} className={styles.itemCard}>
+                    <strong>{ngo.name}</strong>
+                    <div className={styles.itemMeta}><span>{(ngo.categories || []).join(', ') || 'general'}</span><span>{ngo.activeCases || 0} active cases</span></div>
+                  </div>
+                ))}
+              </>
+            ) : <p className={styles.notice}>Loading overview...</p>}
+          </div>
+        </article>
+
+        {/* Recurring Needs (History) */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}><AppIcon name="clock" size={15} /> Recurring needs</div>
+          <div className={styles.panelBody}>
+            {history.slice(0, 5).map((event: any, i: number) => (
+              <div key={i} className={styles.itemCard}>
+                 <strong>{event.title || event.category}</strong>
+                 <p>{event.summary || event.description}</p>
+                <div className={styles.itemMeta}><span>{event.date || event.month}</span></div>
+              </div>
+            ))}
+            {history.length === 0 ? <p className={styles.notice}>No history records.</p> : null}
+          </div>
+        </article>
+
+        {/* Scheme Gap Finder */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}><AppIcon name="spark" size={15} /> Scheme gap finder</div>
+          <div className={styles.panelBody}>
+            <button className={styles.btnGhost} type="button" onClick={() => void onFindSchemeGap()}>
+              <AppIcon name="spark" size={14} /> Run scheme analysis
+            </button>
+            {schemeGap ? (
+              <>
+                 <div className={styles.storyBlock}>
+                   <strong>Action plan</strong>
+                   <p>{schemeGap.actionPlanHindi || schemeGap.summary || schemeGap.analysis || 'Scheme analysis complete.'}</p>
+                 </div>
+                 {Array.isArray(schemeGap.eligibleSchemes) ? (
+                   <div className={styles.chipRow}>
+                     {schemeGap.eligibleSchemes.map((g: any) => <span key={g.scheme || g} className={styles.chip}>{g.scheme || g}</span>)}
+                   </div>
+                 ) : null}
+              </>
+            ) : <p className={styles.notice}>Run to discover unmatched government schemes.</p>}
+          </div>
+        </article>
+
+        {/* Monthly Report */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}><AppIcon name="dashboard" size={15} /> Monthly report</div>
+          <div className={styles.panelBody}>
+            {monthlyReport ? (
+              <div className={styles.storyBlock}>
+                <strong>{monthlyReport.month || 'Report'}</strong>
+                <p>{monthlyReport.summary || (Array.isArray(monthlyReport.highlights) ? monthlyReport.highlights.join(' · ') : 'No monthly summary available.')}</p>
+              </div>
+            ) : <p className={styles.notice}>Loading report...</p>}
+          </div>
+        </article>
+
+        {/* Infrastructure */}
+        <article className={`${styles.panel} ${styles.span6}`}>
+          <div className={styles.panelHeader}><AppIcon name="route" size={15} /> Infrastructure overlay</div>
+          <div className={styles.panelBody}>
+            {gatiShakti ? (
+              <div className={styles.storyBlock}>
+                <strong>Gati Shakti</strong>
+                <p>{gatiShakti.summary || (Array.isArray(gatiShakti.projects) ? gatiShakti.projects.map((item: any) => item.note || item.assetType).join(' · ') : 'Infrastructure overlay loaded.')}</p>
+              </div>
+            ) : <p className={styles.notice}>Loading Gati Shakti data...</p>}
+          </div>
+        </article>
+      </section>
     </div>
   );
 }

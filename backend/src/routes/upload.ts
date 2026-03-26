@@ -11,12 +11,20 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import fs from 'fs/promises';
 import { getStorage } from '../config/firebase';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
 import { analyzeImageWithGemini } from '../services/visionAnalysis';
 
 export const uploadRouter = Router();
+
+type StoredUpload = {
+  publicUrl: string;
+  storageMode: 'cloud' | 'local';
+  warning?: string;
+};
 
 // Configure multer for memory storage
 const upload = multer({
@@ -43,6 +51,50 @@ const upload = multer({
   },
 });
 
+async function persistUpload(req: Request, fileName: string, file: Express.Multer.File, uid: string): Promise<StoredUpload> {
+  try {
+    const bucket = getStorage().bucket();
+    const blob = bucket.file(fileName);
+
+    await blob.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+        metadata: {
+          uploadedBy: uid,
+          uploadedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    await blob.makePublic();
+
+    return {
+      publicUrl: `https://storage.googleapis.com/${bucket.name}/${fileName}`,
+      storageMode: 'cloud',
+    };
+  } catch (error) {
+    const uploadsRoot = path.join(process.cwd(), 'uploads');
+    const localPath = path.join(uploadsRoot, ...fileName.split('/'));
+
+    await fs.mkdir(path.dirname(localPath), { recursive: true });
+    await fs.writeFile(localPath, file.buffer);
+
+    return {
+      publicUrl: `${req.protocol}://${req.get('host')}/uploads/${fileName}`,
+      storageMode: 'local',
+      warning: `Cloud storage unavailable, saved locally instead: ${stringifyError(error)}`,
+    };
+  }
+}
+
+function stringifyError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
 // POST /api/upload/photo - Upload photo and get AI analysis
 uploadRouter.post('/photo', verifyToken, upload.single('photo'), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -55,24 +107,7 @@ uploadRouter.post('/photo', verifyToken, upload.single('photo'), async (req: Req
     const fileId = uuidv4();
     const extension = file.mimetype.split('/')[1];
     const fileName = `photos/${uid}/${fileId}.${extension}`;
-
-    // Upload to Cloud Storage
-    const bucket = getStorage().bucket();
-    const blob = bucket.file(fileName);
-    
-    await blob.save(file.buffer, {
-      metadata: {
-        contentType: file.mimetype,
-        metadata: {
-          uploadedBy: uid,
-          uploadedAt: new Date().toISOString(),
-        },
-      },
-    });
-
-    // Make publicly accessible (or use signed URLs for private)
-    await blob.makePublic();
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    const storedUpload = await persistUpload(req, fileName, file, uid);
 
     // Run Gemini Vision analysis
     let analysis = null;
@@ -85,9 +120,11 @@ uploadRouter.post('/photo', verifyToken, upload.single('photo'), async (req: Req
     res.json({
       success: true,
       data: {
-        url: publicUrl,
+        url: storedUpload.publicUrl,
         fileName,
         analysis,
+        storageMode: storedUpload.storageMode,
+        warning: storedUpload.warning,
       },
     });
   } catch (error) {
@@ -107,29 +144,15 @@ uploadRouter.post('/audio', verifyToken, upload.single('audio'), async (req: Req
     const fileId = uuidv4();
     const extension = file.mimetype.split('/')[1] || 'webm';
     const fileName = `audio/${uid}/${fileId}.${extension}`;
-
-    // Upload to Cloud Storage
-    const bucket = getStorage().bucket();
-    const blob = bucket.file(fileName);
-    
-    await blob.save(file.buffer, {
-      metadata: {
-        contentType: file.mimetype,
-        metadata: {
-          uploadedBy: uid,
-          uploadedAt: new Date().toISOString(),
-        },
-      },
-    });
-
-    await blob.makePublic();
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    const storedUpload = await persistUpload(req, fileName, file, uid);
 
     res.json({
       success: true,
       data: {
-        url: publicUrl,
+        url: storedUpload.publicUrl,
         fileName,
+        storageMode: storedUpload.storageMode,
+        warning: storedUpload.warning,
       },
     });
   } catch (error) {

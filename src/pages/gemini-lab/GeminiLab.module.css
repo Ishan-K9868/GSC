@@ -1,101 +1,115 @@
-.page {
-  min-height: 100vh;
-  padding: 6.3rem 1rem 2rem;
-  background:
-    radial-gradient(circle at 8% 7%, rgba(74, 142, 255, 0.14), transparent 34%),
-    radial-gradient(circle at 92% 0%, rgba(45, 157, 120, 0.1), transparent 35%),
-    linear-gradient(180deg, var(--bg), var(--bg-2));
-}
+/* ===================================
+   GeminiLab — AI Workbench
+   =================================== */
 
-.container {
-  max-width: 1240px;
-  margin: 0 auto;
+.page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.hero { padding: 0.75rem 0 0; }
+.heroContent { max-width: 42ch; }
+.eyebrow { font-family: 'General Sans', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+.heroTitle { font-family: 'Bricolage Grotesque', Georgia, serif; font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; color: var(--text); }
+.heroSub { margin-top: 0.5rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+
+/* ---- TOOL GRID ---- */
+.toolGrid {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
 }
 
-.hero {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
-  background: linear-gradient(155deg, rgba(74, 142, 255, 0.15), rgba(45, 157, 120, 0.08));
+.toolCard {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--internal-grain), var(--surface-glass);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
 }
 
-.title {
-  margin: 0;
-  font-family: 'Bricolage Grotesque', Georgia, serif;
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  line-height: 1.06;
+.toolCard:hover { border-color: var(--border-strong); }
+.toolCardWide { grid-column: span 2; }
+
+.toolHeader {
+  display: flex; align-items: flex-start; gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.sub {
-  margin-top: 0.35rem;
-  color: var(--text-muted);
+.toolIcon {
+  width: 2.2rem; height: 2.2rem; border-radius: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-light); color: var(--accent); flex-shrink: 0;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
+.toolHeader strong { font-size: 0.86rem; font-weight: 700; display: block; }
+.toolDesc { font-size: 0.74rem; color: var(--text-muted); line-height: 1.35; }
+
+.toolBody {
+  display: flex; gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.card {
-  border: 1px solid var(--border);
+.toolInput {
+  flex: 1; font-family: 'General Sans', sans-serif; font-size: 0.84rem;
+  color: var(--text); background: var(--surface-1);
+  border: 1.5px solid var(--glass-border); border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.toolInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+.runBtn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--accent); color: var(--text-inverse); border: none;
   border-radius: var(--radius-md);
-  background: var(--bg);
-  padding: 0.85rem;
-  display: grid;
-  gap: 0.6rem;
+  font-family: 'General Sans', sans-serif; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; flex-shrink: 0;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.runBtn:hover { transform: translateY(-1px); box-shadow: var(--shadow-accent); }
+
+.toolResult {
+  padding: 0.85rem 1rem;
+  min-height: 3rem;
 }
 
-.span6 { grid-column: span 6; }
-.span4 { grid-column: span 4; }
-.span8 { grid-column: span 8; }
-.span12 { grid-column: span 12; }
+/* ---- RESULT COMPONENTS ---- */
+.resultNotice { font-size: 0.82rem; color: var(--text-subtle); text-align: center; padding: 0.5rem 0; }
+.resultText { font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; }
+.resultBlock { display: flex; flex-direction: column; gap: 0.5rem; }
 
-.input,
-.textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-  color: var(--text);
-  padding: 0.55rem 0.65rem;
+.chipRow { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.chip { font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--glass-border); }
+
+.matchList { display: flex; flex-direction: column; gap: 0.35rem; }
+.matchCard {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--glass-border); border-radius: var(--radius-md);
+}
+.matchCard strong { font-size: 0.82rem; font-weight: 600; }
+.matchCard span { font-size: 0.72rem; color: var(--text-subtle); font-variant-numeric: tabular-nums; }
+
+.inlineMetric {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 0.65rem; border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+}
+.inlineMetric span { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+.inlineMetric strong { font-family: 'Bricolage Grotesque', Georgia, serif; font-size: 1.1rem; font-weight: 800; }
+
+.jsonBlock {
+  font-size: 0.72rem; font-family: 'JetBrains Mono', monospace;
+  background: var(--surface-1); padding: 0.65rem;
+  border-radius: var(--radius-md); overflow-x: auto;
+  color: var(--text-muted); line-height: 1.5;
+  max-height: 12rem;
 }
 
-.textarea {
-  min-height: 90px;
-  resize: vertical;
-}
-
-.row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.output {
-  border: 1px dashed var(--border-strong);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-2) 58%, transparent);
-  padding: 0.65rem;
-  white-space: pre-wrap;
-  font-size: 0.86rem;
-}
-
-.pill {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.72rem;
-}
-
-@media (max-width: 1080px) {
-  .span4,
-  .span6,
-  .span8 {
-    grid-column: span 12;
-  }
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .toolGrid { grid-template-columns: 1fr; }
+  .toolCardWide { grid-column: span 1; }
 }

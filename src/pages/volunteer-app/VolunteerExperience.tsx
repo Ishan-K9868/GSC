@@ -1,301 +1,298 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   getVolunteerProfile,
-  runVolunteerSkillAssessment,
-  updateVolunteerPreferences,
   getVolunteerTasks,
   acceptVolunteerTask,
-  getVolunteerTaskChat,
-  sendVolunteerTaskMessage,
   completeVolunteerTask,
+  getVolunteerTaskChat,
   getVolunteerGamification,
 } from '../../services/api';
+import { AppIcon } from '../../components/shared';
 import styles from './VolunteerExperience.module.css';
 
-type Tab = 'onboarding' | 'tasks' | 'chat' | 'rewards';
+type Tab = 'today' | 'missions' | 'chat' | 'rewards';
 
-const DEMO_VOLUNTEER_ID = 'vol_user_1';
+const DEMO_VOLUNTEER_ID = 'dev-user-001';
 
 export function VolunteerExperience() {
-  const [tab, setTab] = useState<Tab>('onboarding');
+  const [tab, setTab] = useState<Tab>('today');
   const [profile, setProfile] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [gamification, setGamification] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState('');
-  const [assessmentAnswer, setAssessmentAnswer] = useState('I have first aid training and experience in flood response and child safety drives.');
-  const [chatInput, setChatInput] = useState('');
-  const [voiceDebrief, setVoiceDebrief] = useState('Delivered support and verified beneficiary handover.');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    void bootstrap();
+    void loadAll();
   }, []);
 
   const selectedTask = useMemo(
-    () => tasks.find((task) => task.id === selectedTaskId) || tasks[0],
+    () => tasks.find((task) => task.taskId === selectedTaskId) || tasks[0] || null,
     [tasks, selectedTaskId]
   );
 
-  async function bootstrap() {
-    setLoading(true);
+  useEffect(() => {
+    if (selectedTask?.taskId) {
+      void loadChat(selectedTask.taskId);
+    } else {
+      setChatMessages([]);
+    }
+  }, [selectedTask?.taskId]);
 
-    const [profileRes, taskRes, gameRes] = await Promise.all([
+  async function loadAll() {
+    setLoading(true);
+    const [profileRes, tasksRes, gamRes] = await Promise.all([
       getVolunteerProfile(DEMO_VOLUNTEER_ID),
       getVolunteerTasks(DEMO_VOLUNTEER_ID),
       getVolunteerGamification(DEMO_VOLUNTEER_ID),
     ]);
 
-    if (profileRes.success) setProfile(profileRes.data?.profile || null);
-    if (taskRes.success) {
-      const list = taskRes.data?.tasks || [];
-      setTasks(list);
-      if (list[0]) {
-        setSelectedTaskId(list[0].id);
-        await loadChat(list[0].id);
-      }
+    if (profileRes.success) setProfile(profileRes.data);
+    if (tasksRes.success) {
+      const nextTasks = tasksRes.data?.tasks || [];
+      setTasks(nextTasks);
+      setSelectedTaskId((current) => current || nextTasks[0]?.taskId || '');
     }
-    if (gameRes.success) setGamification(gameRes.data || null);
-
+    if (gamRes.success) setGamification(gamRes.data);
     setLoading(false);
   }
 
   async function loadChat(taskId: string) {
-    const res = await getVolunteerTaskChat(taskId);
-    if (res.success) setChatMessages(res.data?.messages || []);
-  }
-
-  async function onRunAssessment() {
-    await runVolunteerSkillAssessment(DEMO_VOLUNTEER_ID, [assessmentAnswer]);
-    await bootstrap();
-  }
-
-  async function onSavePreferences() {
-    await updateVolunteerPreferences({
-      volunteerId: DEMO_VOLUNTEER_ID,
-      sdgInterests: ['SDG 2', 'SDG 3', 'SDG 6'],
-      weeklyHourLimit: 10,
-      availabilityCalendar: [
-        { day: 'Mon', isAvailable: true, slots: ['19:00-21:00'] },
-        { day: 'Tue', isAvailable: false, slots: [] },
-        { day: 'Wed', isAvailable: true, slots: ['19:00-21:00'] },
-        { day: 'Thu', isAvailable: true, slots: ['19:00-21:00'] },
-        { day: 'Fri', isAvailable: false, slots: [] },
-      ],
-    });
-    await bootstrap();
+    const chatRes = await getVolunteerTaskChat(taskId);
+    if (chatRes.success) {
+      setChatMessages(chatRes.data?.messages || []);
+    }
   }
 
   async function onAcceptTask(taskId: string) {
     await acceptVolunteerTask(taskId, DEMO_VOLUNTEER_ID);
-    await bootstrap();
+    void loadAll();
   }
 
-  async function onSendMessage() {
-    if (!selectedTask || !chatInput.trim()) return;
-    await sendVolunteerTaskMessage(selectedTask.id, {
-      senderType: 'volunteer',
-      senderId: DEMO_VOLUNTEER_ID,
-      message: chatInput,
-    });
-    setChatInput('');
-    await loadChat(selectedTask.id);
+  async function onCompleteTask(taskId: string) {
+    await completeVolunteerTask({ taskId, volunteerId: DEMO_VOLUNTEER_ID, photoEvidenceUrls: [], voiceDebriefText: 'Mission completed and beneficiary handoff verified.' });
+    void loadAll();
   }
 
-  async function onCompleteTask() {
-    if (!selectedTask) return;
-    await completeVolunteerTask({
-      taskId: selectedTask.id,
-      volunteerId: DEMO_VOLUNTEER_ID,
-      photoEvidenceUrls: ['https://example.com/proof-1.jpg'],
-      voiceDebriefText: voiceDebrief,
-      beneficiaryRating: 5,
-    });
-    await bootstrap();
-  }
+  const tabs: { id: Tab; label: string; icon: any }[] = [
+    { id: 'today', label: 'Today', icon: 'dashboard' },
+    { id: 'missions', label: 'Missions', icon: 'dispatch' },
+    { id: 'chat', label: 'Chat', icon: 'network' },
+    { id: 'rewards', label: 'Rewards', icon: 'spark' },
+  ];
+
+  const activeTasks = tasks.filter((t) => t.status === 'accepted' || t.status === 'in_progress');
+  const pendingTasks = tasks.filter((t) => t.status === 'pending');
 
   return (
     <div className={styles.page}>
-      <div className={styles.phoneShell}>
-        <div className={styles.top}>
-          <h1 className={styles.title}>Volunteer Experience App</h1>
-          <p className={styles.sub}>Mobile-first mission flow: onboard, act, report, and grow.</p>
-          <div className={styles.tabs}>
-            {(['onboarding', 'tasks', 'chat', 'rewards'] as Tab[]).map((item) => (
-              <button
-                type="button"
-                key={item}
-                className={`${styles.tab} ${tab === item ? styles.tabActive : ''}`}
-                onClick={() => setTab(item)}
-              >
-                {item}
-              </button>
-            ))}
+      {/* Hero */}
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.eyebrow}>Volunteer Mission</div>
+          <h1 className={styles.heroTitle}>
+            {profile ? `Welcome back, ${profile.name}` : 'Volunteer Workspace'}
+          </h1>
+          <p className={styles.heroSub}>
+            Tasks, coordination chat, and your growing impact — all in one surface.
+          </p>
+        </div>
+      </section>
+
+      {/* Tab Rail */}
+      <nav className={styles.tabRail}>
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`${styles.tabBtn} ${tab === t.id ? styles.tabBtnActive : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            <AppIcon name={t.icon} size={15} />
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {loading ? <div className={styles.notice}>Loading volunteer data...</div> : null}
+
+      <div className={styles.workspace}>
+        {/* Profile Sidebar */}
+        <aside className={styles.sidebar}>
+          {profile ? (
+            <div className={styles.profileCard}>
+              <div className={styles.profileHeader}>
+                <div className={styles.avatar}>{profile.name?.charAt(0) || 'V'}</div>
+                <div>
+                  <strong>{profile.name}</strong>
+                  <span className={styles.profileMeta}>{profile.zone || 'Delhi NCR'}</span>
+                </div>
+              </div>
+              <div className={styles.profileStats}>
+                <div><span>Reliability</span><strong>{Math.round((profile.reliabilityScore || 0) * 100)}%</strong></div>
+                <div><span>Active tasks</span><strong>{activeTasks.length}</strong></div>
+              </div>
+            </div>
+          ) : null}
+
+          {profile?.skills ? (
+            <div className={styles.sideCard}>
+              <div className={styles.sideCardHeader}>Skills</div>
+              <div className={styles.skillsList}>
+                {(profile.skills || []).slice(0, 6).map((skill: any) => (
+                  <span key={skill.name || skill} className={styles.skillChip}>
+                    {typeof skill === 'string' ? skill : skill.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className={styles.sideCard}>
+            <div className={styles.sideCardHeader}>Preferences</div>
+            <div className={styles.kvList}>
+              <div className={styles.kvRow}><span>Max distance</span><strong>10 km</strong></div>
+              <div className={styles.kvRow}><span>Time slot</span><strong>Morning</strong></div>
+            </div>
           </div>
-        </div>
+        </aside>
 
-        <div className={styles.section}>
-          {loading ? <div className={styles.card}>Loading volunteer app...</div> : null}
-
-          {tab === 'onboarding' && (
-            <>
-              <div className={styles.card}>
-                <strong>Profile Card</strong>
-                <div className={styles.meta}>
-                  <span className={styles.pill}>{profile?.displayName || 'Volunteer'}</span>
-                  <span className={styles.pill}>ID verification: {profile?.identityVerificationStatus || 'not_provided'}</span>
-                </div>
-                <p className={styles.small}>Skills: {(profile?.skills || []).join(', ') || 'None yet'}</p>
-                <p className={styles.small}>Languages: {(profile?.languages || []).join(', ')}</p>
-                <p className={styles.small}>Interests: {(profile?.sdgInterests || []).join(', ')}</p>
+        {/* Main Content */}
+        <main className={styles.mainContent}>
+          {/* Today Tab */}
+          {tab === 'today' && (
+            <section className={styles.tabContent}>
+              <div className={styles.panelHeader}>
+                <AppIcon name="dashboard" size={15} /> Today's briefing
               </div>
 
-              <div className={styles.card}>
-                <strong>5-Min Skill Assessment</strong>
-                <textarea
-                  className={styles.textarea}
-                  value={assessmentAnswer}
-                  onChange={(e) => setAssessmentAnswer(e.target.value)}
-                />
-                <div className={styles.row}>
-                  <button className="btn btn-primary" type="button" onClick={() => void onRunAssessment()}>
-                    Run Assessment
-                  </button>
-                  <button className="btn btn-ghost" type="button" onClick={() => void onSavePreferences()}>
-                    Save Interests + Availability
-                  </button>
+              <div className={styles.briefing}>
+                <div className={styles.briefingMetrics}>
+                  <article className={styles.metricTile}><span>Active</span><strong>{activeTasks.length}</strong></article>
+                  <article className={styles.metricTile}><span>Pending</span><strong>{pendingTasks.length}</strong></article>
+                  <article className={styles.metricTile}><span>Points</span><strong>{gamification?.totalPoints || 0}</strong></article>
                 </div>
-              </div>
-            </>
-          )}
-
-          {tab === 'tasks' && (
-            <>
-              <div className={styles.card}>
-                <strong>Task Feed</strong>
-                <div className={styles.list}>
-                  {tasks.slice(0, 5).map((task) => (
-                    <div key={task.id} className={styles.card}>
-                      <strong>{task.title}</strong>
-                      <p className={styles.small}>{task.summary}</p>
-                      <div className={styles.meta}>
-                        <span className={styles.pill}>{task.distanceKm} km</span>
-                        <span className={styles.pill}>{task.estimatedTimeMinutes} min</span>
-                        <span className={styles.pill}>x{task.urgencyMultiplier} points</span>
-                        <span className={styles.pill}>{task.state}</span>
-                      </div>
-                      <p className={styles.small}>Skills: {(task.requiredSkills || []).join(', ')}</p>
-                      <p className={styles.small}>Bring: {(task.whatToBring || []).join(', ')}</p>
-                      <div className={styles.row}>
-                        <a className="btn btn-ghost" href={task.navigationLink} target="_blank" rel="noreferrer">
-                          Navigate
-                        </a>
-                        <button className="btn btn-primary" type="button" onClick={() => void onAcceptTask(task.id)}>
-                          Accept Task
-                        </button>
-                        <button
-                          className="btn btn-ghost"
-                          type="button"
-                          onClick={() => {
-                            setSelectedTaskId(task.id);
-                            setTab('chat');
-                            void loadChat(task.id);
-                          }}
-                        >
-                          Open Task
-                        </button>
-                      </div>
+                {activeTasks.slice(0, 3).map((task) => (
+                  <div key={task.taskId} className={styles.taskCard}>
+                    <div className={styles.taskTop}>
+                      <strong>{task.category?.replace(/_/g, ' ') || 'Task'}</strong>
+                      <span className={styles.badge}>{task.urgency || task.status}</span>
                     </div>
-                  ))}
-                </div>
+                     <p>{task.description || task.location?.address || task.title || 'Field task assigned'}</p>
+                    <div className={styles.taskActions}>
+                      <button className={styles.btnSmall} type="button" onClick={() => void onCompleteTask(task.taskId)}>
+                        <AppIcon name="check" size={13} /> Complete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </>
+            </section>
           )}
 
+          {/* Missions Tab */}
+          {tab === 'missions' && (
+            <section className={styles.tabContent}>
+              <div className={styles.panelHeader}>
+                <AppIcon name="dispatch" size={15} /> All missions
+              </div>
+              <div className={styles.missionList}>
+                 {tasks.map((task) => (
+                   <div key={task.taskId} className={styles.taskCard}>
+                     <div className={styles.taskTop}>
+                       <strong>{task.category?.replace(/_/g, ' ') || 'Task'}</strong>
+                       <span className={styles.badge} data-status={task.status}>{task.status}</span>
+                     </div>
+                     <p>{task.description || task.location?.address || task.title || 'No details'}</p>
+                     <div className={styles.taskMeta}>
+                       <span>{task.distance ? `${task.distance}km` : ''}</span>
+                       <span>{task.eta || ''}</span>
+                     </div>
+                     <div className={styles.taskActions}>
+                       <button className={styles.btnSmall} type="button" onClick={() => { setSelectedTaskId(task.taskId); setTab('chat'); }}>
+                         Open chat
+                       </button>
+                       {task.status === 'pending' ? (
+                         <button className={styles.btnSmall} type="button" onClick={() => void onAcceptTask(task.taskId)}>
+                           Accept
+                        </button>
+                      ) : null}
+                      {task.status === 'accepted' || task.status === 'in_progress' ? (
+                        <button className={styles.btnSmall} type="button" onClick={() => void onCompleteTask(task.taskId)}>
+                          <AppIcon name="check" size={13} /> Complete
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+                {tasks.length === 0 ? <p className={styles.notice}>No missions available right now.</p> : null}
+              </div>
+            </section>
+          )}
+
+          {/* Chat Tab */}
           {tab === 'chat' && (
-            <>
-              <div className={styles.card}>
-                <strong>Coordinator Chat</strong>
-                <p className={styles.small}>Real-time support while in task.</p>
-                <div className={styles.chat}>
-                  {chatMessages.map((msg) => (
-                    <div key={msg.id} className={styles.bubble}>
-                      <strong>{msg.senderType}</strong>: {msg.message}
-                    </div>
-                  ))}
-                  {chatMessages.length === 0 ? <div className={styles.small}>No chat messages yet.</div> : null}
-                </div>
-                <div className={styles.row}>
-                  <input
-                    className={styles.input}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Message coordinator"
-                  />
-                  <button className="btn btn-primary" type="button" onClick={() => void onSendMessage()}>
-                    Send
-                  </button>
-                </div>
+            <section className={styles.tabContent}>
+              <div className={styles.panelHeader}>
+                <AppIcon name="network" size={15} /> Coordination chat
               </div>
-
-              <div className={styles.card}>
-                <strong>Completion Evidence</strong>
-                <p className={styles.small}>Capture photo evidence and 30-second voice debrief.</p>
-                <textarea
-                  className={styles.textarea}
-                  value={voiceDebrief}
-                  onChange={(e) => setVoiceDebrief(e.target.value)}
-                />
-                <button className="btn btn-primary" type="button" onClick={() => void onCompleteTask()}>
-                  Complete Task
-                </button>
+              <div className={styles.chatArea}>
+                {selectedTask ? (
+                  <div className={styles.chatTaskHeader}>
+                    <strong>{selectedTask.title}</strong>
+                    <span>{selectedTask.taskId}</span>
+                  </div>
+                ) : null}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`${styles.chatBubble} ${msg.sender === 'volunteer' ? styles.chatSent : styles.chatReceived}`}>
+                    <strong>{msg.sender}</strong>
+                    <p>{msg.text || msg.content}</p>
+                    <span className={styles.chatTime}>{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</span>
+                  </div>
+                ))}
+                {chatMessages.length === 0 ? <p className={styles.notice}>No messages yet.</p> : null}
               </div>
-            </>
+            </section>
           )}
 
+          {/* Rewards Tab */}
           {tab === 'rewards' && (
-            <>
-              <div className={styles.card}>
-                <strong>Seva Points & Milestones</strong>
-                <div className={styles.meta}>
-                  <span className={styles.pill}>{gamification?.sevaPoints || 0} points</span>
-                  <span className={styles.pill}>{gamification?.tasksCompleted || 0} tasks</span>
-                  <span className={styles.pill}>{gamification?.beneficiariesImpacted || 0} impacted</span>
+            <section className={styles.tabContent}>
+              <div className={styles.panelHeader}>
+                <AppIcon name="spark" size={15} /> Rewards + progress
+              </div>
+              <div className={styles.rewardsGrid}>
+                <article className={styles.rewardCard}>
+                  <span>Total points</span>
+                  <strong>{gamification?.totalPoints || 0}</strong>
+                </article>
+                <article className={styles.rewardCard}>
+                  <span>Current streak</span>
+                  <strong>{gamification?.streak || 0} days</strong>
+                </article>
+                <article className={styles.rewardCard}>
+                  <span>Level</span>
+                  <strong>{gamification?.level || 1}</strong>
+                </article>
+                <article className={styles.rewardCard}>
+                  <span>Missions done</span>
+                  <strong>{gamification?.completedMissions || 0}</strong>
+                </article>
+              </div>
+              {gamification?.badges?.length > 0 ? (
+                <div className={styles.badgeList}>
+                  <div className={styles.sideCardHeader}>Earned badges</div>
+                  <div className={styles.chipRow}>
+                    {gamification.badges.map((b: any) => (
+                      <span key={b.id || b.name} className={styles.skillChip}>{b.name || b}</span>
+                    ))}
+                  </div>
                 </div>
-                <p className={styles.small}>{gamification?.impactMilestone || 'Start a task to unlock milestones.'}</p>
-              </div>
-
-              <div className={styles.card}>
-                <strong>Skill Badges</strong>
-                <div className={styles.row}>
-                  {(gamification?.badges || []).map((badge: string) => (
-                    <span key={badge} className={styles.btnMini}>{badge}</span>
-                  ))}
-                  {(gamification?.badges || []).length === 0 ? <span className={styles.small}>No badges yet.</span> : null}
-                </div>
-              </div>
-
-              <div className={styles.card}>
-                <strong>Squad Mode + Corporate League</strong>
-                <p className={styles.small}>Squad: {gamification?.squad?.name || 'N/A'} · Rank {gamification?.squad?.rank || '-'}</p>
-                <div className={styles.list}>
-                  {(gamification?.corporateLeague?.companyLeaderboard || []).map((row: any) => (
-                    <div key={row.company} className={styles.meta}>
-                      <span className={styles.pill}>{row.company}</span>
-                      <span>{row.points} pts</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={`${styles.card} ${styles.passport}`}>
-                <strong>Seva Passport</strong>
-                <p className={styles.small}>Credential: {gamification?.sevaPassport?.credentialId || 'N/A'}</p>
-                <p className={styles.small}>{gamification?.sevaPassport?.shareText || 'Complete tasks to build your passport.'}</p>
-              </div>
-            </>
+              ) : null}
+            </section>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );

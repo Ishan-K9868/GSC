@@ -3,44 +3,21 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../context/ThemeContext';
 import { WaitlistModal } from '../shared';
+import { marketingNavItems } from '../../config/appNavigation';
 import styles from './Navbar.module.css';
 
 // Motion configs from foundation
 const springSnap = { type: 'spring', stiffness: 400, damping: 30 } as const;
 const springWarm = { type: 'spring', stiffness: 220, damping: 16 } as const;
 
-interface NavLink {
-  label: string;
-  sectionId?: string; // For anchor links
-  path?: string; // For route links
-  type: 'section' | 'route';
-}
-
-const navLinks: NavLink[] = [
-  { label: 'How It Works', sectionId: 'three-pillars', type: 'section' },
-  { label: 'The Map', path: '/pulse-map', type: 'route' },
-  { label: 'Report a Need', path: '/intake', type: 'route' },
-  { label: 'SEVA Agent', path: '/seva-agent', type: 'route' },
-  { label: 'NGO Dashboard', path: '/ngo-dashboard', type: 'route' },
-  { label: 'Volunteer App', path: '/volunteer-app', type: 'route' },
-  { label: 'Gemini Lab', path: '/gemini-lab', type: 'route' },
-  { label: 'CSR Portal', path: '/csr-portal', type: 'route' },
-  { label: 'Panchayat', path: '/panchayat', type: 'route' },
-  { label: 'Crisis Mode', path: '/crisis-mode', type: 'route' },
-  { label: 'For NGOs', sectionId: 'intake-demo', type: 'section' },
-];
-
 function Navbar() {
   const { theme, toggle } = useTheme();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
-
-  const isLandingPage = location.pathname === '/';
 
   // Scroll detection
   useEffect(() => {
@@ -48,38 +25,6 @@ function Navbar() {
     window.addEventListener('scroll', handler, { passive: true });
     return () => window.removeEventListener('scroll', handler);
   }, []);
-
-  // Active section detection (only on landing page)
-  useEffect(() => {
-    if (!isLandingPage) return;
-
-    const observers: IntersectionObserver[] = [];
-
-    navLinks.forEach(({ sectionId, type }) => {
-      if (type !== 'section' || !sectionId) return;
-
-      const element = document.getElementById(sectionId);
-      if (!element) return;
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setActiveSection(sectionId);
-            }
-          });
-        },
-        { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
-      );
-
-      observer.observe(element);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, [isLandingPage]);
 
   // Mobile menu focus trap and escape key
   useEffect(() => {
@@ -131,11 +76,7 @@ function Navbar() {
     };
   }, [mobileMenuOpen]);
 
-  const scrollToSection = useCallback((sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+  const closeMenu = useCallback(() => {
     setMobileMenuOpen(false);
   }, []);
 
@@ -178,36 +119,16 @@ function Navbar() {
 
         {/* Center Navigation Links */}
         <div className={styles.navLinks}>
-          {navLinks.map(({ label, sectionId, path, type }, index) => {
-            if (type === 'route' && path) {
-              return (
-                <Link
-                  key={index}
-                  to={path}
-                  className={`${styles.navLink} ${location.pathname === path ? styles.active : ''}`}
-                  aria-label={`Go to ${label}`}
-                >
-                  {label}
-                </Link>
-              );
-            } else if (type === 'section' && sectionId) {
-              return (
-                <a
-                  key={sectionId}
-                  href={`#${sectionId}`}
-                  className={`${styles.navLink} ${activeSection === sectionId ? styles.active : ''}`}
-                  aria-label={`Go to ${label} section`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(sectionId);
-                  }}
-                >
-                  {label}
-                </a>
-              );
-            }
-            return null;
-          })}
+          {marketingNavItems.map(({ label, path }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`${styles.navLink} ${location.pathname === path ? styles.active : ''}`}
+              aria-label={`Go to ${label}`}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
 
         {/* Right Action Group */}
@@ -270,14 +191,13 @@ function Navbar() {
           >
             Join Waitlist
           </button>
-          <button
-            type="button"
-            className={`btn btn-primary ${styles.desktopOnly}`}
-            onClick={() => scrollToSection('intake-demo')}
-            aria-label="Go to NGO intake section"
+          <Link
+            to="/for-ngos"
+            className={`btn btn-primary ${styles.desktopOnly} ${styles.ctaLink}`}
+            aria-label="Open the NGO onboarding workspace"
           >
             For NGOs
-          </button>
+          </Link>
 
           {/* Mobile Hamburger */}
           <button
@@ -331,53 +251,25 @@ function Navbar() {
             transition={{ duration: 0.5, ease: [0.76, 0, 0.24, 1] }}
           >
             <div className={styles.mobileOverlayContent}>
-              {navLinks.map(({ label, sectionId, path, type }, index) => {
-                const key = sectionId || path || `link-${index}`;
-                
-                if (type === 'route' && path) {
-                  return (
-                    <motion.div key={key}>
-                      <Link
-                        to={path}
-                        className={styles.mobileLink}
-                        aria-label={`Go to ${label}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {label}
-                      </Link>
-                    </motion.div>
-                  );
-                } else if (type === 'section' && sectionId) {
-                  return (
-                    <motion.a
-                      key={key}
-                      href={`#${sectionId}`}
-                      className={styles.mobileLink}
-                      aria-label={`Go to ${label} section`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        scrollToSection(sectionId);
-                      }}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        ...springWarm,
-                        delay: 0.2 + index * 0.1,
-                      }}
-                    >
-                      {label}
-                    </motion.a>
-                  );
-                }
-                return null;
-              })}
+              {[...marketingNavItems, { label: 'For NGOs', path: '/for-ngos' }].map(({ label, path }) => (
+                <motion.div key={path}>
+                  <Link
+                    to={path}
+                    className={styles.mobileLink}
+                    aria-label={`Go to ${label}`}
+                    onClick={closeMenu}
+                  >
+                    {label}
+                  </Link>
+                </motion.div>
+              ))}
               <motion.div
                 className={styles.mobileActions}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   ...springWarm,
-                  delay: 0.2 + navLinks.length * 0.1,
+                  delay: 0.2 + marketingNavItems.length * 0.1,
                 }}
               >
                 <button
@@ -391,14 +283,14 @@ function Navbar() {
                 >
                   Join Waitlist
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => scrollToSection('intake-demo')}
-                  aria-label="Go to NGO intake section"
+                <Link
+                  to="/for-ngos"
+                  className={`btn btn-primary ${styles.ctaLink}`}
+                  onClick={closeMenu}
+                  aria-label="Open the NGO onboarding workspace"
                 >
                   For NGOs
-                </button>
+                </Link>
               </motion.div>
             </div>
           </motion.div>

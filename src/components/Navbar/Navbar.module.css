@@ -66,7 +66,7 @@
 /* Navigation Links */
 .navLinks {
   display: flex;
-  gap: 2rem;
+  gap: 1.35rem;
 }
 
 @media (max-width: 900px) {
@@ -102,6 +102,11 @@
 
 .desktopOnly {
   display: inline-flex;
+}
+
+.ctaLink {
+  text-decoration: none;
+  color: inherit;
 }
 
 @media (max-width: 900px) {

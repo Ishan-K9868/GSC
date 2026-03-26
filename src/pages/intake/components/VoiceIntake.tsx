@@ -13,6 +13,8 @@ import { useGeolocation } from '../../../hooks/useGeolocation';
 import { submitReport, classifyVoice, uploadAudio } from '../../../services/api';
 import { IntakeSource, SupportedLanguages, CategoryMetadata } from '../../../types';
 import type { Location, NeedCategoryType } from '../../../types';
+import { AppIcon } from '../../../components/shared';
+import { getCategoryIcon } from '../../../utils/categoryIcons';
 import styles from './VoiceIntake.module.css';
 
 interface VoiceIntakeProps {
@@ -71,18 +73,19 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
   // Handle recording stop (release button)
   const handleRecordStop = async () => {
     if (step !== 'recording') return;
-    
-    stopRecording();
+
     setStep('processing');
 
-    // Wait for audio blob to be available
-    setTimeout(() => processRecording(), 500);
+    const recordedBlob = await stopRecording();
+    await processRecording(recordedBlob);
   };
 
   // Process the recording
-  const processRecording = async () => {
+  const processRecording = async (recordedBlob?: Blob | null) => {
     try {
-      if (!audioBlob) {
+      const finalAudioBlob = recordedBlob ?? audioBlob;
+
+      if (!finalAudioBlob) {
         throw new Error('No audio recorded');
       }
 
@@ -210,11 +213,11 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
 
       {/* Location status */}
       <div className={styles.locationStatus}>
-        {locationLoading && <span className={styles.loading}>📍 Getting location...</span>}
-        {locationError && <span className={styles.error}>⚠️ {locationError}</span>}
+        {locationLoading && <span className={styles.loading}>Getting location...</span>}
+        {locationError && <span className={styles.error}>{locationError}</span>}
         {location && (
           <span className={styles.success}>
-            📍 {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
+            {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
           </span>
         )}
       </div>
@@ -291,7 +294,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
           <div className={styles.confirmState}>
             {categoryMeta && (
               <div className={styles.categoryBadge}>
-                <span className={styles.emoji}>{categoryMeta.emoji}</span>
+                <span className={styles.iconBadge}><AppIcon name={getCategoryIcon(classification?.category)} size={18} /></span>
                 <span className={styles.categoryLabel}>
                   {categoryMeta.labelHi} / {categoryMeta.label}
                 </span>
@@ -336,7 +339,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
         {/* Success state */}
         {step === 'success' && (
           <div className={styles.successState}>
-            <div className={styles.successIcon}>✓</div>
+            <div className={styles.successIcon}><AppIcon name="check" size={28} /></div>
             <p className={styles.successMessage}>
               रिपोर्ट सफलतापूर्वक जमा की गई!<br />
               <span className={styles.successEn}>Report submitted successfully!</span>
@@ -353,7 +356,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
         {/* Error state */}
         {step === 'error' && (
           <div className={styles.errorState}>
-            <div className={styles.errorIcon}>✕</div>
+            <div className={styles.errorIcon}><AppIcon name="alert" size={22} /></div>
             <p className={styles.errorMessage}>{errorMessage || recordingError}</p>
             <button className={styles.retryButton} onClick={handleCancel}>
               पुनः प्रयास करें / Try Again

@@ -148,12 +148,18 @@ export async function getVolunteerTaskFeed(volunteerId: string) {
 
   const reportsSnapshot = await db
     .collection('needReports')
-    .where('status', 'in', [ReportStatus.DISPATCHED, ReportStatus.IN_PROGRESS, ReportStatus.CLASSIFIED])
     .orderBy('createdAt', 'desc')
-    .limit(50)
+    .limit(100)
     .get();
 
-  const reports = reportsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport));
+  const reports = reportsSnapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport))
+    .filter(
+      (report) =>
+        report.status === ReportStatus.DISPATCHED ||
+        report.status === ReportStatus.IN_PROGRESS ||
+        report.status === ReportStatus.CLASSIFIED
+    );
   const tasks = reports.map((report) => buildTaskCard(report, volunteer));
 
   return tasks;
@@ -161,6 +167,7 @@ export async function getVolunteerTaskFeed(volunteerId: string) {
 
 export async function acceptVolunteerTask(taskId: string, volunteerId: string) {
   const db = getFirestore();
+  await ensureVolunteerRecord(volunteerId);
   const reportRef = db.collection('needReports').doc(taskId);
   const reportDoc = await reportRef.get();
 
@@ -207,12 +214,15 @@ export async function sendTaskChatMessage(input: {
 
 export async function getTaskChat(taskId: string) {
   const db = getFirestore();
-  const snapshot = await db.collection('taskChats').where('taskId', '==', taskId).orderBy('createdAt', 'asc').limit(200).get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const snapshot = await db.collection('taskChats').where('taskId', '==', taskId).limit(200).get();
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a: any, b: any) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
 }
 
 export async function completeVolunteerTask(input: VolunteerCompletionPayload) {
   const db = getFirestore();
+  await ensureVolunteerRecord(input.volunteerId);
   const reportRef = db.collection('needReports').doc(input.taskId);
   const reportDoc = await reportRef.get();
   if (!reportDoc.exists) {
@@ -360,6 +370,55 @@ function normalizeStringArray(value: unknown, fallback: string[]): string[] {
   return items.length > 0 ? Array.from(new Set(items)) : fallback;
 }
 
+async function ensureVolunteerRecord(volunteerId: string) {
+  const db = getFirestore();
+  const volunteerRef = db.collection('volunteers').doc(volunteerId);
+  const volunteerDoc = await volunteerRef.get();
+
+  if (volunteerDoc.exists) {
+    return { id: volunteerDoc.id, ...volunteerDoc.data() } as Volunteer;
+  }
+
+  const profile = await getOrCreateVolunteerProfile(volunteerId);
+  const now = new Date().toISOString();
+  const volunteer: Volunteer = {
+    id: volunteerId,
+    userId: volunteerId,
+    name: profile.displayName,
+    phoneNumber: '+919999999999',
+    preferredLanguage: profile.languages[0] || 'hi',
+    isActive: true,
+    location: {
+      latitude: 28.6139,
+      longitude: 77.209,
+      district: 'New Delhi',
+      state: 'Delhi',
+      updatedAt: now,
+    },
+    skills: profile.skills,
+    categories: [],
+    certifications: profile.verifiedCertifications,
+    availability: VolunteerAvailability.FREE,
+    maxServiceableDistanceKm: 25,
+    supportsUnderservedZones: false,
+    ngoVolunteerCount: 0,
+    stats: {
+      assignedTasks: 0,
+      completedTasks: 0,
+      avgBeneficiaryRating: 4,
+      reliabilityScore: 0.8,
+      activeTasks: 0,
+      last90dAssignedTasks: 0,
+      last90dCompletedTasks: 0,
+    },
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await volunteerRef.set(volunteer);
+  return volunteer;
+}
+
 function buildTaskCard(report: NeedReport, volunteer: Volunteer | null) {
   const distanceKm = volunteer
     ? haversine(
@@ -373,6 +432,9 @@ function buildTaskCard(report: NeedReport, volunteer: Volunteer | null) {
   return {
     id: report.id || '',
     reportId: report.id || '',
+    category: report.category,
+    urgency: report.urgency,
+    location: report.location,
     language: volunteer?.preferredLanguage || 'en',
     title: `${humanizeCategory(report.category)} Support Needed`,
     summary: report.description,

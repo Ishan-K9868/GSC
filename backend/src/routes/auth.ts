@@ -33,6 +33,35 @@ const DEV_USER_PROFILE = {
   reportsResolved: 20,
 };
 
+function buildDefaultUserProfile(input: { uid: string; phoneNumber?: string | null }) {
+  const now = new Date().toISOString();
+  return {
+    id: input.uid,
+    phoneNumber: input.phoneNumber || null,
+    role: UserRole.FIELD_WORKER as UserRoleType,
+    preferredLanguage: 'hi',
+    reportsSubmitted: 0,
+    reportsResolved: 0,
+    createdAt: now,
+    updatedAt: now,
+    lastLoginAt: now,
+  };
+}
+
+export async function ensureUserProfile(uid: string, phoneNumber?: string | null) {
+  const db = getFirestore();
+  const userRef = db.collection('users').doc(uid);
+  const userDoc = await userRef.get();
+
+  if (userDoc.exists) {
+    return { userRef, existed: true, data: userDoc.data() };
+  }
+
+  const data = buildDefaultUserProfile({ uid, phoneNumber });
+  await userRef.set(data);
+  return { userRef, existed: false, data };
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     uid: string;
@@ -102,8 +131,8 @@ export function requireRoles(...allowedRoles: UserRoleType[]) {
         return next();
       }
 
-      const db = getFirestore();
-      const userDoc = await db.collection('users').doc(uid).get();
+      const { userRef } = await ensureUserProfile(uid, authReq.user?.phoneNumber);
+      const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
         throw createError('User profile not found', 404, 'USER_NOT_FOUND');
@@ -144,35 +173,13 @@ authRouter.post('/verify', verifyToken, async (req: Request, res: Response, next
       });
     }
 
-    const db = getFirestore();
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+    const { userRef, existed, data } = await ensureUserProfile(uid, phoneNumber);
 
-    let userData;
-    let isNewUser = false;
-    
-    if (userDoc.exists) {
-      // Update last login
-      await userRef.update({
-        lastLoginAt: new Date().toISOString(),
-      });
-      userData = userDoc.data();
-    } else {
-      // Create new user
-      isNewUser = true;
-      userData = {
-        id: uid,
-        phoneNumber,
-        role: UserRole.FIELD_WORKER, // Default role
-        preferredLanguage: 'hi',
-        reportsSubmitted: 0,
-        reportsResolved: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-      };
-      await userRef.set(userData);
-    }
+    const lastLoginAt = new Date().toISOString();
+    await userRef.set({ lastLoginAt, updatedAt: lastLoginAt }, { merge: true });
+
+    const userData = { ...data, lastLoginAt, updatedAt: lastLoginAt };
+    const isNewUser = !existed;
 
     res.json({
       success: true,
@@ -205,8 +212,8 @@ authRouter.get('/me', verifyToken, async (req: Request, res: Response, next: Nex
       });
     }
 
-    const db = getFirestore();
-    const userDoc = await db.collection('users').doc(uid).get();
+    const { userRef } = await ensureUserProfile(uid, authReq.user?.phoneNumber);
+    const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
       throw createError('User not found', 404, 'USER_NOT_FOUND');
@@ -232,8 +239,7 @@ authRouter.patch('/me', verifyToken, async (req: Request, res: Response, next: N
     }
     const { displayName, preferredLanguage, avatarUrl } = req.body;
     
-    const db = getFirestore();
-    const userRef = db.collection('users').doc(uid);
+    const { userRef } = await ensureUserProfile(uid, (req as AuthenticatedRequest).user?.phoneNumber);
     
     const updates: any = {
       updatedAt: new Date().toISOString(),
@@ -243,7 +249,7 @@ authRouter.patch('/me', verifyToken, async (req: Request, res: Response, next: N
     if (preferredLanguage) updates.preferredLanguage = preferredLanguage;
     if (avatarUrl) updates.avatarUrl = avatarUrl;
     
-    await userRef.update(updates);
+    await userRef.set(updates, { merge: true });
     
     const updatedDoc = await userRef.get();
 

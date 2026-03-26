@@ -7,218 +7,149 @@ import {
   runBurnoutDetection,
   generateCrisisEscalationDraft,
 } from '../../services/api';
+import { AppIcon } from '../../components/shared';
 import styles from './GeminiLab.module.css';
 
-function pretty(value: unknown) {
-  return JSON.stringify(value, null, 2);
+type CardResult = { loading: boolean; data: any; error: string | null };
+
+const tools = [
+  { id: 'copilot', label: 'Copilot', icon: 'spark' as const, description: 'Context-aware coordinator suggestions', wide: false },
+  { id: 'skillMatch', label: 'Skill Match', icon: 'volunteer' as const, description: 'AI-ranked volunteer matching for a given need', wide: false },
+  { id: 'impact', label: 'Impact Report', icon: 'dashboard' as const, description: 'Donor-ready narrative + SDG mapping', wide: true },
+  { id: 'surge', label: 'Surge Forecast', icon: 'alert' as const, description: 'Demand projection for coming weeks', wide: false },
+  { id: 'burnout', label: 'Burnout Prediction', icon: 'shield' as const, description: 'Volunteer fatigue risk assessment', wide: false },
+  { id: 'escalation', label: 'Escalation Draft', icon: 'crisis' as const, description: 'Auto-drafted escalation with evidence', wide: true },
+] as const;
+
+type ToolId = typeof tools[number]['id'];
+
+function ResultCard({ data, loading, error }: CardResult) {
+  if (loading) return <div className={styles.resultNotice}>Processing...</div>;
+  if (error) return <div className={styles.resultNotice}>{error}</div>;
+  if (!data) return <div className={styles.resultNotice}>Run the tool to see results.</div>;
+
+  if (typeof data === 'string') return <p className={styles.resultText}>{data}</p>;
+
+  return (
+    <div className={styles.resultBlock}>
+      {data.summary && <p className={styles.resultText}>{data.summary}</p>}
+      {data.narrative && <p className={styles.resultText}>{data.narrative}</p>}
+      {data.recommendation && <p className={styles.resultText}>{data.recommendation}</p>}
+
+      {Array.isArray(data.suggestions) && data.suggestions.length > 0 && (
+        <div className={styles.chipRow}>
+          {data.suggestions.map((s: string, i: number) => <span key={i} className={styles.chip}>{s}</span>)}
+        </div>
+      )}
+
+      {Array.isArray(data.matches) && data.matches.length > 0 && (
+        <div className={styles.matchList}>
+          {data.matches.slice(0, 5).map((m: any) => (
+            <div key={m.volunteerId} className={styles.matchCard}>
+              <strong>{m.volunteerName}</strong>
+              <span>{Math.round((m.score || 0) * 100)} score</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.riskLevel && (
+        <div className={styles.inlineMetric}>
+          <span>Risk level</span><strong>{data.riskLevel}</strong>
+        </div>
+      )}
+
+      {!data.summary && !data.narrative && !data.recommendation && !data.suggestions && !data.matches && !data.riskLevel && (
+        <pre className={styles.jsonBlock}>{JSON.stringify(data, null, 2)}</pre>
+      )}
+    </div>
+  );
 }
 
 export function GeminiLab() {
-  const [copilotQuery, setCopilotQuery] = useState('Show unresolved medical needs older than 2 hours in Uttar Pradesh.');
-  const [copilotOut, setCopilotOut] = useState('');
-
-  const [skills, setSkills] = useState('first aid, rescue ops, child safety');
-  const [needDesc, setNeedDesc] = useState('Urgent medical support and triage needed for flood-hit families.');
-  const [skillOut, setSkillOut] = useState('');
-
-  const [rawLogs, setRawLogs] = useState('Resolved 43 needs, 1,280 beneficiaries, average response 2.9h, high load in health and food support.');
-  const [impactOut, setImpactOut] = useState('');
-
-  const [surgeInput, setSurgeInput] = useState({
-    historicalSummary: 'Food and water needs rise sharply after heavy rain in zones 3A and 4B.',
-    weatherSignals: 'Forecast indicates 6 days moderate to heavy rainfall.',
-    socialSignals: 'Increased local posts about supply disruption and water contamination.',
+  const [results, setResults] = useState<Record<ToolId, CardResult>>(() => {
+    const init: Record<string, CardResult> = {};
+    tools.forEach(t => { init[t.id] = { loading: false, data: null, error: null }; });
+    return init as Record<ToolId, CardResult>;
   });
-  const [surgeOut, setSurgeOut] = useState('');
 
-  const [burnoutInput, setBurnoutInput] = useState({
-    messageToneSample: 'I am exhausted and still handling late-night escalations daily.',
-    usageSummary: '16h/day app usage, 43 coordinator messages after midnight this week.',
-    optIn: true,
+  const [inputs, setInputs] = useState<Record<ToolId, string>>(() => {
+    const init: Record<string, string> = {};
+    tools.forEach(t => { init[t.id] = ''; });
+    return init as Record<ToolId, string>;
   });
-  const [burnoutOut, setBurnoutOut] = useState('');
 
-  const [escalationInput, setEscalationInput] = useState({
-    zone: 'Meerut Cluster',
-    needsSummary: 'Multiple high-urgency shelter and food needs with delayed response windows.',
-    evidenceSummary: '34 unresolved cases, 11 critical, mapped concentration in 3 wards.',
-  });
-  const [escalationOut, setEscalationOut] = useState('');
+  async function runTool(toolId: ToolId) {
+    setResults(prev => ({ ...prev, [toolId]: { loading: true, data: null, error: null } }));
+
+    try {
+      let res: any;
+      const query = inputs[toolId] || 'Delhi urban district needs';
+
+      switch (toolId) {
+        case 'copilot': res = await runCoordinatorCopilotQuery(query); break;
+        case 'skillMatch': res = await runSkillMatchProxy(query.split(',').map(s => s.trim()), 'general field need'); break;
+        case 'impact': res = await generateGeminiImpactReport({ ngoName: 'SevaSetu', periodLabel: '2025-03', rawActivityLogs: query || 'sample', language: 'en' }); break;
+        case 'surge': res = await runSurgeRagForecast({ historicalSummary: query || 'zone_4b data', weatherSignals: 'stable', socialSignals: 'standard' }); break;
+        case 'burnout': res = await runBurnoutDetection({ messageToneSample: query || 'sample', usageSummary: 'volunteer_001', optIn: true }); break;
+        case 'escalation': res = await generateCrisisEscalationDraft({ zone: 'zone_4b', needsSummary: query || 'report', evidenceSummary: 'field evidence' }); break;
+      }
+
+      if (res?.success) {
+        setResults(prev => ({ ...prev, [toolId]: { loading: false, data: res.data, error: null } }));
+      } else {
+        setResults(prev => ({ ...prev, [toolId]: { loading: false, data: null, error: res?.error?.message || 'Tool run failed' } }));
+      }
+    } catch (err: any) {
+      setResults(prev => ({ ...prev, [toolId]: { loading: false, data: null, error: err?.message || 'Unknown error' } }));
+    }
+  }
 
   return (
     <div className={styles.page}>
-      <div className={styles.container}>
-        <section className={styles.hero}>
-          <h1 className={styles.title}>Gemini Powered Features Lab</h1>
-          <p className={styles.sub}>
-            Central AI layer playground with explainable outputs and graceful degradation across all key workflows.
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <div className={styles.eyebrow}>AI Workbench</div>
+          <h1 className={styles.heroTitle}>
+            Six tools, one surface.<br />
+            Run any model against live field data.
+          </h1>
+          <p className={styles.heroSub}>
+            Copilot suggestions, volunteer matching, impact reporting, and escalation drafting.
           </p>
-          <div className={styles.row}>
-            <span className={styles.pill}>Multimodal-first</span>
-            <span className={styles.pill}>Explainable AI</span>
-            <span className={styles.pill}>Graceful fallback</span>
-          </div>
-        </section>
-
-        <div className={styles.grid}>
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Coordinator Copilot</h2>
-            <textarea className={styles.textarea} value={copilotQuery} onChange={(e) => setCopilotQuery(e.target.value)} />
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={async () => {
-                const res = await runCoordinatorCopilotQuery(copilotQuery);
-                setCopilotOut(pretty(res.data || res.error));
-              }}
-            >
-              Run Copilot
-            </button>
-            <div className={styles.output}>{copilotOut || 'Output appears here...'}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Skill Matching</h2>
-            <input className={styles.input} value={skills} onChange={(e) => setSkills(e.target.value)} />
-            <textarea className={styles.textarea} value={needDesc} onChange={(e) => setNeedDesc(e.target.value)} />
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={async () => {
-                const res = await runSkillMatchProxy(skills.split(',').map((v) => v.trim()).filter(Boolean), needDesc);
-                setSkillOut(pretty(res.data || res.error));
-              }}
-            >
-              Compute Similarity
-            </button>
-            <div className={styles.output}>{skillOut || 'Output appears here...'}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span8}`}>
-            <h2>Impact Report Generation</h2>
-            <textarea className={styles.textarea} value={rawLogs} onChange={(e) => setRawLogs(e.target.value)} />
-            <div className={styles.row}>
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={async () => {
-                  const res = await generateGeminiImpactReport({
-                    ngoName: 'SevaSetu Foundation',
-                    periodLabel: 'March 2026',
-                    rawActivityLogs: rawLogs,
-                    language: 'en',
-                  });
-                  setImpactOut(pretty(res.data || res.error));
-                }}
-              >
-                Generate EN
-              </button>
-              <button
-                className="btn btn-ghost"
-                type="button"
-                onClick={async () => {
-                  const res = await generateGeminiImpactReport({
-                    ngoName: 'SevaSetu Foundation',
-                    periodLabel: 'March 2026',
-                    rawActivityLogs: rawLogs,
-                    language: 'hi',
-                  });
-                  setImpactOut(pretty(res.data || res.error));
-                }}
-              >
-                Generate HI
-              </button>
-            </div>
-            <div className={styles.output}>{impactOut || 'Output appears here...'}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span4}`}>
-            <h2>Surge Forecast RAG</h2>
-            <textarea
-              className={styles.textarea}
-              value={surgeInput.historicalSummary}
-              onChange={(e) => setSurgeInput((prev) => ({ ...prev, historicalSummary: e.target.value }))}
-            />
-            <textarea
-              className={styles.textarea}
-              value={surgeInput.weatherSignals}
-              onChange={(e) => setSurgeInput((prev) => ({ ...prev, weatherSignals: e.target.value }))}
-            />
-            <textarea
-              className={styles.textarea}
-              value={surgeInput.socialSignals}
-              onChange={(e) => setSurgeInput((prev) => ({ ...prev, socialSignals: e.target.value }))}
-            />
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={async () => {
-                const res = await runSurgeRagForecast(surgeInput);
-                setSurgeOut(pretty(res.data || res.error));
-              }}
-            >
-              Run Forecast
-            </button>
-            <div className={styles.output}>{surgeOut || 'Output appears here...'}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Coordinator Burnout Detection (Opt-in)</h2>
-            <textarea
-              className={styles.textarea}
-              value={burnoutInput.messageToneSample}
-              onChange={(e) => setBurnoutInput((prev) => ({ ...prev, messageToneSample: e.target.value }))}
-            />
-            <textarea
-              className={styles.textarea}
-              value={burnoutInput.usageSummary}
-              onChange={(e) => setBurnoutInput((prev) => ({ ...prev, usageSummary: e.target.value }))}
-            />
-            <div className={styles.row}>
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={async () => {
-                  const res = await runBurnoutDetection(burnoutInput);
-                  setBurnoutOut(pretty(res.data || res.error));
-                }}
-              >
-                Detect Burnout
-              </button>
-            </div>
-            <div className={styles.output}>{burnoutOut || 'Output appears here...'}</div>
-          </section>
-
-          <section className={`${styles.card} ${styles.span6}`}>
-            <h2>Crisis Escalation Draft</h2>
-            <input
-              className={styles.input}
-              value={escalationInput.zone}
-              onChange={(e) => setEscalationInput((prev) => ({ ...prev, zone: e.target.value }))}
-            />
-            <textarea
-              className={styles.textarea}
-              value={escalationInput.needsSummary}
-              onChange={(e) => setEscalationInput((prev) => ({ ...prev, needsSummary: e.target.value }))}
-            />
-            <textarea
-              className={styles.textarea}
-              value={escalationInput.evidenceSummary}
-              onChange={(e) => setEscalationInput((prev) => ({ ...prev, evidenceSummary: e.target.value }))}
-            />
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={async () => {
-                const res = await generateCrisisEscalationDraft(escalationInput);
-                setEscalationOut(pretty(res.data || res.error));
-              }}
-            >
-              Draft Letter
-            </button>
-            <div className={styles.output}>{escalationOut || 'Output appears here...'}</div>
-          </section>
         </div>
+      </section>
+
+      <div className={styles.toolGrid}>
+        {tools.map((tool) => (
+          <article key={tool.id} className={`${styles.toolCard} ${tool.wide ? styles.toolCardWide : ''}`}>
+            <div className={styles.toolHeader}>
+              <span className={styles.toolIcon}>
+                <AppIcon name={tool.icon} size={18} />
+              </span>
+              <div>
+                <strong>{tool.label}</strong>
+                <span className={styles.toolDesc}>{tool.description}</span>
+              </div>
+            </div>
+
+            <div className={styles.toolBody}>
+              <input
+                className={styles.toolInput}
+                placeholder={`Query for ${tool.label}...`}
+                value={inputs[tool.id]}
+                onChange={(e) => setInputs(prev => ({ ...prev, [tool.id]: e.target.value }))}
+              />
+              <button className={styles.runBtn} type="button" onClick={() => void runTool(tool.id)}>
+                <AppIcon name="spark" size={14} /> Run
+              </button>
+            </div>
+
+            <div className={styles.toolResult}>
+              <ResultCard {...results[tool.id]} />
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
