@@ -1,24 +1,12 @@
 # SevaSetu
 
-> AI-powered NGO resource coordination platform for India
-
----
+AI-powered need intake, volunteer dispatch, civic coordination, CSR operations, crisis escalation, and public impact telemetry for NGOs and local response teams.
 
 ## Documentation Plan
 
-**First 3 files/folders inspected:**
-1. `package.json` (root + backend) - dependencies, versions, scripts
-2. `backend/src/routes/` - all API endpoints
-3. `src/pages/` - frontend components and routing
-
-**First diagram generated:** Layered System Architecture
-
-**Pass order:**
-1. Package files & environment configs
-2. Backend routes and models
-3. Frontend components and services
-4. AI/ML services (classification, matching)
-5. Data models and state management
+- First 3 files/folders to inspect: `package.json`, `backend/src/`, `src/`
+- First diagram to generate: `Layered System Architecture`
+- Estimated pass order: `1) package.json & env, 2) server routes, 3) frontend components, 4) AI/ML + analytics code`
 
 ---
 
@@ -32,29 +20,11 @@
   - [Privacy & Trust Layer](#privacy--trust-layer)
   - [Application Role Flows](#application-role-flows)
   - [Data Flow Diagram](#data-flow-diagram)
-  - [AI/ML Pipeline Diagram](#aiml-pipeline-diagram)
-  - [Why-this-Stack Diagram](#why-this-stack-diagram)
+  - [AI / ML Pipeline Diagram](#ai--ml-pipeline-diagram)
+  - [Why-this-stack Diagram](#why-this-stack-diagram)
 - [Directory Structure](#directory-structure)
 - [Component Index](#component-index)
-  - [Backend Services](#backend-services)
-  - [Backend Routes](#backend-routes)
-  - [Backend Models](#backend-models)
-  - [Frontend Pages](#frontend-pages)
-  - [Frontend Components](#frontend-components)
-  - [Frontend Services](#frontend-services)
 - [API Contracts](#api-contracts)
-  - [Authentication](#authentication-api)
-  - [Intake](#intake-api)
-  - [Upload](#upload-api)
-  - [Classification](#classification-api)
-  - [Map](#map-api)
-  - [Dispatch](#dispatch-api)
-  - [Dashboard](#dashboard-api)
-  - [Volunteer App](#volunteer-app-api)
-  - [Gemini Features](#gemini-features-api)
-  - [CSR Portal](#csr-portal-api)
-  - [Panchayat Interface](#panchayat-interface-api)
-  - [Crisis Mode](#crisis-mode-api)
 - [Data Flow & State Management](#data-flow--state-management)
 - [AI/ML Section](#aiml-section)
 - [Styling & Theming](#styling--theming)
@@ -63,120 +33,141 @@
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [Validation & Manifest](#validation--manifest)
-- [Validation Checklist](#validation-checklist)
+- [VALIDATION CHECKLIST](#validation-checklist)
 - [Appendix](#appendix)
 
 ---
 
 ## Project Overview
 
-**SevaSetu** is a full-stack platform designed to coordinate NGO activities across India, enabling efficient matching of community needs with volunteers and resources using AI-powered classification and dispatch.
+SevaSetu is a warm-surface operations platform built for fast-moving community response. It combines four intake modes, live need mapping, dispatch ranking, volunteer execution, NGO coordination, Panchayat workflows, CSR orchestration, crisis response, and a public KPI surface inside one product.
 
-### Goals
-- Enable multilingual need reporting (9 Indian languages) via voice, photo, WhatsApp, or web form
-- Provide real-time visualization of community needs on a privacy-preserving hexagonal map
-- Automate volunteer dispatch using AI-powered matching algorithms
-- Support NGO coordination, corporate CSR engagement, and panchayat-level governance
+### Core goals
 
-### Target Users
-| Role | Description |
-|------|-------------|
-| Field Worker | Submits need reports from the field |
-| NGO Staff | Manages and monitors need resolution |
-| NGO Admin | Administers organization settings |
-| Volunteer | Accepts and completes tasks |
-| CSR Coordinator | Manages corporate volunteer programs |
-| Sarpanch | Views village-level data and flags needs |
+- Capture needs quickly through `voice`, `photo`, `form`, and `assisted WhatsApp-style` intake.
+- Classify and score urgency with context-aware AI instead of flat severity labels.
+- Detect duplicate reports, merge clustered signals, and surface systemic issues.
+- Match volunteers using proximity, skills, reliability, urgency, and available supplies.
+- Close the loop with completion verification, coordinator review, and reporter confirmation.
+- Expose the same underlying field graph across NGO, CSR, Panchayat, crisis, and public impact views.
 
-### Key Features
-- **SEVA Intake Engine**: Voice, photo, WhatsApp, web form intake with AI classification
-- **Community Pulse Map**: H3 hexagon-based real-time need visualization
-- **SEVA Agent**: Automated volunteer dispatch with cascade logic
-- **NGO Intelligence Dashboard**: Analytics and surge forecasting
-- **Volunteer Experience App**: Mobile-first task management
-- **Corporate CSR Portal**: Employee volunteering and BRSR compliance
-- **Panchayat Interface**: Village-level scheme gap analysis
-- **Crisis Mode**: Emergency coordination activation
+### Target users
 
-> **Detailed Setup Instructions**: See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for comprehensive environment, Firebase, and GCP configuration.
+- Field workers and community reporters
+- NGO coordinators and operations leads
+- Volunteers and volunteer captains
+- Panchayat / civic administrators
+- CSR teams and enterprise impact/compliance stakeholders
+- Public audiences viewing live impact summaries
+
+### What makes SevaSetu distinctive
+
+- It is not just an intake app; it is a full need-to-resolution operating system.
+- The same `needReports` and `dispatchTasks` graph powers multiple role-specific surfaces rather than separate disconnected tools.
+- AI is used as structured decision support: classification, deduplication, urgency explainability, skill fit, verification, scheme-gap analysis, and escalation drafting.
+- The UI language stays warm and civic rather than cold enterprise SaaS, which helps dense operational data remain readable.
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 20+ (Node 22 recommended)
+
+- Node.js `>=18`
 - npm
-- Firebase project with Auth, Firestore, and Storage enabled
-- Google Cloud APIs enabled (see [SETUP_GUIDE.md](./SETUP_GUIDE.md#6-google-cloud-apis-to-enable))
+- Firebase project with Firestore and Storage
+- Gemini API key
+- Google Maps browser key for map/geolocation features
 
-### Installation
+### Install
 
 ```bash
-# Clone repository
-git clone <repo-url>
-cd GSC
-
-# Install frontend dependencies
 npm install
-
-# Install backend dependencies
-cd backend && npm install && cd ..
+npm install --prefix backend
 ```
 
-### Environment Setup
-
-**Frontend** (`.env.local`):
-```env
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=1:123:web:abc
-VITE_API_BASE_URL=http://localhost:3001/api
-VITE_GOOGLE_MAPS_API_KEY=your-maps-key
-VITE_USE_FIREBASE_EMULATOR=false
-```
-
-**Backend** (`backend/.env`):
-```env
-PORT=3001
-NODE_ENV=development
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-FIREBASE_PROJECT_ID=your-project-id
-GCS_BUCKET_NAME=your-project.appspot.com
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
-```
-
-### Running the Application
+### Run frontend + backend together
 
 ```bash
-# Terminal 1: Start backend
-cd backend
-npm run build && npm start
-
-# Terminal 2: Start frontend
-npm run dev
-
-# Or run both concurrently from root
 npm run dev:all
 ```
 
-### Verify Setup
+### Or run separately
 
 ```bash
-# Health check
-curl http://localhost:3001/health
+# terminal 1
+npm run dev --prefix backend
 
-# Dependencies status
-curl http://localhost:3001/api/health/deps
-
-# Public endpoint test
-curl http://localhost:3001/api/map/stats
+# terminal 2
+npm run dev
 ```
+
+### Production builds
+
+```bash
+npm run build
+npm run build --prefix backend
+```
+
+### Preview frontend build
+
+```bash
+npm run preview
+```
+
+### Seed demo data
+
+```bash
+npm run seed --prefix backend -- --clear --count=24
+```
+
+### Example env keys
+
+#### Root `.env`
+
+```env
+VITE_API_BASE_URL=http://localhost:3001/api
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_GOOGLE_MAPS_API_KEY=...
+VITE_USE_FIREBASE_EMULATOR=false
+VITE_DEV_AUTH_BYPASS=true
+```
+
+#### `backend/.env`
+
+```env
+PORT=3001
+NODE_ENV=development
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+FIREBASE_PROJECT_ID=...
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=...
+GCS_BUCKET_NAME=...
+
+GEMINI_API_KEY=...
+GEMINI_FLASH_MODEL=gemini-1.5-flash
+GEMINI_PRO_MODEL=gemini-1.5-pro
+
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+RATE_LIMIT_AUTH_MAX=20
+RATE_LIMIT_UPLOAD_MAX=40
+RATE_LIMIT_AI_MAX=50
+```
+
+### Required env vars verified from code
+
+- Frontend Firebase config: `src/config/firebase.ts`
+- Frontend API base and dev bypass: `src/services/api.ts`
+- Backend server config: `backend/src/index.ts`
+- Backend Firebase admin config: `backend/src/config/firebase.ts`
+- Backend Gemini config: `backend/src/services/geminiClient.ts`
 
 ---
 
@@ -184,49 +175,51 @@ curl http://localhost:3001/api/map/stats
 
 ### Frontend
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react | ^18.3.0 | UI framework |
-| react-dom | ^18.3.0 | React DOM renderer |
-| react-router-dom | ^6.21.0 | Client-side routing |
-| firebase | ^10.7.0 | Firebase Web SDK (Auth, Firestore, Storage) |
-| zustand | ^4.4.7 | State management |
-| @react-google-maps/api | ^2.19.2 | Google Maps React integration |
-| @googlemaps/js-api-loader | ^2.0.2 | Google Maps loader |
-| h3-js | ^4.4.0 | H3 hexagonal grid system |
-| motion | ^12.0.0 | Animation library |
-| react-hot-toast | ^2.4.1 | Toast notifications |
-| papaparse | ^5.4.1 | CSV parsing |
-| lenis | ^1.1.0 | Smooth scrolling |
-| vite | ^5.0.0 | Build tool |
-| typescript | ^5.0.0 | Type safety |
+| Package | Version | Role |
+|---|---:|---|
+| `react` | `^18.3.0` | core UI runtime |
+| `react-dom` | `^18.3.0` | DOM renderer |
+| `react-router-dom` | `^6.21.0` | route graph |
+| `firebase` | `^10.7.0` | auth + Firestore web SDK |
+| `@react-google-maps/api` | `^2.19.2` | map components (installed) |
+| `@googlemaps/js-api-loader` | `^2.0.2` | direct map script loading |
+| `motion` | `^12.0.0` | page/section motion |
+| `h3-js` | `^4.4.0` | hex mapping utilities |
+| `zustand` | `^4.4.7` | installed but not materially used in inspected source |
+| `papaparse` | `^5.4.1` | CSV intake/import support |
+| `lenis` | `^1.1.0` | smooth scroll layer |
 
 ### Backend
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| express | ^4.18.2 | Web framework |
-| firebase-admin | ^12.0.0 | Firebase Admin SDK |
-| @google-cloud/vertexai | ^0.5.0 | Gemini AI integration |
-| @google-cloud/storage | ^7.7.0 | Cloud Storage |
-| h3-js | ^4.4.0 | H3 hexagonal grid |
-| zod | ^3.22.4 | Schema validation |
-| helmet | ^7.1.0 | Security headers |
-| cors | ^2.8.5 | CORS middleware |
-| express-rate-limit | ^7.4.1 | Rate limiting |
-| multer | ^1.4.5-lts.1 | File uploads |
-| uuid | ^9.0.1 | UUID generation |
-| typescript | ^5.3.0 | Type safety |
+| Package | Version | Role |
+|---|---:|---|
+| `express` | `^4.18.2` | HTTP API |
+| `firebase-admin` | `^12.0.0` | Firestore/Auth/Storage admin |
+| `@google/generative-ai` | `^0.24.1` | Gemini structured generation + embeddings |
+| `@google-cloud/storage` | `^7.7.0` | cloud storage access |
+| `axios` | `^1.14.0` | Open-Meteo fetches |
+| `multer` | `^1.4.5-lts.1` | file upload parsing |
+| `zod` | `^3.22.4` | schema validation |
+| `helmet` | `^7.1.0` | security headers |
+| `cors` | `^2.8.5` | CORS policy |
+| `express-rate-limit` | `^7.4.1` | rate limiting |
+| `uuid` | `^9.0.1` | IDs |
+| `h3-js` | `^4.4.0` | hex map aggregation |
 
-### Infrastructure
+### Build / Tooling
 
-| Service | Purpose |
-|---------|---------|
-| Firebase Authentication | Phone OTP-based auth |
-| Cloud Firestore | NoSQL document database |
-| Cloud Storage | Media file storage |
-| Vertex AI | Gemini 1.5 Flash/Pro models |
-| Google Maps Platform | Mapping and geocoding |
+| Tool | Version | Role |
+|---|---:|---|
+| `vite` | `^5.0.0` | frontend dev/build |
+| `typescript` | `^5.x` | static typing |
+| `ts-node-dev` | `^2.0.0` | backend dev server |
+| `concurrently` | `^8.2.2` | run frontend + backend together |
+| `eslint` | `^8.55.0` (backend) | backend linting |
+
+### Human-review note
+
+- Versions above were double-checked against `package.json` and `backend/package.json`.
+- Some older README references to Vertex AI are stale; the current code uses `@google/generative-ai` directly.
 
 ---
 
@@ -234,1452 +227,882 @@ curl http://localhost:3001/api/map/stats
 
 ### Layered System Architecture
 
-This diagram shows the major system layers, their responsibilities, boundaries, and inter-component communication.
-
 ```mermaid
-flowchart TB
-    subgraph Frontend["Frontend Layer (React + Vite)"]
-        direction LR
-        LP[Landing Page]
-        IP[Intake Page]
-        PM[Pulse Map]
-        SA[SEVA Agent]
-        ND[NGO Dashboard]
-        VA[Volunteer App]
-        CP[CSR Portal]
-        PI[Panchayat]
-        CM[Crisis Mode]
-    end
+flowchart LR
+  subgraph FE[Frontend Layer]
+    Landing[Landing + Marketing]
+    Intake[Intake Modes\nVoice / Photo / Form / Assisted]
+    Ops[NGO Dashboard / Seva Agent / Pulse Map]
+    RoleUIs[Volunteer App / CSR Portal / Panchayat / Crisis / Public KPI / Gemini Lab]
+  end
 
-    subgraph API["API Gateway Layer (Express)"]
-        direction LR
-        AUTH[Auth Routes]
-        INTAKE[Intake Routes]
-        MAP[Map Routes]
-        DISPATCH[Dispatch Routes]
-        DASH[Dashboard Routes]
-        UPLOAD[Upload Routes]
-        GEMINI[Gemini Routes]
-    end
+  subgraph API[API / Gateway Layer]
+    AuthAPI[/Auth/]
+    IntakeAPI[/Intake/]
+    DispatchAPI[/Dispatch/]
+    DashAPI[/Dashboard/]
+    RoleAPI[/Volunteer + CSR + Panchayat + Crisis + Gemini/]
+  end
 
-    subgraph Business["Business Logic Layer"]
-        direction LR
-        CLASS[Classification Service]
-        MATCH[Matching Engine]
-        SEVA[SEVA Agent Service]
-        MAPAGG[Map Aggregation]
-        CRISIS_SVC[Crisis Mode Service]
-    end
+  subgraph BL[Business Logic Layer]
+    Classify[Classification + Urgency Scoring]
+    Dedup[Dedup Engine]
+    Match[Matching + Inventory Score]
+    Verify[Verifier Agent]
+    Coord[Dashboard / Map / Dispatch Intelligence]
+  end
 
-    subgraph AI["AI/ML Layer (Vertex AI)"]
-        direction LR
-        CLASSIFY[Need Classification]
-        VISION[Vision Analysis]
-        COPILOT[Coordinator Copilot]
-        SKILL[Skill Matching]
-    end
+  subgraph AI[AI / ML Layer]
+    Gemini[Gemini Structured Generation]
+    Vision[Gemini Vision Analysis]
+    Embed[Text Embeddings]
+    Lab[AI Workbench Tools]
+  end
 
-    subgraph Data["Data Storage Layer"]
-        direction LR
-        FS[(Firestore)]
-        GCS[(Cloud Storage)]
-    end
+  subgraph DATA[Data Storage Layer]
+    FS[(Firestore)]
+    Storage[(Firebase Storage / Local Uploads)]
+    WebSDK[(Firebase Web Auth)]
+  end
 
-    subgraph Privacy["Privacy & Trust Layer"]
-        direction LR
-        H3[H3 Hexagon Aggregation]
-        PRIV[Privacy Mode]
-        CONSENT[Consent Tracking]
-    end
+  subgraph TRUST[Privacy & Trust Layer]
+    RoleGuard[Role Guards + Token Verification]
+    PrivateReports[Private Report Flagging]
+    ReporterLoop[Reporter Confirmation]
+    Aggregation[Admin / KPI Aggregation]
+  end
 
-    Frontend --> API
-    API --> Business
-    Business --> AI
-    Business --> Data
-    Business --> Privacy
-    AI --> Data
-    Privacy --> Data
-
-    classDef frontend fill:#e3f2fd,stroke:#1976d2
-    classDef api fill:#fff3e0,stroke:#f57c00
-    classDef business fill:#e8f5e9,stroke:#388e3c
-    classDef ai fill:#fce4ec,stroke:#c2185b
-    classDef data fill:#f3e5f5,stroke:#7b1fa2
-    classDef privacy fill:#e0f2f1,stroke:#00796b
-
-    class LP,IP,PM,SA,ND,VA,CP,PI,CM frontend
-    class AUTH,INTAKE,MAP,DISPATCH,DASH,UPLOAD,GEMINI api
-    class CLASS,MATCH,SEVA,MAPAGG,CRISIS_SVC business
-    class CLASSIFY,VISION,COPILOT,SKILL ai
-    class FS,GCS data
-    class H3,PRIV,CONSENT privacy
+  FE --> API
+  API --> BL
+  BL --> AI
+  BL --> DATA
+  API --> TRUST
+  TRUST --> DATA
+  AI --> BL
 ```
 
-**Explanation:** The architecture follows a layered pattern with clear separation of concerns. The Frontend Layer handles user interaction through React pages. The API Gateway Layer (Express) manages HTTP routing, authentication, and rate limiting. The Business Logic Layer contains core services like volunteer matching and dispatch. The AI/ML Layer interfaces with Vertex AI for classification and analysis. The Data Storage Layer uses Firestore for documents and Cloud Storage for media. The Privacy & Trust Layer ensures location anonymization through H3 hexagons.
+SevaSetu is layered around one core field graph: `needReports`, `dispatchTasks`, volunteers, resources, and operational logs. Frontend surfaces are role-specific, but the same backend services and Firestore collections drive all of them, which is why fixes in intake, dispatch, and verification propagate across NGO, volunteer, CSR, Panchayat, and public views.
 
-**Caption:** SevaSetu's six-layer architecture showing data flow from frontend to storage with AI integration.
+Caption: Layered view of SevaSetu from role-facing UI down to storage and trust boundaries.
 
-**Alt text:** Flowchart showing SevaSetu's layered architecture with Frontend, API Gateway, Business Logic, AI/ML, Data Storage, and Privacy layers connected by data flow arrows.
-
----
+Alt text: A multi-layer architecture diagram showing frontend role surfaces calling backend APIs, business logic services, Gemini-based AI modules, Firebase storage layers, and privacy/trust controls.
 
 ### Privacy & Trust Layer
 
-This diagram details the privacy pipeline including location anonymization, consent management, and data visibility controls.
-
 ```mermaid
-flowchart LR
-    subgraph Input["Raw Input"]
-        GPS[GPS Coordinates]
-        PHONE[Phone Number]
-        PHOTO[Photo with EXIF]
-        DESC[Description Text]
-    end
-
-    subgraph Anonymization["Anonymization Pipeline"]
-        H3AGG[H3 Hexagon Mapping\nResolution 8]
-        STRIP[EXIF Stripping]
-        MASK[PII Masking]
-        FUZZ[Location Fuzzing\n+/-500m]
-    end
-
-    subgraph Consent["Consent Layer"]
-        OPT[Opt-in Privacy Mode]
-        SENS[Sensitive Category\nAuto-Privacy]
-        TRACK[Consent Artifact\nStorage]
-    end
-
-    subgraph Visibility["Visibility Controls"]
-        PUB[Public Map View\nAggregated Only]
-        NGO[NGO View\nHexagon Details]
-        COORD[Coordinator View\nFull Details]
-        ADMIN[Admin View\nTrends Only]
-    end
-
-    GPS --> H3AGG
-    GPS --> FUZZ
-    PHONE --> MASK
-    PHOTO --> STRIP
-    DESC --> MASK
-
-    H3AGG --> PUB
-    FUZZ --> NGO
-    MASK --> COORD
-
-    OPT --> TRACK
-    SENS --> TRACK
-    TRACK --> Visibility
-
-    classDef input fill:#ffebee,stroke:#c62828
-    classDef anon fill:#e8f5e9,stroke:#2e7d32
-    classDef consent fill:#e3f2fd,stroke:#1565c0
-    classDef vis fill:#fff8e1,stroke:#f9a825
-
-    class GPS,PHONE,PHOTO,DESC input
-    class H3AGG,STRIP,MASK,FUZZ anon
-    class OPT,SENS,TRACK consent
-    class PUB,NGO,COORD,ADMIN vis
+flowchart TD
+  Reporter[Reporter / Field Worker] --> IntakeCapture[Intake capture]
+  IntakeCapture --> VerifyToken[Auth token / dev token verification]
+  VerifyToken --> Profile[User profile bootstrap / role lookup]
+  Profile --> NeedDoc[Create needReport]
+  NeedDoc --> PrivateFlag{Private report?}
+  PrivateFlag -- Yes --> RestrictedView[Restricted operator visibility]
+  PrivateFlag -- No --> StandardOps[Standard operational visibility]
+  NeedDoc --> DedupCheck[Dedup + urgency + dispatch queue]
+  DedupCheck --> TaskFlow[Dispatch + volunteer execution]
+  TaskFlow --> Verification[Photo verification + coordinator review]
+  Verification --> ReporterConfirm[Reporter confirmation request]
+  ReporterConfirm --> AggregatedViews[Dashboard / map / KPI aggregation]
+  AggregatedViews --> PublicViews[Public KPI page]
 ```
 
-**Explanation:** Raw inputs (GPS, phone, photos, text) pass through an anonymization pipeline that applies H3 hexagon mapping for location aggregation, EXIF stripping from photos, and PII masking in text. The consent layer handles opt-in privacy mode and automatically enables privacy for sensitive categories like women & child protection. Visibility controls ensure that public views only see aggregated data, while coordinators can access full details for task execution.
+The codebase does not contain zero-knowledge proofs or formal anonymization pipelines, so the trust model is operational rather than cryptographic. Trust comes from token verification, role-based route protection, optional `isPrivate` reports, review queues, and the extra reporter confirmation loop after completion.
 
-**Caption:** Privacy pipeline showing data anonymization flow from raw inputs to role-based visibility.
+Caption: Trust and review controls applied from intake to public/ops visibility.
 
-**Alt text:** Flowchart depicting privacy processing pipeline with input anonymization, consent tracking, and role-based visibility controls.
-
----
+Alt text: A privacy pipeline diagram showing need intake, token verification, private report branching, dispatch, photo verification, reporter confirmation, and aggregated views.
 
 ### Application Role Flows
 
-This diagram shows navigation paths for different user roles from landing to feature-specific dashboards.
-
 ```mermaid
-flowchart TD
-    subgraph Entry["Entry Points"]
-        LAND[Landing Page]
-        AUTH_GATE{Authenticated?}
-    end
+flowchart LR
+  subgraph Reporter[Reporter / Field Worker]
+    R1[Landing / Workspace] --> R2[Report a Need]
+    R2 --> R3[Voice / Photo / Form / Assisted]
+    R3 --> R4[Need submitted]
+    R4 --> R5[Reporter confirmation prompt]
+  end
 
-    subgraph FieldWorker["Field Worker Flow"]
-        FW_DASH[Field Dashboard]
-        FW_INTAKE[Submit Report]
-        FW_VOICE[Voice Intake]
-        FW_PHOTO[Photo Intake]
-        FW_FORM[Form Intake]
-    end
+  subgraph Coordinator[NGO Coordinator / Admin]
+    C1[Workspace] --> C2[Pulse Map]
+    C1 --> C3[NGO Dashboard]
+    C1 --> C4[SEVA Agent]
+    C3 --> C5[Verification review]
+    C4 --> C6[Dispatch override / logs]
+    C3 --> C7[Gemini Lab / Voice Command Button]
+  end
 
-    subgraph NGOStaff["NGO Staff Flow"]
-        NGO_DASH[NGO Dashboard]
-        NGO_MAP[Pulse Map View]
-        NGO_AGENT[SEVA Agent Monitor]
-        NGO_REPORTS[Report Management]
-    end
+  subgraph Volunteer[Volunteer]
+    V1[Volunteer App] --> V2[Missions]
+    V2 --> V3[Chat + Accept]
+    V3 --> V4[Upload completion photo]
+    V4 --> V5[Verification result]
+  end
 
-    subgraph Volunteer["Volunteer Flow"]
-        VOL_APP[Volunteer App]
-        VOL_TASKS[Task Feed]
-        VOL_ACCEPT[Accept Task]
-        VOL_CHAT[Beneficiary Chat]
-        VOL_COMPLETE[Complete Task]
-    end
-
-    subgraph CSR["CSR Coordinator Flow"]
-        CSR_PORTAL[CSR Portal]
-        CSR_EMP[Employee Pool]
-        CSR_LEAD[Leaderboard]
-        CSR_BRSR[BRSR Reports]
-    end
-
-    subgraph Sarpanch["Panchayat Flow"]
-        PAN_DASH[Panchayat Dashboard]
-        PAN_FLAG[Flag Needs]
-        PAN_SCHEMES[Scheme Gap Finder]
-    end
-
-    LAND --> AUTH_GATE
-    AUTH_GATE -->|No| LAND
-    AUTH_GATE -->|Field Worker| FW_DASH
-    AUTH_GATE -->|NGO Staff| NGO_DASH
-    AUTH_GATE -->|Volunteer| VOL_APP
-    AUTH_GATE -->|CSR| CSR_PORTAL
-    AUTH_GATE -->|Sarpanch| PAN_DASH
-
-    FW_DASH --> FW_INTAKE
-    FW_INTAKE --> FW_VOICE
-    FW_INTAKE --> FW_PHOTO
-    FW_INTAKE --> FW_FORM
-
-    NGO_DASH --> NGO_MAP
-    NGO_DASH --> NGO_AGENT
-    NGO_DASH --> NGO_REPORTS
-
-    VOL_APP --> VOL_TASKS
-    VOL_TASKS --> VOL_ACCEPT
-    VOL_ACCEPT --> VOL_CHAT
-    VOL_CHAT --> VOL_COMPLETE
-
-    CSR_PORTAL --> CSR_EMP
-    CSR_PORTAL --> CSR_LEAD
-    CSR_PORTAL --> CSR_BRSR
-
-    PAN_DASH --> PAN_FLAG
-    PAN_DASH --> PAN_SCHEMES
-
-    classDef entry fill:#fce4ec,stroke:#ad1457
-    classDef fw fill:#e3f2fd,stroke:#1565c0
-    classDef ngo fill:#e8f5e9,stroke:#2e7d32
-    classDef vol fill:#fff3e0,stroke:#e65100
-    classDef csr fill:#f3e5f5,stroke:#6a1b9a
-    classDef pan fill:#e0f2f1,stroke:#00695c
-
-    class LAND,AUTH_GATE entry
-    class FW_DASH,FW_INTAKE,FW_VOICE,FW_PHOTO,FW_FORM fw
-    class NGO_DASH,NGO_MAP,NGO_AGENT,NGO_REPORTS ngo
-    class VOL_APP,VOL_TASKS,VOL_ACCEPT,VOL_CHAT,VOL_COMPLETE vol
-    class CSR_PORTAL,CSR_EMP,CSR_LEAD,CSR_BRSR csr
-    class PAN_DASH,PAN_FLAG,PAN_SCHEMES pan
+  subgraph Partner[CSR / Panchayat / Public]
+    P1[CSR Portal]
+    P2[Panchayat Dashboard]
+    P3[Impact Live]
+  end
 ```
 
-**Explanation:** Users enter through the landing page and are routed based on their authenticated role. Field workers access intake features (voice, photo, form). NGO staff monitor the pulse map and SEVA agent dispatch. Volunteers see their task feed and complete assignments. CSR coordinators manage employee volunteering. Sarpanch users view village data and flag needs.
+The app is not one dashboard wearing many hats; it is multiple role lanes over shared operational data. The reporter starts the graph, coordinators steer and verify it, volunteers execute it, and CSR/Panchayat/Public surfaces consume curated slices of the same state.
 
-**Caption:** Role-based navigation flows showing entry points and feature access per user type.
+Caption: Role-oriented navigation lanes across the major SevaSetu surfaces.
 
-**Alt text:** Flowchart showing five user role flows (Field Worker, NGO Staff, Volunteer, CSR, Sarpanch) branching from authentication gate to role-specific features.
-
----
+Alt text: A role-flow diagram showing separate paths for reporters, NGO coordinators, volunteers, and partner/public users across SevaSetu pages.
 
 ### Data Flow Diagram
 
-This diagram shows data flow from frontend through backend to external APIs and storage.
+```mermaid
+flowchart LR
+  FE[Frontend forms, chats, dashboards, maps] --> API[Express route layer]
+  API --> Validate[Zod / route validation / auth checks]
+  Validate --> Transform[Mapping + normalization]
+  Transform --> Firestore[(Firestore collections)]
+  Transform --> Storage[(Storage / local uploads)]
+  Transform --> External[Gemini / Open-Meteo / Google Maps]
+  External --> Transform
+  Firestore --> Dashboards[NGO / SEVA / CSR / Panchayat / Crisis]
+  Firestore --> PublicKPI[Public impact KPI page]
+  Firestore --> Map[Pulse Map live listeners]
+  Firestore --> VolunteerApp[Volunteer task feed]
+```
+
+The frontend is mostly a thin client over a typed API layer, except for the live map and public KPI views which listen directly to Firestore. Transformations happen both server-side and in `src/services/api.ts`, where backend payloads are normalized into UI-friendly shapes for volunteer, CSR, Panchayat, crisis, and dashboard screens.
+
+Caption: End-to-end data path from UI input through API logic into storage, external services, and live role-specific views.
+
+Alt text: A left-to-right data flow diagram showing frontend requests passing through validation and transformation into Firestore, uploads, external AI/weather/maps services, and then returning into dashboards and live visualizations.
+
+### AI / ML Pipeline Diagram
+
+```mermaid
+flowchart TD
+  IntakeText[Need text / transcript / photo context] --> ClassifyPrompt[Structured classification prompts]
+  ClassifyPrompt --> GeminiClassify[Gemini Flash / Pro]
+  GeminiClassify --> Urgency[Urgency multipliers\nweather + vulnerability + time]
+  IntakeText --> EmbedPrompt[Embedding text]
+  EmbedPrompt --> GeminiEmbed[text-embedding-004]
+  GeminiEmbed --> Dedup[Dedup engine]
+  NeedAndVolunteer[Need + volunteer + inventory signals] --> MatchScore[Matching engine]
+  CompletionPhoto[Completion photo URL] --> VisionFetch[Image fetch + Gemini Vision]
+  VisionFetch --> VerifyTier[auto_resolved / needs_review / rejected]
+  OpsQuery[Operator query] --> LabTools[Gemini Lab tools / Copilot / Surge / Burnout / Escalation]
+  LabTools --> HumanReadable[Readable operator-facing answers]
+```
+
+SevaSetu does not contain a custom-trained ML training pipeline in the repo. Its AI layer is inference-first: structured Gemini calls, prompt-controlled JSON outputs, deterministic fallbacks, heuristics, weather augmentation, ward-vulnerability overlays, and embedding-backed plus lexical deduplication.
+
+Caption: Inference pipeline linking intake, urgency scoring, deduplication, matching, verification, and AI workbench tools.
+
+Alt text: An AI/ML diagram showing Gemini structured classification, urgency multipliers, text embeddings for deduplication, volunteer matching, vision verification, and operator tool outputs.
+
+### Why-this-stack Diagram
 
 ```mermaid
 flowchart LR
-    subgraph Client["Client (Browser)"]
-        UI[React UI]
-        SDK[Firebase Web SDK]
-        OFFLINE[IndexedDB Queue]
-    end
-
-    subgraph Backend["Backend (Express)"]
-        GUARD[Auth Guard]
-        RATE[Rate Limiter]
-        ROUTES[API Routes]
-        SERVICES[Services]
-    end
-
-    subgraph External["External APIs"]
-        VERTEX[Vertex AI\nGemini 1.5]
-        MAPS[Google Maps\nGeocoding]
-    end
-
-    subgraph Storage["Firebase Storage"]
-        AUTH_FB[Firebase Auth]
-        FS[(Firestore)]
-        GCS[(Cloud Storage)]
-    end
-
-    subgraph Analytics["Analytics Pipeline"]
-        AGG[H3 Aggregation]
-        SURGE[Surge Forecasting]
-        DASH_DATA[Dashboard Data]
-    end
-
-    UI -->|HTTP/JSON| GUARD
-    UI -->|Token| SDK
-    SDK -->|Verify| AUTH_FB
-    OFFLINE -->|Sync| ROUTES
-
-    GUARD --> RATE
-    RATE --> ROUTES
-    ROUTES --> SERVICES
-
-    SERVICES -->|Classify| VERTEX
-    SERVICES -->|Geocode| MAPS
-    SERVICES -->|CRUD| FS
-    SERVICES -->|Upload| GCS
-
-    FS --> AGG
-    AGG --> SURGE
-    SURGE --> DASH_DATA
-    DASH_DATA --> UI
-
-    classDef client fill:#e3f2fd,stroke:#1565c0
-    classDef backend fill:#fff3e0,stroke:#ef6c00
-    classDef external fill:#fce4ec,stroke:#c2185b
-    classDef storage fill:#e8f5e9,stroke:#388e3c
-    classDef analytics fill:#f3e5f5,stroke:#7b1fa2
-
-    class UI,SDK,OFFLINE client
-    class GUARD,RATE,ROUTES,SERVICES backend
-    class VERTEX,MAPS external
-    class AUTH_FB,FS,GCS storage
-    class AGG,SURGE,DASH_DATA analytics
+  React[React 18 + Vite] --> UX[Fast route rendering + modular role surfaces]
+  Firebase[Firebase Auth + Firestore + Storage] --> Ops[One shared operational graph + realtime listeners]
+  Express[Express + TypeScript] --> APIShape[Explicit route contracts + additive backend evolution]
+  Gemini[Gemini structured generation] --> Decisions[Readable AI decision support, not loose chat]
+  GoogleMaps[Google Maps + JS loader] --> Atlas[Live Delhi operations atlas]
+  CSS[CSS Modules + tokenized globals] --> Visuals[Warm civic interface instead of generic SaaS chrome]
 ```
 
-**Explanation:** The client sends requests through Firebase Auth for token verification, then to Express backend. Auth guards and rate limiters protect endpoints. Services interact with Vertex AI for classification, Google Maps for geocoding, Firestore for persistence, and Cloud Storage for media. Analytics pipeline aggregates data using H3 hexagons and generates surge forecasts for dashboards.
+The stack is practical rather than trendy: Vite for speed, Firebase for operational state, Express for explicit route ownership, Gemini for structured outputs, and CSS tokens for a stable visual language. The result is a role-dense app that still feels coherent because the same primitives power every surface.
 
-**Caption:** End-to-end data flow from React UI through backend services to storage and analytics.
+Caption: Technology-to-capability mapping behind SevaSetu’s operational UX.
 
-**Alt text:** Data flow diagram showing client requests flowing through authentication, rate limiting, backend services, external APIs, and storage layers.
+Alt text: A diagram mapping React/Vite, Firebase, Express, Gemini, Google Maps, and CSS tokens to the user-facing capabilities they enable.
 
----
+### Mermaid export note
 
-### AI/ML Pipeline Diagram
-
-This diagram shows the AI/ML components including classification, vision analysis, and matching.
-
-```mermaid
-flowchart TB
-    subgraph Inputs["Input Sources"]
-        VOICE[Voice Transcript]
-        PHOTO[Photo + EXIF]
-        TEXT[Form Text]
-        CSV[CSV Batch]
-    end
-
-    subgraph Preprocessing["Preprocessing"]
-        LANG[Language Detection]
-        CLEAN[Text Cleaning]
-        EXIF[EXIF Extraction]
-        RESIZE[Image Resize]
-    end
-
-    subgraph Models["AI Models (Vertex AI)"]
-        FLASH[Gemini 1.5 Flash\nClassification]
-        VISION[Gemini Vision\nPhoto Analysis]
-        PRO[Gemini Pro\nCopilot Queries]
-    end
-
-    subgraph Outputs["Model Outputs"]
-        CAT[Category\n8 types]
-        URG[Urgency\n4 levels]
-        CONF[Confidence\n0-1 score]
-        DESC[Description\nEnglish summary]
-    end
-
-    subgraph Matching["Matching Engine"]
-        WEIGHTS[Weight Calculator]
-        PROX[Proximity Score]
-        SKILL[Skill Fit Score]
-        REL[Reliability Score]
-        RANK[Volunteer Ranking]
-    end
-
-    subgraph Dispatch["SEVA Agent"]
-        TOP3[Top 3 Candidates]
-        CASCADE[Cascade Logic]
-        NOTIFY[Notification]
-        ESCALATE[Escalation]
-    end
-
-    VOICE --> LANG --> CLEAN --> FLASH
-    TEXT --> CLEAN
-    CSV --> CLEAN
-    PHOTO --> EXIF --> RESIZE --> VISION
-
-    FLASH --> CAT
-    FLASH --> URG
-    FLASH --> CONF
-    FLASH --> DESC
-    VISION --> CAT
-    VISION --> DESC
-
-    CAT --> WEIGHTS
-    URG --> WEIGHTS
-    WEIGHTS --> PROX
-    WEIGHTS --> SKILL
-    WEIGHTS --> REL
-    PROX --> RANK
-    SKILL --> RANK
-    REL --> RANK
-
-    RANK --> TOP3
-    TOP3 --> CASCADE
-    CASCADE -->|Accept| NOTIFY
-    CASCADE -->|Timeout/Decline| ESCALATE
-
-    classDef input fill:#ffebee,stroke:#c62828
-    classDef preproc fill:#e8f5e9,stroke:#2e7d32
-    classDef model fill:#e3f2fd,stroke:#1565c0
-    classDef output fill:#fff3e0,stroke:#ef6c00
-    classDef match fill:#f3e5f5,stroke:#7b1fa2
-    classDef dispatch fill:#e0f2f1,stroke:#00695c
-
-    class VOICE,PHOTO,TEXT,CSV input
-    class LANG,CLEAN,EXIF,RESIZE preproc
-    class FLASH,VISION,PRO model
-    class CAT,URG,CONF,DESC output
-    class WEIGHTS,PROX,SKILL,REL,RANK match
-    class TOP3,CASCADE,NOTIFY,ESCALATE dispatch
-```
-
-**Explanation:** Voice, photo, text, and CSV inputs are preprocessed (language detection, cleaning, EXIF extraction). Gemini 1.5 Flash performs classification into 8 categories and 4 urgency levels with confidence scores. Vision analysis extracts information from photos. The matching engine uses weighted scoring (proximity 30%, skill fit 25%, availability 20%, reliability 15%, equity 5%, urgency 5%) to rank volunteers. SEVA Agent dispatches to top 3 candidates with cascade logic on timeout or decline.
-
-**Caption:** AI/ML pipeline from input preprocessing through classification and matching to dispatch.
-
-**Alt text:** Pipeline diagram showing input processing, Gemini model inference, scoring algorithm, and automated dispatch logic.
-
----
-
-### Why-this-Stack Diagram
-
-This diagram maps technology choices to capabilities and outcomes.
-
-```mermaid
-flowchart LR
-    subgraph Tech["Technology"]
-        REACT[React 18]
-        VITE[Vite 5]
-        TS[TypeScript 5]
-        EXPRESS[Express 4]
-        FIRESTORE[Firestore]
-        VERTEX[Vertex AI]
-        H3[H3-js]
-        ZUSTAND[Zustand]
-    end
-
-    subgraph Capability["Capability"]
-        CONCURRENT[Concurrent Rendering]
-        HMR[Hot Module Reload]
-        TYPESAFE[Type Safety]
-        MIDDLEWARE[Middleware Pipeline]
-        REALTIME[Realtime Sync]
-        GENAI[Generative AI]
-        HEXGRID[Hexagonal Grid]
-        LIGHTWEIGHT[Lightweight State]
-    end
-
-    subgraph Outcome["Outcome"]
-        SMOOTH[Smoother UX]
-        FASTDEV[Faster Development]
-        FEWER_BUGS[Fewer Runtime Bugs]
-        SECURE[Secure API Layer]
-        LIVE_UPDATES[Live Updates]
-        SMART_CLASS[Smart Classification]
-        PRIVACY_MAP[Privacy-Preserving Map]
-        PERF[Better Performance]
-    end
-
-    REACT --> CONCURRENT --> SMOOTH
-    VITE --> HMR --> FASTDEV
-    TS --> TYPESAFE --> FEWER_BUGS
-    EXPRESS --> MIDDLEWARE --> SECURE
-    FIRESTORE --> REALTIME --> LIVE_UPDATES
-    VERTEX --> GENAI --> SMART_CLASS
-    H3 --> HEXGRID --> PRIVACY_MAP
-    ZUSTAND --> LIGHTWEIGHT --> PERF
-
-    classDef tech fill:#e3f2fd,stroke:#1565c0
-    classDef cap fill:#e8f5e9,stroke:#2e7d32
-    classDef out fill:#fff3e0,stroke:#ef6c00
-
-    class REACT,VITE,TS,EXPRESS,FIRESTORE,VERTEX,H3,ZUSTAND tech
-    class CONCURRENT,HMR,TYPESAFE,MIDDLEWARE,REALTIME,GENAI,HEXGRID,LIGHTWEIGHT cap
-    class SMOOTH,FASTDEV,FEWER_BUGS,SECURE,LIVE_UPDATES,SMART_CLASS,PRIVACY_MAP,PERF out
-```
-
-**Explanation:** Each technology was chosen for specific capabilities that drive measurable outcomes. React 18's concurrent rendering enables smoother UX. Vite's HMR speeds development. TypeScript provides compile-time safety. Express middleware enables authentication and rate limiting. Firestore provides realtime sync for live updates. Vertex AI powers intelligent classification. H3-js enables privacy-preserving hexagonal maps. Zustand's minimal footprint improves performance.
-
-**Caption:** Technology-to-capability-to-outcome mapping justifying the stack choices.
-
-**Alt text:** Flowchart mapping eight technologies to their capabilities and resulting business outcomes.
-
----
-
-### Mermaid Export Instructions
-
-To export any Mermaid diagram to SVG locally:
+To export any embedded Mermaid block to SVG locally:
 
 ```bash
-# Install Mermaid CLI
-npm install -g @mermaid-js/mermaid-cli
-
-# Export diagram (copy mermaid code to file.mmd first)
-mmdc -i diagram.mmd -o diagram.svg -t neutral
+npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.svg
 ```
 
 ---
 
 ## Directory Structure
 
+```text
+.
+├─ backend/
+│  ├─ src/
+│  │  ├─ config/          # Firebase admin bootstrapping
+│  │  ├─ middleware/      # auth, errors, rate limits
+│  │  ├─ models/          # zod models + shared backend types
+│  │  ├─ routes/          # mounted API groups
+│  │  ├─ scripts/         # seed + urgency decay jobs
+│  │  └─ services/        # business logic, AI, dispatch, dashboards
+│  ├─ package.json
+│  └─ tsconfig.json
+├─ src/
+│  ├─ components/         # marketing + shared primitives + app shell
+│  ├─ config/             # frontend Firebase + nav config
+│  ├─ context/            # auth + theme contexts
+│  ├─ data/              # report templates + Delhi presets
+│  ├─ hooks/             # geolocation, voice recording, offline queue
+│  ├─ pages/             # role-facing app surfaces
+│  ├─ services/          # typed API client + offline queue
+│  ├─ styles/            # global/internal token layers
+│  └─ types/             # shared frontend types
+├─ FIRESTORE_INDEXES.md   # Firestore index inventory and create links
+├─ PENDING_INFRA_AND_OPTIONAL.md
+├─ package.json
+└─ README.md
 ```
-GSC/
-├── .env.example                    # Frontend env template
-├── .env.local                      # Frontend env (gitignored)
-├── package.json                    # Frontend dependencies
-├── vite.config.ts                  # Vite + dev proxy config
-├── tsconfig.json                   # TypeScript config
-├── index.html                      # Entry HTML
-├── SETUP_GUIDE.md                  # Detailed setup instructions
-├── README.md                       # This file
-│
-├── backend/                        # Express API server
-│   ├── .env.example               # Backend env template
-│   ├── package.json               # Backend dependencies
-│   ├── tsconfig.json              # Backend TS config
-│   └── src/
-│       ├── index.ts               # Server entry point
-│       ├── config/
-│       │   └── firebase.ts        # Firebase Admin init
-│       ├── middleware/
-│       │   ├── errorHandler.ts    # Error handling
-│       │   └── rateLimit.ts       # Rate limiting
-│       ├── models/                # Zod schemas + types
-│       │   ├── NeedReport.ts
-│       │   ├── User.ts
-│       │   ├── Volunteer.ts
-│       │   ├── DispatchTask.ts
-│       │   └── VolunteerApp.ts
-│       ├── routes/                # API route handlers
-│       │   ├── auth.ts
-│       │   ├── intake.ts
-│       │   ├── upload.ts
-│       │   ├── classification.ts
-│       │   ├── map.ts
-│       │   ├── dispatch.ts
-│       │   ├── dashboard.ts
-│       │   ├── volunteerApp.ts
-│       │   ├── gemini.ts
-│       │   ├── csr.ts
-│       │   ├── panchayat.ts
-│       │   └── crisis.ts
-│       ├── services/              # Business logic
-│       │   ├── classification.ts
-│       │   ├── visionAnalysis.ts
-│       │   ├── matchingEngine.ts
-│       │   ├── sevaAgent.ts
-│       │   ├── autoDispatch.ts
-│       │   ├── mapAggregation.ts
-│       │   ├── geminiFeatures.ts
-│       │   ├── dashboardIntelligence.ts
-│       │   ├── volunteerExperience.ts
-│       │   ├── csrPortal.ts
-│       │   ├── panchayatInterface.ts
-│       │   ├── crisisMode.ts
-│       │   └── conflictResolution.ts
-│       └── scripts/               # Data seeding
-│           ├── seedData.ts
-│           └── seedVolunteers.ts
-│
-├── src/                           # Frontend source
-│   ├── App.tsx                    # Main router
-│   ├── main.tsx                   # Entry point
-│   ├── config/
-│   │   └── firebase.ts            # Firebase Web SDK
-│   ├── context/
-│   │   ├── AuthContext.tsx        # Auth state provider
-│   │   └── ThemeContext.tsx       # Theme provider
-│   ├── hooks/
-│   │   └── useGeolocation.ts      # GPS hook
-│   ├── services/
-│   │   ├── api.ts                 # API client
-│   │   └── offlineQueue.ts        # IndexedDB offline
-│   ├── types/
-│   │   └── index.ts               # Shared types
-│   ├── pages/
-│   │   ├── intake/
-│   │   │   ├── IntakePage.tsx
-│   │   │   └── components/
-│   │   │       ├── VoiceIntake.tsx
-│   │   │       ├── PhotoIntake.tsx
-│   │   │       ├── FormIntake.tsx
-│   │   │       ├── WhatsAppIntake.tsx
-│   │   │       └── LocationPicker.tsx
-│   │   ├── pulse-map/
-│   │   │   └── CommunityPulseMap.tsx
-│   │   ├── seva-agent/
-│   │   │   └── SevaAgentDashboard.tsx
-│   │   ├── ngo-dashboard/
-│   │   │   └── NgoDashboard.tsx
-│   │   ├── volunteer-app/
-│   │   │   └── VolunteerExperience.tsx
-│   │   ├── gemini-lab/
-│   │   │   └── GeminiLab.tsx
-│   │   ├── csr-portal/
-│   │   │   └── CsrPortalPage.tsx
-│   │   ├── panchayat/
-│   │   │   └── PanchayatInterface.tsx
-│   │   └── crisis-mode/
-│   │       └── CrisisModePage.tsx
-│   ├── components/                # Shared UI components
-│   │   ├── Navbar/
-│   │   ├── Footer/
-│   │   ├── Hero/
-│   │   ├── shared/
-│   │   └── [landing sections]/
-│   └── styles/
-│       └── global.css
-│
-├── prd/                           # Product Requirements
-│   ├── 01_seva_intake_engine.md
-│   ├── 02_community_pulse_map.md
-│   ├── 03_seva_agent.md
-│   ├── 04_ngo_intelligence_dashboard.md
-│   ├── 05_volunteer_experience_app.md
-│   ├── 06_gemini_powered_features.md
-│   ├── 07_corporate_csr_portal.md
-│   ├── 08_panchayat_interface.md
-│   └── 09_seva_crisis_mode.md
-│
-├── public/                        # Static assets
-└── dist/                          # Build output
-```
+
+### Important folders
+
+- `backend/src/routes/` maps almost 1:1 to public API surface.
+- `backend/src/services/` contains the actual product behavior: classification, dispatch, verification, dashboard aggregation, CSR, Panchayat, crisis, AI tools.
+- `src/pages/` is the clearest way to understand role-specific UX boundaries.
+- `src/services/api.ts` is the frontend contract adapter and one of the highest-value files to read first.
 
 ---
 
 ## Component Index
 
+This index focuses on source modules that define runtime behavior. Generated files, logs, and simple `index.ts` barrels are omitted from detailed rows unless they carry meaning.
+
+### Backend Core Modules
+
+| Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
+|---|---|---|---|---|---|---|
+| `backend/src/index.ts` | Express bootstrap, route mounting, health, static uploads | env vars, Express app, middleware chain | `app.listen(...)` | `cors`, `helmet`, route modules | none found | O(1) bootstrap |
+| `backend/src/config/firebase.ts` | Firebase Admin initialization and fallback bucket config | env credentials, bucket name | `initializeFirebase`, `getFirestore`, `getAuth`, `getStorage` | `firebase-admin` | none found | O(1) init; human-review env safety |
+| `backend/src/middleware/errorHandler.ts` | standard error payloads and error helper | Express errors | `createError`, `errorHandler` | Express | none found | O(1) |
+| `backend/src/middleware/rateLimit.ts` | route-specific throttles | env rate-limit knobs | limiter factories | `express-rate-limit` | none found | O(1) config |
+| `backend/src/models/NeedReport.ts` | report schema, enums, metadata | report payloads | `NeedReportSchema`, enums | `zod` | none found | schema only |
+| `backend/src/models/DispatchTask.ts` | dispatch task schema + ranked decisions | task payloads | `DispatchTaskSchema` | `zod` | none found | schema only |
+| `backend/src/models/Volunteer.ts` | volunteer model used by matcher/ops | volunteer docs | volunteer types | `zod` | none found | schema only |
+| `backend/src/models/User.ts` | user roles and auth profile schema | auth/user docs | role enums | `zod` | none found | schema only |
+| `backend/src/models/VolunteerApp.ts` | volunteer-app-specific types | volunteer UI contracts | app-level volunteer types | `zod` | none found | schema only |
+| `backend/src/routes/auth.ts` | token verification, dev bypass, user profile CRUD | bearer token, profile patches | `/api/auth/*` | Firebase Auth/Firestore | none found | O(1) per request |
+| `backend/src/routes/intake.ts` | report submission, classification, dedup, queue creation | report body, batch imports | `/api/intake/*` | classification, dedup, dispatch | none found | O(n) dedup candidate scan after indexed query |
+| `backend/src/routes/upload.ts` | photo/audio upload and photo analysis | multipart uploads, base64 image | `/api/upload/*` | Storage, vision analysis | none found | O(file size) |
+| `backend/src/routes/classification.ts` | text/voice classification facade | text/transcript payloads | `/api/classification/*` | classification service | none found | O(prompt call) |
+| `backend/src/routes/map.ts` | hex map stats and layer APIs | optional bounds | `/api/map/*` | map aggregation | none found | O(hex aggregation size) |
+| `backend/src/routes/dispatch.ts` | dispatch trigger, task queue, response, review, logs | route params/body | `/api/dispatch/*` | `sevaAgent`, verifier | none found | queue endpoints vary |
+| `backend/src/routes/dashboard.ts` | NGO command-center aggregates | auth role | `/api/dashboard/*` | dashboard intelligence | none found | aggregation-bound |
+| `backend/src/routes/volunteerApp.ts` | volunteer onboarding, tasks, chat, completion, gamification | volunteer id/task data | `/api/volunteer-app/*` | volunteer experience service | none found | feed/chat aggregation |
+| `backend/src/routes/inventory.ts` | volunteer inventory CRUD | volunteer inventory body | `/api/inventory/*` | inventory engine | none found | indexed subcollection ops |
+| `backend/src/routes/gemini.ts` | AI tool API endpoints + live tool bridge | AI inputs, role gating | `/api/gemini/*` | gemini features/live service | none found | prompt/inference bound |
+| `backend/src/routes/csr.ts` | CSR onboarding, leaderboard, compliance, challenges | company payloads | `/api/csr/*` | CSR portal service | none found | list + generation |
+| `backend/src/routes/panchayat.ts` | Panchayat overview/history/gap finder/flagging | panchayat id, need text | `/api/panchayat/*` | panchayat service | none found | service bound |
+| `backend/src/routes/crisis.ts` | evaluate/activate/resolve crisis mode | zone + evidence inputs | `/api/crisis/*` | crisis service | none found | service bound |
+
 ### Backend Services
 
-| Path | Purpose | Key Methods | Dependencies |
-|------|---------|-------------|--------------|
-| `backend/src/services/classification.ts` | AI-powered need classification using Gemini 1.5 Flash | `classifyNeedReport(text, lang)`, `classifyVoiceTranscript(transcript, lang)`, `mockClassifyNeedReport()` | `@google-cloud/vertexai`, `../models/NeedReport` |
-| `backend/src/services/visionAnalysis.ts` | Photo analysis using Gemini Vision | `analyzeImage(base64, mimeType)` | `@google-cloud/vertexai` |
-| `backend/src/services/matchingEngine.ts` | Weighted volunteer-need matching | `computeVolunteerMatches(report)` | `../config/firebase`, `../models/Volunteer` |
-| `backend/src/services/sevaAgent.ts` | Automated dispatch with cascade | `triggerSevaAgentForReport(reportId)`, `respondToDispatchInvite(taskId, volunteerId, action)`, `runDispatchHeartbeat()`, `coordinatorOverrideDispatch()` | `./matchingEngine`, `../models/DispatchTask` |
-| `backend/src/services/mapAggregation.ts` | H3 hexagon data aggregation | `getMapLayers(bounds)`, `getHexagonDetails(hexId)`, `getNearbyVolunteers(hexId)` | `h3-js`, `../config/firebase` |
-| `backend/src/services/geminiFeatures.ts` | Advanced Gemini features | `coordinatorCopilot(query)`, `generateImpactReport()`, `detectBurnout()`, `surgeForecastRAG()` | `@google-cloud/vertexai` |
-| `backend/src/services/dashboardIntelligence.ts` | Dashboard data aggregation | `getDashboardOverview()`, `getSurgeProjections()`, `getCrossNgoData()` | `../config/firebase` |
-| `backend/src/services/volunteerExperience.ts` | Volunteer app functionality | `getVolunteerProfile()`, `runSkillAssessment()`, `getTaskFeed()`, `getGamification()` | `../config/firebase` |
-| `backend/src/services/csrPortal.ts` | Corporate CSR features | `bulkOnboardEmployees()`, `getLeaderboard()`, `getBRSRReport()`, `createChallenge()` | `../config/firebase` |
-| `backend/src/services/panchayatInterface.ts` | Panchayat-level operations | `flagNeed()`, `getPanchayatOverview()`, `runSchemeGapFinder()`, `getMonthlyReport()` | `../config/firebase` |
-| `backend/src/services/crisisMode.ts` | Crisis management | `evaluateCrisis()`, `activateCrisis()`, `resolveCrisis()`, `getCrisisDashboard()` | `../config/firebase` |
-| `backend/src/services/autoDispatch.ts` | Automatic dispatch triggering | `runAutoDispatch()` | `./sevaAgent` |
-| `backend/src/services/conflictResolution.ts` | Conflict handling | `resolveConflict()` | `../config/firebase` |
+| Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
+|---|---|---|---|---|---|---|
+| `backend/src/services/geminiClient.ts` | shared Gemini JSON client + fallback metadata | prompt config, env keys | `generateStructuredJson(...)` | `@google/generative-ai` | none found | central AI infra |
+| `backend/src/services/classification.ts` | text/voice need classification + urgency enrichment | transcript/text + optional location | `classifyNeedReport(...)` | Gemini + urgency multipliers | none found | prompt-bound |
+| `backend/src/services/urgencyMultipliers.ts` | weather/vulnerability/time explainable urgency score | category + lat/lon + urgency enum | `computeFullUrgencyScore(...)` | Open-Meteo + ward GeoJSON | none found | O(features) vulnerability lookup |
+| `backend/src/services/dedupEngine.ts` | duplicate detection via embeddings + lexical fallback | report id/description/category/location | `runDedupCheck(...)` | Firestore + Gemini embeddings | none found | indexed query + candidate scan |
+| `backend/src/services/matchingEngine.ts` | volunteer ranking using proximity, skills, reliability, urgency, supply | report + volunteer docs | `computeVolunteerMatches(...)` | inventory engine | none found | O(v) over candidate volunteers |
+| `backend/src/services/inventoryEngine.ts` | volunteer inventory CRUD + supply score + alert checks | volunteerId, items, category | `computeSupplyScore(...)` | Firestore subcollections | none found | O(items) per volunteer |
+| `backend/src/services/sevaAgent.ts` | dispatch queue creation, ranked decisions, overrides, logs | report ids, volunteer choices | `triggerSevaAgentForReport(...)` | matcher + Firestore | none found | key dispatch orchestrator |
+| `backend/src/services/autoDispatch.ts` | NGO auto-dispatch path and NGO lookup | report docs | `triggerAutoDispatch(...)` | matcher/NGO data | none found | may require composite indexes |
+| `backend/src/services/visionAnalysis.ts` | Gemini vision abstraction for photo analysis | image buffer + mime type | `analyzeImageWithGemini(...)` | Gemini multimodal | none found | image-size bound |
+| `backend/src/services/verifierAgent.ts` | completion verification, review queue, reporter loop | task/report/photo/reporter ids | `verifyTaskCompletion(...)` | visionAnalysis + Firestore | none found | branch-heavy but linear |
+| `backend/src/services/dashboardIntelligence.ts` | NGO dashboard analytics: live ops, volunteer health, impact, inventory | dashboard query context | `getDashboardOverview()` | Firestore aggregates | none found | aggregation-heavy |
+| `backend/src/services/mapAggregation.ts` | hex stats and map layers | optional bounds/filters | `getMapLayersData(...)` | H3 + Firestore | none found | O(n) over fetched reports |
+| `backend/src/services/volunteerExperience.ts` | volunteer profile/task/chat/gamification workflow | volunteer/task ids | task feed + chat methods | Firestore | none found | UI adapter service |
+| `backend/src/services/geminiFeatures.ts` | coordinator copilot, skill match, impact report, surge, burnout, escalation | plain operator input | tool-specific exported fns | Gemini client + dashboard | none found | prompt-bound |
+| `backend/src/services/geminiLiveService.ts` | tool declaration catalog + execution for voice/text dispatch commands | tool name + args | `executeLiveTool(...)` | Firestore | none found | imperative command layer |
+| `backend/src/services/csrPortal.ts` | CSR pool, leaderboard, BRSR, vetting, challenges, pricing | company ids + onboarding inputs | CSR methods | Firestore + Gemini | none found | contains challenge index dependency |
+| `backend/src/services/panchayatInterface.ts` | village overview/history/reporting/scheme analysis | panchayat ids + needs summary | Panchayat methods | Firestore + Gemini | none found | mixed analytics + generation |
+| `backend/src/services/crisisMode.ts` | crisis evaluate/activate/resolve/dashboard/post-report | zone ids + evidence | crisis methods | Firestore + Gemini | none found | multi-step orchestration |
 
-**Matching Engine Algorithm Complexity:**
-- Time: O(n * m) where n = volunteers (max 300), m = report tokens
-- Space: O(n) for scored volunteers array
-- Uses Jaccard similarity for skill matching, Haversine formula for distance
+### Backend Scripts / Operational Modules
 
----
+| Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
+|---|---|---|---|---|---|---|
+| `backend/src/scripts/seedData.ts` | seeds reports, volunteers, inventory, duplicate-ready state | `--clear`, `--count` | `npm run seed --prefix backend -- --clear --count=24` | Firestore | none found | demo data critical |
+| `backend/src/scripts/seedVolunteers.ts` | volunteer-only bulk seed helper | `--clear`, `--count` | volunteer seeding CLI | Firestore | none found | demo helper |
+| `backend/src/scripts/urgencyDecay.ts` | batch urgency escalation job | Firestore unresolved reports | `runUrgencyDecay()` | Firestore | none found | scheduler wiring external |
+| `backend/src/services/conflictResolution.ts` | report conflict rules | report states | exported helpers | backend services | none found | small utility |
 
-### Backend Routes
+### Frontend Application Surfaces
 
-| Path | Purpose | Auth | Rate Limit |
-|------|---------|------|------------|
-| `backend/src/routes/auth.ts` | Authentication & user management | Token required | 20/15min |
-| `backend/src/routes/intake.ts` | Need report submission | Token required | Standard |
-| `backend/src/routes/upload.ts` | Photo/audio uploads with AI | Token required | 30/15min |
-| `backend/src/routes/classification.ts` | Text/voice classification | Token required | 60/15min |
-| `backend/src/routes/map.ts` | Map layers and hexagon data | Public | Standard |
-| `backend/src/routes/dispatch.ts` | SEVA Agent dispatch operations | NGO Staff+ | Standard |
-| `backend/src/routes/dashboard.ts` | NGO dashboard data | NGO Staff+ | Standard |
-| `backend/src/routes/volunteerApp.ts` | Volunteer app endpoints | Token required | Standard |
-| `backend/src/routes/gemini.ts` | Gemini AI features | NGO Staff+ | 60/15min |
-| `backend/src/routes/csr.ts` | CSR portal endpoints | Token required | Standard |
-| `backend/src/routes/panchayat.ts` | Panchayat interface | Token required | Standard |
-| `backend/src/routes/crisis.ts` | Crisis mode operations | Token required | Standard |
+| Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
+|---|---|---|---|---|---|---|
+| `src/App.tsx` | root route graph + layout split | route tree | `AppChrome` | Router + pages | none found | core navigation |
+| `src/main.tsx` | browser bootstrap | DOM root | app mount | `StrictMode` | none found | bootstrap only |
+| `src/pages/workspace/WorkspaceDashboard.tsx` | internal hub for role surfaces | fetched summary + nav links | workspace page | shared icons/styles | none found | static/dashboard hybrid |
+| `src/pages/intake/IntakePage.tsx` | mode switcher for four intake paths | active mode state | intake page | four intake components | none found | small mode router |
+| `src/pages/intake/components/VoiceIntake.tsx` | capture, classify, confirm, submit voice reports | transcript, audio blob, location, confirmation state | voice intake component | `useVoiceRecording`, `useGeolocation`, API | none found | media + AI flow |
+| `src/pages/intake/components/PhotoIntake.tsx` | photo upload/analyze/submit path | selected file, analysis, location | photo intake component | upload API + geolocation | none found | file-driven flow |
+| `src/pages/intake/components/FormIntake.tsx` | structured intake fallback | fields, attachments, AI suggestion | form intake component | API + templates + presets | none found | conventional form |
+| `src/pages/intake/components/WhatsAppIntake.tsx` | guided WhatsApp-style wizard | chat transcript, step machine | assisted intake component | API + geolocation | none found | state-machine UX |
+| `src/pages/pulse-map/CommunityPulseMap.tsx` | live Delhi operations atlas | Firestore listeners, selected need, filters | pulse map page | Firebase, Google Maps, Delhi presets | none found | high-density live page |
+| `src/pages/pulse-map/PublicKPIDashboard.tsx` | public impact telemetry | Firestore listeners, ward slug | public KPI page | Firebase + Maps | none found | live aggregate dashboard |
+| `src/pages/seva-agent/SevaAgentDashboard.tsx` | dispatch queue, ranked decisions, override control | selected task, override target | SEVA agent page | dispatch APIs | none found | ops decision tool |
+| `src/pages/ngo-dashboard/NgoDashboard.tsx` | NGO command center | dashboard overview + urgency breakdown fetches | NGO dashboard page | dashboard/dispatch APIs | none found | cross-panel aggregate |
+| `src/pages/ngo-dashboard/VoiceCommandButton.tsx` | floating command surface for live tool calls | transcript, response, open state | voice/text command UI | gemini live endpoints | none found | text-first live tool UX |
+| `src/pages/volunteer-app/VolunteerExperience.tsx` | mission feed, chat, rewards, completion, inventory tab | selected task, completion states | volunteer page | volunteer APIs + inventory tab | none found | dense task client |
+| `src/pages/volunteer-app/InventoryTab.tsx` | volunteer supply management | inventory list, add/update form | inventory tab | inventory endpoints | none found | CRUD UI |
+| `src/pages/gemini-lab/GeminiLab.tsx` | AI workbench for operators | per-tool input/result state | Gemini Lab page | gemini API group | none found | multi-tool UI |
+| `src/pages/csr-portal/CsrPortalPage.tsx` | CSR volunteering + compliance workspace | volunteer pool, challenges, certificates, pricing | CSR page | CSR + dashboard APIs | none found | fallback-enhanced portal |
+| `src/pages/panchayat/PanchayatInterface.tsx` | civic dashboard and scheme gap finder | overview/history/reporting state | Panchayat page | panchayat APIs | none found | Hindi-first civic ops |
+| `src/pages/crisis-mode/CrisisModePage.tsx` | crisis activation / post-crisis reporting | dashboard, activation/report state | crisis page | crisis endpoints | none found | stateful incident view |
+| `src/pages/for-ngos/ForNgosPage.tsx` | partner-NGO CTA page | static UI state | for-NGOs page | none | none found | lightweight marketing/internal bridge |
 
----
+### Frontend Platform / Shared Modules
 
-### Backend Models
+| Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
+|---|---|---|---|---|---|---|
+| `src/components/app-shell/AppShell.tsx` | internal shell with grouped navigation + top bar | route location, mobile nav state | shell component | nav config + theme | none found | central app chrome |
+| `src/components/Navbar/Navbar.tsx` | marketing navbar | menu/open state | navbar component | theme + waitlist | none found | marketing shell |
+| `src/components/shared/AppIcons.tsx` | icon system for app and marketing surfaces | `name`, `size` | `AppIcon` | none | none found | O(1) icon switch |
+| `src/components/shared/LocationPresetPicker.tsx` | Delhi map section picker | selected preset, current location, callbacks | picker component | Delhi presets | none found | stateless helper |
+| `src/context/AuthContext.tsx` | Firebase auth + dev bypass | current user, OTP states | `useAuth()` | Firebase Auth | none found | auth provider |
+| `src/context/ThemeContext.tsx` | light/dark theme persistence | theme state | `useTheme()` | DOM attrs/localStorage | none found | theme provider |
+| `src/hooks/useVoiceRecording.ts` | MediaRecorder + speech recognition | recording state, transcript accumulation | voice hook | browser media APIs | none found | asynchronous media state |
+| `src/hooks/useGeolocation.ts` | GPS + reverse geocoding | location state | geolocation hook | browser geolocation + Google/Nominatim | none found | network + permission bound |
+| `src/hooks/useOfflineQueue.ts` | offline queue status bridge | online/sync state | offline hook | offlineQueue service | none found | queue wrapper |
+| `src/services/api.ts` | typed backend client + response mapping | auth token, endpoint calls | many API methods | Firebase auth | none found | central contract adapter |
+| `src/services/offlineQueue.ts` | IndexedDB queue for deferred intake | queued reports, retry | offline queue methods | IndexedDB + API | none found | queue size dependent |
+| `src/config/firebase.ts` | frontend Firebase config | Vite env vars | `db`, `auth`, `storage` | Firebase SDK | none found | config |
+| `src/config/appNavigation.ts` | grouped nav metadata | route descriptors | nav arrays | none | none found | config |
+| `src/data/delhiLocationPresets.ts` | map-aligned location presets | Delhi presets | preset helpers | none | none found | config/data |
+| `src/data/reportTemplates.ts` | structured form intake templates | template catalog | template helpers | none | none found | config/data |
+| `src/styles/global.css` | global design tokens and utilities | CSS vars | global stylesheet | none | none found | token source |
+| `src/styles/internal.css` | internal dashboard primitives | CSS vars/classes | internal stylesheet | none | none found | shared panel system |
 
-| Path | Purpose | Key Fields |
-|------|---------|------------|
-| `backend/src/models/NeedReport.ts` | Need report schema | `id`, `reporterId`, `category`, `urgency`, `description`, `location`, `status`, `photoUrls[]`, `geminiExtraction` |
-| `backend/src/models/User.ts` | User schema | `id`, `phoneNumber`, `displayName`, `role`, `preferredLanguage`, `reportsSubmitted`, `reportsResolved` |
-| `backend/src/models/Volunteer.ts` | Volunteer schema | `id`, `userId`, `ngoId`, `name`, `location`, `skills[]`, `categories[]`, `availability`, `stats` |
-| `backend/src/models/DispatchTask.ts` | Dispatch task schema | `id`, `needReportId`, `status`, `candidateVolunteerIds[]`, `rankedDecisions[]`, `invitationHistory[]`, `coordinatorOverride` |
-| `backend/src/models/VolunteerApp.ts` | Volunteer app schemas | `VolunteerProfileCard`, `VolunteerTaskCard`, `VolunteerChatMessage`, `VolunteerCompletionPayload` |
+### Marketing / Narrative Components
 
----
+| Path | Purpose | Example usage |
+|---|---|---|
+| `src/components/Hero/Hero.tsx` | landing hero | rendered in `src/App.tsx` |
+| `src/components/TrustStrip/TrustStrip.tsx` | trust/brand proof strip | landing section |
+| `src/components/ProblemStatement/ProblemStatement.tsx` | problem framing | landing section |
+| `src/components/ThreePillars/ThreePillars.tsx` | value pillars | landing section |
+| `src/components/IntakeEngineDemo/IntakeEngineDemo.tsx` | intake explainer | landing section |
+| `src/components/PulseMapSection/PulseMapSection.tsx` | map explainer | landing section |
+| `src/components/MatchingEngine/MatchingEngine.tsx` | dispatch explainer | landing section |
+| `src/components/ImpactStats/ImpactStats.tsx` | metric proof section | landing section |
+| `src/components/Personas/Personas.tsx` | role cards | landing section |
+| `src/components/CrisisMode/CrisisMode.tsx` | crisis explainer | landing section |
+| `src/components/CSRPortal/CSRPortal.tsx` | CSR explainer | landing section |
+| `src/components/TechFoundation/TechFoundation.tsx` | tech story | landing section |
+| `src/components/Testimonials/Testimonials.tsx` | quotes/social proof | landing section |
+| `src/components/FinalCTA/FinalCTA.tsx` | closing CTA | landing section |
+| `src/components/Footer/Footer.tsx` | footer | landing section |
 
-### Frontend Pages
+### Example usage snippets
 
-| Path | Route | Purpose | Auth | Key Props |
-|------|-------|---------|------|-----------|
-| `src/pages/intake/IntakePage.tsx` | `/intake` | Multi-modal need reporting | Required | - |
-| `src/pages/pulse-map/CommunityPulseMap.tsx` | `/pulse-map` | H3 hexagon map visualization | Public | - |
-| `src/pages/seva-agent/SevaAgentDashboard.tsx` | `/seva-agent` | Dispatch monitoring | NGO Staff | - |
-| `src/pages/ngo-dashboard/NgoDashboard.tsx` | `/ngo-dashboard` | NGO analytics | NGO Staff | - |
-| `src/pages/volunteer-app/VolunteerExperience.tsx` | `/volunteer-app` | Volunteer task management | Volunteer | - |
-| `src/pages/gemini-lab/GeminiLab.tsx` | `/gemini-lab` | AI feature testing | NGO Staff | - |
-| `src/pages/csr-portal/CsrPortalPage.tsx` | `/csr-portal` | Corporate CSR management | CSR | - |
-| `src/pages/panchayat/PanchayatInterface.tsx` | `/panchayat` | Village-level interface | Sarpanch | - |
-| `src/pages/crisis-mode/CrisisModePage.tsx` | `/crisis-mode` | Crisis activation | NGO Admin | - |
+```tsx
+// Mounting the live pulse map inside the internal app shell
+<Route path="/pulse-map" element={<CommunityPulseMap />} />
 
----
+// Triggering an AI copilot query from Gemini Lab
+const result = await runCoordinatorCopilotQuery('Where are Delhi tasks getting stuck right now?')
 
-### Frontend Components
-
-| Path | Purpose | Props | State |
-|------|---------|-------|-------|
-| `src/pages/intake/components/VoiceIntake.tsx` | Voice recording with transcription | `onSubmit(report)` | recording, transcript, classification |
-| `src/pages/intake/components/PhotoIntake.tsx` | Photo capture with AI analysis | `onSubmit(report)` | photo, analysis, preview |
-| `src/pages/intake/components/FormIntake.tsx` | Web form submission | `onSubmit(report)` | form fields, validation |
-| `src/pages/intake/components/WhatsAppIntake.tsx` | WhatsApp-style interface | `onSubmit(report)` | messages, input |
-| `src/pages/intake/components/LocationPicker.tsx` | GPS + map location selection | `onLocationSelect(location)`, `initialLocation?` | coordinates, address, map state |
-| `src/components/Navbar/Navbar.tsx` | Navigation header | - | auth state, menu open |
-| `src/components/Footer/Footer.tsx` | Page footer | - | - |
-| `src/components/Hero/Hero.tsx` | Landing hero section | - | animation state |
-
----
-
-### Frontend Services
-
-| Path | Purpose | Key Methods |
-|------|---------|-------------|
-| `src/services/api.ts` | Centralized API client | All API calls wrapped with auth token injection |
-| `src/services/offlineQueue.ts` | IndexedDB offline queue | `initOfflineDB()`, `queueReport()`, `getPendingReports()`, `syncPendingReports()`, `setupConnectivityListeners()` |
-
-**api.ts Methods:**
-```typescript
-// Auth
-verifyToken(token): Promise<User>
-getCurrentUser(): Promise<User>
-updateUserProfile(data): Promise<User>
-
-// Intake
-submitReport(data): Promise<NeedReport>
-getReports(filters): Promise<NeedReport[]>
-getReport(id): Promise<NeedReport>
-updateReport(id, data): Promise<NeedReport>
-batchImportReports(file): Promise<{imported: number}>
-
-// Upload
-uploadPhoto(file): Promise<{url, analysis}>
-uploadAudio(file): Promise<{url}>
-analyzePhoto(base64): Promise<{analysis}>
-
-// Classification
-classifyText(text, lang): Promise<Classification>
-classifyVoice(transcript, lang): Promise<Classification>
-getCategories(): Promise<CategoryMeta[]>
-
-// Map
-getMapLayers(bounds): Promise<MapLayersResponse>
-getHexagonDetails(hexId): Promise<HexagonData>
-getMapStats(): Promise<Stats>
-
-// Dispatch
-triggerDispatch(reportId): Promise<DispatchResult>
-respondToDispatch(taskId, action): Promise<Result>
-runDispatchHeartbeat(): Promise<{processed, escalated}>
-getDispatchTasks(): Promise<DispatchTask[]>
-applyDispatchOverride(taskId, volunteerId, reason): Promise<Result>
-
-// Dashboard
-getDashboardOverview(): Promise<Overview>
-getSurgeForecast(): Promise<Forecast>
-getCrossNgoData(): Promise<Data>
-
-// Volunteer
-getVolunteerProfile(id): Promise<Profile>
-getVolunteerTasks(id): Promise<Task[]>
-acceptTask(taskId): Promise<Result>
-completeTask(taskId, data): Promise<Result>
-getGamification(id): Promise<Gamification>
-
-// Gemini
-copilotQuery(query): Promise<Response>
-generateImpactReport(): Promise<Report>
-detectBurnout(): Promise<Analysis>
-
-// CSR
-bulkOnboardEmployees(companyId, employees): Promise<Result>
-getVolunteerPool(companyId): Promise<Pool>
-getLeaderboard(companyId): Promise<Leaderboard>
-getBRSRReport(companyId): Promise<Report>
-
-// Panchayat
-flagNeed(panchayatId, data): Promise<Result>
-getPanchayatOverview(id): Promise<Overview>
-runSchemeGapFinder(id): Promise<Gaps>
-
-// Crisis
-evaluateCrisis(zoneId): Promise<Evaluation>
-activateCrisis(zoneId): Promise<Result>
-resolveCrisis(zoneId): Promise<Result>
-getCrisisDashboard(zoneId): Promise<Dashboard>
+// Submitting a need report from any intake mode
+await submitReport({
+  description: 'Handpump has failed for two lanes.',
+  category: 'water_sanitation',
+  urgency: 'high',
+  source: 'web_form',
+  language: 'en',
+  location: { latitude: 28.5453, longitude: 77.2734, district: 'South East Delhi', state: 'Delhi' },
+})
 ```
 
 ---
 
 ## API Contracts
 
-### Authentication API
+### Route surface summary
 
-#### POST /api/auth/verify
-Verify Firebase token and get/create user.
+Mounted route groups are verified from `backend/src/index.ts`:
 
-**Request:**
+| Prefix | Source file | Purpose |
+|---|---|---|
+| `/health`, `/api/health/deps` | `backend/src/index.ts` | health + dependency checks |
+| `/api/auth` | `backend/src/routes/auth.ts` | token verification and profile |
+| `/api/intake` | `backend/src/routes/intake.ts` | report submission + CRUD |
+| `/api/upload` | `backend/src/routes/upload.ts` | photo/audio uploads |
+| `/api/classification` | `backend/src/routes/classification.ts` | direct classification endpoints |
+| `/api/map` | `backend/src/routes/map.ts` | map layers and stats |
+| `/api/dispatch` | `backend/src/routes/dispatch.ts` | dispatch queue + review |
+| `/api/dashboard` | `backend/src/routes/dashboard.ts` | NGO dashboard aggregates |
+| `/api/volunteer-app` | `backend/src/routes/volunteerApp.ts` | volunteer mission workflows |
+| `/api/inventory` | `backend/src/routes/inventory.ts` | volunteer supplies |
+| `/api/gemini` | `backend/src/routes/gemini.ts` | AI workbench + live tools |
+| `/api/csr` | `backend/src/routes/csr.ts` | CSR workflows |
+| `/api/panchayat` | `backend/src/routes/panchayat.ts` | Panchayat workflows |
+| `/api/crisis` | `backend/src/routes/crisis.ts` | crisis workflows |
+
+### Auth API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/auth/verify` | Bearer token | verify token and create/bootstrap user |
+| `GET` | `/api/auth/me` | Bearer token | get current profile |
+| `PATCH` | `/api/auth/me` | Bearer token | update profile |
+
+Representative request:
+
 ```json
 {
-  "headers": {
-    "Authorization": "Bearer <firebase-id-token>"
-  }
+  "displayName": "Farah Khan",
+  "preferredLanguage": "en"
 }
 ```
 
-**Response:**
+Representative response:
+
 ```json
 {
   "success": true,
   "data": {
     "user": {
-      "id": "uid123",
-      "phoneNumber": "+919876543210",
-      "displayName": "Ravi Kumar",
-      "role": "field_worker",
-      "preferredLanguage": "hi",
-      "reportsSubmitted": 15,
-      "reportsResolved": 12
-    },
-    "isNewUser": false
+      "id": "dev-user-001",
+      "role": "ngo_admin",
+      "preferredLanguage": "en"
+    }
   }
 }
 ```
 
-**Example curl:**
 ```bash
-curl -X POST http://localhost:3001/api/auth/verify \
-  -H "Authorization: Bearer <token>"
+curl -H "Authorization: Bearer <token>" http://localhost:3001/api/auth/me
 ```
-
----
 
 ### Intake API
 
-#### POST /api/intake/report
-Submit a new need report.
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/intake/report` | Bearer token | submit report, classify, score urgency, dedupe, create queue |
+| `GET` | `/api/intake/reports` | Bearer token | filtered report listing |
+| `GET` | `/api/intake/reports/:id` | Bearer token | single report fetch |
+| `PATCH` | `/api/intake/reports/:id` | Bearer token | update status / assignment |
+| `POST` | `/api/intake/batch` | Bearer token | batch import reports |
 
-**Request:**
+Representative request:
+
 ```json
 {
-  "description": "गांव में पीने के पानी की कमी है",
+  "description": "Community taps are dry and tanker support is needed.",
+  "category": "water_sanitation",
+  "urgency": "high",
+  "source": "web_form",
+  "language": "en",
   "location": {
-    "latitude": 28.6139,
-    "longitude": 77.209,
-    "address": "Village Ramnagar, UP",
-    "district": "Lucknow",
-    "state": "Uttar Pradesh"
-  },
-  "source": "voice",
-  "language": "hi",
-  "estimatedPeopleAffected": 50,
-  "photoUrls": ["https://storage.../photo1.jpg"]
+    "latitude": 28.5453,
+    "longitude": 77.2734,
+    "district": "South East Delhi",
+    "state": "Delhi",
+    "address": "Okhla, South East Delhi, Delhi"
+  }
 }
 ```
 
-**Response:**
+Representative response:
+
 ```json
 {
   "success": true,
   "data": {
-    "id": "report123",
-    "reporterId": "uid123",
-    "category": "water_sanitation",
-    "urgency": "high",
-    "status": "classified",
-    "geminiExtraction": {
+    "report": {
+      "id": "report-id",
       "category": "water_sanitation",
-      "subCategory": "Drinking water scarcity",
-      "severity": "high",
-      "estimatedCount": 50,
-      "description": "Village facing drinking water shortage",
-      "confidence": 0.92,
-      "language": "hi"
+      "urgencyScore": 9.1,
+      "status": "classified"
     },
-    "createdAt": "2024-01-15T10:30:00Z"
+    "classification": {
+      "category": "water_sanitation",
+      "urgency": "high",
+      "urgencyBreakdown": {
+        "base": 7,
+        "weatherMult": 1,
+        "vulnerabilityMult": 1.2,
+        "timeMult": 1.3,
+        "finalScore": 10.92
+      }
+    },
+    "dispatchTaskId": "dispatch-id"
   }
 }
 ```
 
-**Example curl:**
 ```bash
 curl -X POST http://localhost:3001/api/intake/report \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"description":"Water shortage","location":{"latitude":28.6,"longitude":77.2},"source":"web_form"}'
+  -d '{"description":"Community taps are dry","category":"water_sanitation","source":"web_form","location":{"latitude":28.5453,"longitude":77.2734}}'
 ```
 
----
+### Upload API
 
-### Map API
-
-#### GET /api/map/layers
-Get all map layers with H3 hexagon data.
-
-**Request:**
-```
-GET /api/map/layers?north=29.0&south=28.0&east=78.0&west=76.0
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "active": {
-      "name": "Active Needs",
-      "hexagons": [
-        {
-          "hexId": "882a100001fffff",
-          "center": {"lat": 28.62, "lng": 77.21},
-          "boundary": [[28.61, 77.20], [28.63, 77.22]],
-          "needCount": 5,
-          "dominantCategory": "water_sanitation",
-          "dominantUrgency": "high",
-          "categories": {"water_sanitation": 3, "health": 2},
-          "urgencies": {"high": 3, "medium": 2},
-          "nearbyVolunteers": 3,
-          "lastUpdated": "2024-01-15T10:00:00Z"
-        }
-      ],
-      "totalNeeds": 150
-    },
-    "inProgress": {...},
-    "resolved": {...},
-    "centerPoint": {"lat": 28.5, "lng": 77.2},
-    "bounds": {"north": 29.0, "south": 28.0, "east": 78.0, "west": 76.0}
-  }
-}
-```
-
-**Example curl:**
-```bash
-curl "http://localhost:3001/api/map/layers?north=29&south=28&east=78&west=76"
-```
-
----
-
-### Dispatch API
-
-#### POST /api/dispatch/trigger/:reportId
-Trigger SEVA Agent dispatch for a report.
-
-**Request:**
-```
-POST /api/dispatch/trigger/report123
-Authorization: Bearer <token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "taskId": "task456",
-    "message": "SEVA Agent dispatched top candidate",
-    "topCandidate": {
-      "volunteerId": "vol789",
-      "volunteerName": "Amit Singh",
-      "totalScore": 0.87,
-      "distanceKm": 3.2,
-      "explanation": "Matched Amit Singh because they are 3.2km away, with 85% skill fit and 92% reliability."
-    }
-  }
-}
-```
-
-**Example curl:**
-```bash
-curl -X POST http://localhost:3001/api/dispatch/trigger/report123 \
-  -H "Authorization: Bearer <token>"
-```
-
----
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/upload/photo` | Bearer token | upload photo and analyze it |
+| `POST` | `/api/upload/audio` | Bearer token | upload audio recording |
+| `POST` | `/api/upload/photo/analyze` | Bearer token | analyze base64 photo without storage write |
 
 ### Classification API
 
-#### POST /api/classification/text
-Classify text description using Gemini.
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/classification/text` | Bearer token | classify free text |
+| `POST` | `/api/classification/voice` | Bearer token | classify transcript |
+| `GET` | `/api/classification/categories` | public | category metadata |
 
-**Request:**
+### Map API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/map/layers` | public | aggregated map layers |
+| `GET` | `/api/map/hexagon/:hexId` | public | single hex detail |
+| `GET` | `/api/map/stats` | public | map statistics |
+
+### Dispatch API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/dispatch/trigger/:reportId` | coordinator/admin | create dispatch for report |
+| `POST` | `/api/dispatch/tasks/:taskId/respond` | authenticated | accept/decline task invite |
+| `POST` | `/api/dispatch/heartbeat` | authenticated | volunteer heartbeat |
+| `GET` | `/api/dispatch/tasks/:taskId` | coordinator/admin | task detail |
+| `GET` | `/api/dispatch/tasks-list` | coordinator/admin | queue list |
+| `POST` | `/api/dispatch/complete` | authenticated | completion photo verification |
+| `POST` | `/api/dispatch/reporter-confirm` | authenticated | reporter confirmation |
+| `GET` | `/api/dispatch/pending-review` | coordinator/admin | pending AI review queue |
+| `POST` | `/api/dispatch/review-decision` | coordinator/admin | approve/reject AI review |
+| `POST` | `/api/dispatch/tasks/:taskId/override` | coordinator/admin | manual volunteer override |
+| `GET` | `/api/dispatch/tasks/:taskId/logs` | coordinator/admin | decision log history |
+
+Representative request:
+
 ```json
 {
-  "text": "बच्चे भूखे हैं, तीन दिन से खाना नहीं मिला",
-  "language": "hi"
+  "taskId": "workflow-task-001",
+  "needReportId": "seed-report-001",
+  "volunteerId": "dev-user-001",
+  "reporterId": "seed-user-1",
+  "needCategory": "water_sanitation",
+  "photoUrl": "https://.../verification.jpg"
 }
 ```
 
-**Response:**
+Representative response:
+
 ```json
 {
   "success": true,
   "data": {
-    "category": "food_nutrition",
-    "categoryLabel": "Food & Nutrition",
-    "categoryEmoji": "🍽️",
-    "urgency": "critical",
-    "autoAction": "Priority match",
-    "confidence": 0.94,
-    "extraction": {
-      "category": "food_nutrition",
-      "subCategory": "Acute hunger",
-      "severity": "critical",
-      "estimatedCount": 3,
-      "description": "Children have not eaten for 3 days",
-      "language": "hi"
-    }
+    "verified": false,
+    "confidence": 0.5,
+    "reason": "Vision analysis failed — routed to coordinator review",
+    "tier": "needs_review"
   }
 }
 ```
 
----
+### Dashboard API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/dashboard/overview` | coordinator/admin | master NGO dashboard payload |
+| `GET` | `/api/dashboard/surge-forecast` | coordinator/admin | surge forecast snapshot |
+| `GET` | `/api/dashboard/cross-ngo` | coordinator/admin | cross-NGO coordination summary |
+| `POST` | `/api/dashboard/resources` | coordinator/admin | resource updates |
+
+### Volunteer App API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/volunteer-app/profile/:volunteerId` | authenticated | volunteer profile |
+| `POST` | `/api/volunteer-app/onboarding/assessment` | authenticated | onboarding assessment |
+| `POST` | `/api/volunteer-app/onboarding/preferences` | authenticated | preferences save |
+| `GET` | `/api/volunteer-app/tasks/:volunteerId` | authenticated | mission feed |
+| `POST` | `/api/volunteer-app/tasks/:taskId/accept` | authenticated | accept mission |
+| `GET` | `/api/volunteer-app/tasks/:taskId/chat` | authenticated | load task chat |
+| `POST` | `/api/volunteer-app/tasks/:taskId/chat` | authenticated | send chat message |
+| `POST` | `/api/volunteer-app/tasks/complete` | authenticated | legacy completion flow |
+| `GET` | `/api/volunteer-app/gamification/:volunteerId` | authenticated | gamification summary |
+
+### Inventory API
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/inventory/categories` | public | category -> supply map |
+| `GET` | `/api/inventory/:volunteerId` | authenticated | volunteer inventory |
+| `POST` | `/api/inventory/update` | authenticated | add/update item |
+| `POST` | `/api/inventory/decrement` | authenticated | decrement after use |
 
 ### Gemini Features API
 
-#### POST /api/gemini/copilot/query
-Query the coordinator copilot.
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/gemini/copilot/query` | coordinator/admin | coordinator copilot |
+| `POST` | `/api/gemini/skill-match` | authenticated | semantic skill fit |
+| `POST` | `/api/gemini/impact-report` | coordinator/admin | impact narrative |
+| `POST` | `/api/gemini/surge-rag` | coordinator/admin | surge forecast |
+| `POST` | `/api/gemini/burnout-detect` | coordinator/admin | burnout risk |
+| `POST` | `/api/gemini/crisis-escalation` | coordinator/admin | escalation draft |
+| `GET` | `/api/gemini/live-functions` | coordinator/admin | voice/text tool declarations |
+| `POST` | `/api/gemini/live-tool-call` | coordinator/admin | execute live tool |
 
-**Request:**
-```json
-{
-  "query": "Which volunteers have capacity for health tasks in Lucknow?",
-  "context": {
-    "ngoId": "ngo123",
-    "region": "Lucknow"
-  }
-}
-```
+### CSR API
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "response": "Based on current data, 12 volunteers are available for health tasks in Lucknow. Top 3 by reliability: Priya (95%), Raj (92%), Meena (90%). Priya completed 8 health tasks this month with average 4.8 rating.",
-    "suggestions": [
-      "Assign Priya to critical health cases",
-      "Consider onboarding more health volunteers in South Lucknow"
-    ],
-    "dataPoints": {
-      "availableVolunteers": 12,
-      "avgReliability": 0.88,
-      "pendingHealthTasks": 5
-    }
-  }
-}
-```
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `GET` | `/api/csr/pricing` | public | pricing tier info |
+| `POST` | `/api/csr/employees/bulk-onboard` | authenticated | bulk employee onboarding |
+| `GET` | `/api/csr/volunteer-pool/:companyId` | authenticated | volunteer pool |
+| `GET` | `/api/csr/leaderboard/:companyId` | authenticated | division leaderboard |
+| `GET` | `/api/csr/compliance/brsr/:companyId` | authenticated | BRSR automation output |
+| `GET` | `/api/csr/compliance/audit-trail/:companyId` | authenticated | audit trail |
+| `GET` | `/api/csr/certificates/:companyId` | authenticated | certificate feed |
+| `POST` | `/api/csr/challenges` | authenticated | create challenge |
+| `GET` | `/api/csr/challenges/:companyId` | authenticated | list challenges |
+| `POST` | `/api/csr/ngo-vetting` | authenticated | NGO due diligence summary |
 
----
+### Panchayat API
 
-### CSR Portal API
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/panchayat/needs/flag` | authenticated | flag village need |
+| `GET` | `/api/panchayat/overview/:panchayatId` | authenticated | overview |
+| `GET` | `/api/panchayat/history/:panchayatId` | authenticated | recurring history |
+| `POST` | `/api/panchayat/scheme-gap-finder` | authenticated | scheme analysis |
+| `GET` | `/api/panchayat/monthly-health-report/:panchayatId` | authenticated | monthly report |
+| `GET` | `/api/panchayat/pm-gatishakti/:panchayatId` | authenticated | infra overlay |
 
-#### POST /api/csr/employees/bulk-onboard
-Bulk onboard corporate employees as volunteers.
+### Crisis API
 
-**Request:**
-```json
-{
-  "companyId": "corp123",
-  "employees": [
-    {"email": "john@corp.com", "name": "John", "department": "IT"},
-    {"email": "jane@corp.com", "name": "Jane", "department": "HR"}
-  ]
-}
-```
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| `POST` | `/api/crisis/evaluate` | authenticated | evaluate activation |
+| `POST` | `/api/crisis/activate` | authenticated | activate crisis mode |
+| `POST` | `/api/crisis/resolve` | authenticated | resolve crisis |
+| `GET` | `/api/crisis/dashboard/:zoneId` | authenticated | crisis dashboard |
+| `POST` | `/api/crisis/post-report` | authenticated | generate post-crisis report |
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "onboarded": 2,
-    "failed": 0,
-    "employees": [
-      {"email": "john@corp.com", "volunteerId": "vol001"},
-      {"email": "jane@corp.com", "volunteerId": "vol002"}
-    ]
-  }
-}
-```
+### External integration mapping
 
----
+| Integration | Used for | Code location |
+|---|---|---|
+| Firebase Auth | auth and dev bypass patterns | `backend/src/routes/auth.ts`, `src/context/AuthContext.tsx` |
+| Firestore | core operational graph | throughout backend services + map/public KPI listeners |
+| Firebase Storage / local uploads | photo/audio persistence | `backend/src/routes/upload.ts` |
+| Gemini API | structured generation, embeddings, vision | `backend/src/services/geminiClient.ts`, `classification.ts`, `geminiFeatures.ts`, `dedupEngine.ts`, `visionAnalysis.ts` |
+| Open-Meteo | weather multiplier | `backend/src/services/urgencyMultipliers.ts` |
+| Google Maps JS API | maps + reverse geocode UX | `src/pages/pulse-map/*.tsx`, `src/hooks/useGeolocation.ts` |
 
-### Crisis Mode API
+### Integration note
 
-#### POST /api/crisis/activate
-Activate crisis mode for a zone.
-
-**Request:**
-```json
-{
-  "zoneId": "zone123",
-  "reason": "Flood emergency",
-  "severity": "critical",
-  "estimatedAffected": 5000
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "crisisId": "crisis456",
-    "zoneId": "zone123",
-    "status": "active",
-    "activatedAt": "2024-01-15T10:00:00Z",
-    "notifications": {
-      "volunteersNotified": 45,
-      "ngosNotified": 8
-    }
-  }
-}
-```
+- No FHIR, ABDM, or AWS HealthLake integration was verified in the current codebase.
 
 ---
 
 ## Data Flow & State Management
 
-### Frontend State Architecture
+### Frontend state map
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     React Application                        │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │ AuthContext │  │ThemeContext │  │ Component Local     │  │
-│  │             │  │             │  │ State (useState)    │  │
-│  │ - user      │  │ - theme     │  │ - form data         │  │
-│  │ - loading   │  │ - toggle()  │  │ - UI state          │  │
-│  │ - signIn()  │  │             │  │ - async status      │  │
-│  │ - signOut() │  │             │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Zustand Store (Lightweight)             │    │
-│  │  - Optional global state for complex cross-page     │    │
-│  │    data sharing (not heavily used currently)        │    │
-│  └─────────────────────────────────────────────────────┘    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              IndexedDB (Offline Queue)               │    │
-│  │  - pendingReports: queued when offline              │    │
-│  │  - syncStatus: last sync timestamp                  │    │
-│  └─────────────────────────────────────────────────────┘    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              API Service Layer                       │    │
-│  │  - Centralized fetch with auth token injection      │    │
-│  │  - Error handling and response normalization        │    │
-│  │  - Automatic retry on network failure               │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-```
+- Routing state: `react-router-dom` in `src/App.tsx`
+- Theme state: `ThemeContext` with `localStorage` persistence in `src/context/ThemeContext.tsx`
+- Auth state: `AuthContext` with Firebase auth listeners in `src/context/AuthContext.tsx`
+- Page-local operational state: most major pages keep their own fetch/result state with React hooks
+- API normalization state: `src/services/api.ts` reshapes backend payloads before UI consumption
+- Live data state: direct Firestore `onSnapshot` listeners in Pulse Map and Public KPI pages
+- Offline state: IndexedDB-backed queue via `src/services/offlineQueue.ts`
 
-### Data Flow Sequence
+### Practical flow
 
-1. **User Action** → Component event handler
-2. **API Call** → `api.ts` adds auth token, makes request
-3. **Backend Processing** → Express route → Service → Firestore
-4. **Response** → JSON returned to frontend
-5. **State Update** → Component setState or Context update
-6. **UI Render** → React reconciliation and DOM update
+1. User action enters through a page or intake mode.
+2. Most pages call `src/services/api.ts`, which attaches auth tokens and normalizes responses.
+3. Backend routes delegate to service modules.
+4. Services write/read Firestore, Storage, Gemini, weather, or map-related integrations.
+5. Aggregate views then flow back into role-specific dashboards, or directly into live Firestore listeners.
 
-### Offline Flow
+### Cache / state notes
 
-1. User submits report while offline
-2. `offlineQueue.ts` stores in IndexedDB
-3. Connectivity listener detects online status
-4. `syncPendingReports()` retries queued reports
-5. Success → remove from queue, update UI
+- No Redux store was verified.
+- `zustand` is installed but not meaningfully used in inspected runtime source.
+- The app relies on React state, contexts, API helpers, and Firestore listeners rather than a global client-state store.
 
 ---
 
 ## AI/ML Section
 
-### Models Used
+### What exists
 
-| Model | Version | Purpose | Latency |
-|-------|---------|---------|---------|
-| Gemini 1.5 Flash | Latest | Text/voice classification | ~500ms |
-| Gemini 1.5 Flash Vision | Latest | Photo analysis | ~800ms |
-| Gemini 1.5 Pro | Latest | Copilot queries, complex reasoning | ~1.5s |
+- Structured classification for intake text and transcripts
+- Vision analysis for photo intake and completion verification
+- Text embeddings for deduplication
+- Explainable urgency scoring using weather, ward vulnerability, and time of day
+- AI workbench tools: copilot, skill fit, impact report, surge forecast, burnout prediction, escalation draft
+- Panchayat scheme-gap analysis and CSR NGO vetting generation
 
-### Classification Pipeline
+### Models verified in code
 
-**Input Processing:**
-- Language detection (supports hi, ta, te, bn, mr, gu, kn, or, en)
-- Text cleaning and normalization
-- Colloquial language handling for voice transcripts
+- `gemini-1.5-flash` (default flash path)
+- `gemini-1.5-pro` (longer-form generation path)
+- `text-embedding-004` (dedup embeddings)
 
-**Model Invocation:**
-- Temperature: 0.1 (for consistent classification)
-- Max output tokens: 500
-- Structured JSON output enforced via prompt engineering
+### Inference modes
 
-**Output Schema:**
-```typescript
-interface GeminiExtraction {
-  category: string;        // One of 8 categories
-  subCategory?: string;    // Specific sub-category
-  severity: string;        // critical | high | medium | low
-  estimatedCount?: number; // Affected population
-  description: string;     // English summary
-  keywords?: string[];     // Extracted keywords
-  confidence: number;      // 0-1 confidence score
-  language?: string;       // Detected language code
-}
-```
+- Realtime-ish: intake classification, queue creation, dashboard tool queries, verification routing
+- Batch / infra-ready: urgency decay script, inventory alert checks
+- Human-in-loop: verification review, reporter confirmation, coordinator override
 
-### Matching Algorithm
+### Explainability notes
 
-**Weights:**
-| Factor | Default | Emergency |
-|--------|---------|-----------|
-| Proximity | 0.30 | 0.50 |
-| Skill Fit | 0.25 | 0.15 |
-| Availability | 0.20 | 0.20 |
-| Reliability | 0.15 | 0.10 |
-| Equity Boost | 0.05 | 0.03 |
-| Urgency | 0.05 | 0.02 |
+- Urgency stores `urgencyBreakdown` fields directly on `needReports`
+- Gemini tool outputs include `provider`, `model`, and `degraded`
+- Dedup is fail-open and now has lexical fallback when embeddings fail
+- Gemini Lab now renders model outputs as operational summaries instead of raw JSON dumps
 
-**Scoring Functions:**
-- **Proximity**: Inverse distance with exponential decay after 5km
-- **Skill Fit**: Jaccard similarity of tokenized skills vs need
-- **Availability**: FREE=1, IN_TASK=0.25, OFFLINE=0
-- **Reliability**: (completed/assigned) * (rating/5)
-- **Equity Boost**: +0.15 for underserved zones, +0.1 for small NGOs
+### What was not found
 
-### Fallback Behavior
-
-If Vertex AI is unavailable:
-- Classification falls back to keyword-based mock
-- Returns default category (health) with low confidence (0.3)
-- Backend continues operation, flagged in logs
+- No custom model training pipeline
+- No drift monitoring framework
+- No offline model weights or classical ML training code checked into the repo
 
 ---
 
 ## Styling & Theming
 
-### CSS Approach
-- Global CSS in `src/styles/global.css`
-- Component-scoped styles via CSS modules or inline
-- Utility classes for common patterns
+### Styling approach
 
-### Color Tokens
+- CSS Modules for page/component-local styling
+- `src/styles/global.css` for root tokens and shared utilities
+- `src/styles/internal.css` for internal-product shells, panels, badges, metrics, forms
+- Attribute-driven theming using `data-theme="dark"`
+
+### Design tokens
+
+- Typography: `Bricolage Grotesque` for display, `General Sans` for UI/body
+- Base surfaces: warm linen / parchment in light mode, deep warm surfaces in dark mode
+- Accent: terra cotta
+- Success/live: jade
+- Warning: amber
+- Critical: warm red
+
+### Breakpoints
+
+- Most page modules implement custom responsive behavior around `1260px`, `1100px`, `900px`, `840px`, and `768px`
+- Layouts collapse from multi-column dashboards into stacked cards rather than horizontal scroll-heavy shells
+
+### Example token usage
 
 ```css
-:root {
-  /* Primary */
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
-  
-  /* Status */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  
-  /* Urgency */
-  --color-critical: #dc2626;
-  --color-high: #f97316;
-  --color-medium: #eab308;
-  --color-low: #22c55e;
-  
-  /* Category colors */
-  --color-emergency: #dc2626;
-  --color-food: #f97316;
-  --color-health: #ec4899;
-  --color-education: #8b5cf6;
-  --color-water: #06b6d4;
-  --color-shelter: #84cc16;
-  --color-women-child: #f472b6;
-  --color-environment: #22c55e;
+.panel {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--internal-grain), var(--surface-glass);
+  box-shadow: var(--shadow-sm);
 }
-```
 
-### Responsive Breakpoints
-
-```css
-/* Mobile first */
-@media (min-width: 640px) { /* sm */ }
-@media (min-width: 768px) { /* md */ }
-@media (min-width: 1024px) { /* lg */ }
-@media (min-width: 1280px) { /* xl */ }
+.btnPrimary {
+  background: var(--jade);
+  color: var(--text-inverse);
+}
 ```
 
 ---
 
 ## Testing
 
-### Current Status
-**No test files found in the codebase.** Testing infrastructure needs to be set up.
+### What is available
 
-### Recommended Testing Setup
-
-```bash
-# Install testing dependencies
-npm install -D vitest @testing-library/react @testing-library/jest-dom
-
-# Backend
-cd backend
-npm install -D vitest supertest
-```
-
-### Test Commands (Once Set Up)
+- Build verification only was auto-verified from package scripts:
 
 ```bash
-# Frontend tests
-npm test
-
-# Backend tests
-cd backend && npm test
-
-# Coverage
-npm run test:coverage
+npm run build
+npm run build --prefix backend
 ```
 
-### Areas Needing Tests
-- [ ] Classification service accuracy
-- [ ] Matching engine scoring
-- [ ] SEVA Agent cascade logic
-- [ ] API route handlers
-- [ ] Frontend form validation
-- [ ] Offline queue sync
+### What is missing
+
+- No `test`, `test:coverage`, or frontend/backend unit-test scripts were found in current `package.json` files.
+- No `*.test.*`, `*.spec.*`, or `__tests__` folders were found in the repo scan.
+
+### Practical QA strategy used during implementation
+
+- route-level curl smoke checks
+- live Firestore query verification
+- seeded end-to-end workflow checks
+- UI route load checks after restarting frontend/backend
 
 ---
 
 ## Build & Deployment
 
-### Build Commands
+### Build outputs
+
+- Frontend: `dist/`
+- Backend: `backend/dist/`
+
+### Local deployment pattern
 
 ```bash
-# Frontend production build
-npm run build
-# Output: dist/
-
-# Backend production build
-cd backend && npm run build
-# Output: backend/dist/
+npm run dev:all
 ```
 
-### Environment Variables for Production
+### Production notes
 
-**Frontend** (build-time):
-- All `VITE_*` variables must be set before build
-- Values are inlined during compilation
+- Backend serves `/uploads` as static files when cloud storage falls back to disk.
+- Firestore composite indexes are required for some production query paths; see `FIRESTORE_INDEXES.md`.
+- Scheduler deployment for `urgencyDecay` and inventory alert checks is an operational follow-up outside the current runtime bootstrap.
 
-**Backend** (runtime):
-- Set via hosting platform environment
-- Never commit `.env` files
+### CI/CD / hosting clues
 
-### Deployment Recommendations
-
-| Component | Recommended Platform |
-|-----------|---------------------|
-| Frontend | Firebase Hosting, Vercel, Netlify |
-| Backend | Cloud Run, Cloud Functions, App Engine |
-| Database | Firestore (already configured) |
-| Storage | Cloud Storage (already configured) |
-
-### Docker (Optional)
-
-```dockerfile
-# Backend Dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY backend/package*.json ./
-RUN npm ci --only=production
-COPY backend/dist ./dist
-EXPOSE 3001
-CMD ["node", "dist/index.js"]
-```
-
-### CI/CD Considerations
-- Run linting: `npm run lint`
-- Type check: `tsc --noEmit`
-- Build check: `npm run build`
-- Security scan dependencies periodically
+- No Dockerfile found
+- No GitHub Actions / CI workflow files verified
+- No Firebase Hosting manifest verified
+- Human review is required for final production deployment topology
 
 ---
 
 ## Troubleshooting
 
-See [SETUP_GUIDE.md](./SETUP_GUIDE.md#11-troubleshooting-from-real-findings) for detailed troubleshooting based on real debugging sessions.
+### Common issues found during analysis
 
-### Quick Reference
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `CONFIGURATION_NOT_FOUND` | Firebase Auth not configured | Enable sign-in provider in Firebase Console |
-| `Cloud Firestore API disabled` | API not enabled | Enable in GCP Console |
-| `The query requires an index` | Missing composite index | Click link in error to create index |
-| `Failed to parse private key` | Malformed `FIREBASE_PRIVATE_KEY` | Use JSON file path instead |
-| `429 Too Many Requests` | Rate limited | Wait for window reset or adjust limits |
-| `Network Error` on frontend | Backend not running / CORS | Check backend logs, verify ALLOWED_ORIGINS |
-
-### Health Check Endpoints
-
-```bash
-# Basic health
-curl http://localhost:3001/health
-
-# Dependency status (shows Firebase mode)
-curl http://localhost:3001/api/health/deps
-```
+- `Pulse Map` blank or degraded
+  - usually missing `VITE_GOOGLE_MAPS_API_KEY` or Firestore index setup
+- `Assisted Intake` duplicate greeting in dev
+  - caused by React StrictMode double-effect behavior; current implementation guards this
+- `Seva Agent` queue card crash
+  - older tasks without `rankedDecisions` caused undefined access; now normalized safely in frontend API mapping
+- intake report not appearing in dispatch queue
+  - fixed by routing intake into `triggerSevaAgentForReport(...)`, not just `needReports`
+- duplicate volunteer names in map roster
+  - caused by duplicate demo docs in Firestore; UI now collapses them
+- `ERR_BLOCKED_BY_CLIENT`
+  - usually browser extension/adblock, not a SevaSetu runtime bug
+- `google.maps.Marker` deprecation warning
+  - non-blocking today, but future migration to `AdvancedMarkerElement` is recommended
 
 ---
 
 ## Contributing
 
-### Code Style
-- TypeScript strict mode
-- ESLint configuration in `backend/.eslintrc`
-- Use async/await over raw Promises
-- Prefer functional components with hooks
+### Code style expectations
 
-### File Naming
-- Components: PascalCase (`IntakePage.tsx`)
-- Services: camelCase (`classification.ts`)
-- Routes: camelCase (`dispatch.ts`)
+- Keep changes additive unless a named file/change explicitly requires otherwise
+- Preserve existing route paths and Firestore collection names
+- Prefer repo conventions over generic abstractions
+- Keep UI within the existing warm internal design language
+- Do not invent backend contracts that are not already supported or explicitly approved
 
-### Git Workflow
-1. Create feature branch from `main`
-2. Make changes with clear commits
-3. Ensure build passes: `npm run build`
-4. Ensure lint passes: `npm run lint`
-5. Submit PR with description
+### Recommended pre-PR checklist
 
-### PR Checklist
-- [ ] Code compiles without errors
-- [ ] No lint warnings
-- [ ] API changes documented
-- [ ] Environment variables documented
-- [ ] Tested locally
+- `npm run build`
+- `npm run build --prefix backend`
+- verify changed routes/pages manually
+- verify Firestore indexes for any new query shapes
+- update `README.md` and `FIRESTORE_INDEXES.md` if contracts/query shapes changed
 
 ---
 
@@ -1688,123 +1111,73 @@ curl http://localhost:3001/api/health/deps
 ```json
 {
   "docs_manifest": {
-    "files_scanned_count": 85,
+    "files_scanned_count": 167,
     "diagrams_generated": [
       "Layered System Architecture",
       "Privacy & Trust Layer",
       "Application Role Flows",
       "Data Flow Diagram",
-      "AI/ML Pipeline Diagram",
-      "Why-this-Stack Diagram"
+      "AI / ML Pipeline Diagram",
+      "Why-this-stack Diagram"
     ],
-    "components_indexed_count": 42,
-    "api_routes_count": 48,
-    "issues_flagged_count": 5,
-    "run_timestamp": "2024-01-15T12:00:00Z"
+    "components_indexed_count": 64,
+    "api_routes_count": 93,
+    "issues_flagged_count": 8,
+    "run_timestamp": "2026-03-29T00:00:00Z"
   }
 }
 ```
 
 ---
 
-## Validation Checklist
+## VALIDATION CHECKLIST
 
-### Double-Verified Items
-
-- [x] **Package versions** - Verified from `package.json` (root) and `backend/package.json`
-- [x] **API routes** - Verified from `backend/src/routes/*.ts` files
-- [x] **Environment variables** - Verified from `.env.example` and `backend/.env.example`
-- [x] **Data models** - Verified from `backend/src/models/*.ts` files
-- [x] **Frontend routes** - Verified from `src/App.tsx` routing configuration
-- [x] **Service methods** - Verified from source files in `backend/src/services/`
-- [x] **Rate limiting** - Verified from `backend/src/middleware/rateLimit.ts`
-
-### Items Flagged for Human Review
-
-- [ ] **Test coverage** - No test files found. Recommend adding tests. (Location: entire codebase)
-- [ ] **FHIR/HealthLake/ABDM integration** - Not found in codebase. PRDs mention potential future integration. (Assumption: not implemented)
-- [ ] **WhatsApp/Twilio integration** - Env vars exist but implementation appears incomplete. (Location: `backend/src/routes/intake.ts` - WhatsApp endpoint exists but Twilio integration not found)
-- [ ] **Gemini Pro usage** - Copilot uses Pro model but exact model version not verified at runtime. (Location: `backend/src/services/geminiFeatures.ts`)
-- [ ] **Offline sync reliability** - IndexedDB implementation exists but edge cases not tested. (Location: `src/services/offlineQueue.ts`)
-
-### Assumptions Made
-
-1. **Firebase emulator** - Not configured for local development (based on `VITE_USE_FIREBASE_EMULATOR=false` default)
-2. **H3 resolution** - Assumed Resolution 8 based on privacy requirements in PRD
-3. **Model versions** - Gemini 1.5 Flash used, exact version managed by Vertex AI
-4. **Notification delivery** - WhatsApp/SMS fallbacks declared but external service not connected
+- [x] Package versions double-verified against `package.json` and `backend/package.json`
+- [x] Mounted backend route groups verified from `backend/src/index.ts`
+- [x] Frontend route structure verified from `src/App.tsx`
+- [x] Firebase/Gemini env usage verified from runtime config files
+- [x] Public KPI, Pulse Map, CSR Portal, Panchayat, Gemini Lab, NGO Dashboard, Volunteer App, and intake flows all have source-backed documentation entries
+- [x] All 6 required Mermaid diagrams are embedded in this file
+- [x] No FHIR / ABDM / HealthLake integration was verified; marked explicitly instead of guessed
+- [ ] Human review: `backend/.env` contains real-looking secrets and should be checked for exposure/rotation risk
+- [ ] Human review: no formal automated test suite was found, so coverage claims should not be overstated
+- [ ] Human review: scheduler deployment for `backend/src/scripts/urgencyDecay.ts` and inventory alerts is not wired in bootstrap code
+- [ ] Human review: some route groups accept ids in params/body without strict ownership enforcement; verify final RBAC expectations route-by-route
+- [ ] Human review: Google Maps deprecation warning for `google.maps.Marker` remains a future maintenance item
+- [ ] Human review: current README package/env facts are code-verified, but deployment topology remains inferential because no CI/CD manifests or Dockerfiles were found
 
 ---
 
 ## Appendix
 
-### Supported Languages
-
-| Code | Native Name | English Name |
-|------|-------------|--------------|
-| hi | हिन्दी | Hindi |
-| ta | தமிழ் | Tamil |
-| te | తెలుగు | Telugu |
-| bn | বাংলা | Bengali |
-| mr | मराठी | Marathi |
-| gu | ગુજરાતી | Gujarati |
-| kn | ಕನ್ನಡ | Kannada |
-| or | ଓଡ଼ିଆ | Odia |
-| en | English | English |
-
-### Need Categories
-
-| Category | Emoji | Default Urgency | Auto Action |
-|----------|-------|-----------------|-------------|
-| emergency | 🚨 | critical | Auto-dispatch in 60 sec |
-| food_nutrition | 🍽️ | high | Priority match |
-| health | 🏥 | high | Health NGO match |
-| education | 📚 | medium | Education NGO queue |
-| water_sanitation | 💧 | high | WASH NGO match |
-| shelter | 🏘️ | high | Relief NGO alert |
-| women_child | 👩‍⚕️ | critical | Special dispatch + privacy mode |
-| environment | 🌿 | low | Environment NGO queue |
-
-### User Roles
-
-| Role | Access Level | Features |
-|------|--------------|----------|
-| field_worker | Basic | Submit reports, view own history |
-| ngo_staff | Standard | Dashboard, dispatch, report management |
-| ngo_admin | Admin | All NGO features + settings |
-| volunteer | Volunteer | Task feed, accept/complete tasks |
-| admin | Super | All features across all NGOs |
-
-### Dispatch Task States
-
-```
-pending → invited → accepted → completed
-                 ↘ declined → (cascade or escalated)
-                 ↘ expired → (cascade or escalated)
-```
-
-### Useful Commands
+### Useful commands
 
 ```bash
-# Seed test data
-cd backend && npm run seed
+# run frontend + backend
+npm run dev:all
 
-# Seed volunteer data
-cd backend && npm run seed:volunteers
+# backend only
+npm run dev --prefix backend
 
-# Check TypeScript compilation
-npx tsc --noEmit
+# frontend only
+npm run dev
 
-# Run ESLint
-npm run lint
+# seed demo data
+npm run seed --prefix backend -- --clear --count=24
 
-# View backend logs in real-time
-cd backend && npm run dev
-
-# Quick API test
-curl -s http://localhost:3001/api/health/deps | jq
+# build everything
+npm run build && npm run build --prefix backend
 ```
 
----
+### Example route smoke checks
 
-*Generated from codebase analysis. Last updated based on files in repository.*
+```bash
+curl http://localhost:3001/health
+curl -H "Authorization: Bearer dev-mock-token-for-prototype" http://localhost:3001/api/dashboard/overview
+curl -H "Authorization: Bearer dev-mock-token-for-prototype" http://localhost:3001/api/dispatch/tasks-list
+```
+
+### Notes on completeness
+
+- This README documents the current inspected source code, not hypothetical deployment state.
+- Where behavior depended on code-backed fallbacks or operational setup, that has been described precisely and flagged in the validation checklist.
