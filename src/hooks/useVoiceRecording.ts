@@ -49,6 +49,16 @@ export function useVoiceRecording(
   const startTimeRef = useRef<number>(0);
   const recognitionRef = useRef<any>(null);
   const stopResolverRef = useRef<((blob: Blob | null) => void) | null>(null);
+  const finalTranscriptRef = useRef('');
+
+  const updateTranscriptState = useCallback(
+    (finalText: string, interimText: string = '') => {
+      const nextTranscript = [finalText.trim(), interimText.trim()].filter(Boolean).join(' ').trim();
+      setTranscript(nextTranscript);
+      onTranscript?.(nextTranscript);
+    },
+    [onTranscript]
+  );
 
   // Check browser support
   const isSupported = typeof navigator !== 'undefined' && 
@@ -68,21 +78,26 @@ export function useVoiceRecording(
     recognition.lang = 'hi-IN'; // Default to Hindi, can be changed
     
     recognition.onresult = (event: any) => {
-      let finalTranscript = '';
+      let finalTranscriptChunk = '';
       let interimTranscript = '';
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+          finalTranscriptChunk += transcript;
         } else {
           interimTranscript += transcript;
         }
       }
-      
-      const fullTranscript = finalTranscript || interimTranscript;
-      setTranscript(fullTranscript);
-      onTranscript?.(fullTranscript);
+
+      if (finalTranscriptChunk.trim()) {
+        finalTranscriptRef.current = [finalTranscriptRef.current.trim(), finalTranscriptChunk.trim()]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+      }
+
+      updateTranscriptState(finalTranscriptRef.current, interimTranscript);
     };
 
     recognition.onerror = (event: any) => {
@@ -90,8 +105,18 @@ export function useVoiceRecording(
       // Don't set error - speech recognition is optional
     };
 
+    recognition.onend = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        try {
+          recognition.start();
+        } catch {
+          // Ignore repeated start errors while browser settles.
+        }
+      }
+    };
+
     return recognition;
-  }, [onTranscript]);
+  }, [updateTranscriptState]);
 
   // Start recording
   const startRecording = useCallback(async () => {
@@ -103,6 +128,7 @@ export function useVoiceRecording(
     try {
       setError(null);
       chunksRef.current = [];
+      finalTranscriptRef.current = '';
       setTranscript('');
       
       // Get microphone access
@@ -250,6 +276,7 @@ export function useVoiceRecording(
       URL.revokeObjectURL(audioUrl);
     }
     setAudioUrl(null);
+    finalTranscriptRef.current = '';
     setTranscript('');
     setError(null);
     chunksRef.current = [];

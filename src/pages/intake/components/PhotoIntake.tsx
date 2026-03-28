@@ -13,6 +13,8 @@ import { uploadPhoto, submitReport } from '../../../services/api';
 import { IntakeSource, CategoryMetadata } from '../../../types';
 import type { Location, NeedCategoryType } from '../../../types';
 import { AppIcon } from '../../../components/shared';
+import LocationPresetPicker from '../../../components/shared/LocationPresetPicker';
+import { getDelhiLocationPreset } from '../../../data/delhiLocationPresets';
 import { getCategoryIcon } from '../../../utils/categoryIcons';
 import styles from './PhotoIntake.module.css';
 
@@ -48,6 +50,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [reportId, setReportId] = useState<string | null>(null);
   const [useCamera, setUseCamera] = useState(true);
+  const [selectedPresetId, setSelectedPresetId] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,7 +60,9 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
   const {
     location,
     loading: locationLoading,
+    error: locationError,
     getLocation,
+    setLocation,
     isSupported: geoSupported,
   } = useGeolocation();
 
@@ -67,6 +72,21 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
       getLocation();
     }
   }, [geoSupported, location, getLocation]);
+
+  const handleSelectLocationPreset = (presetId: string) => {
+    const preset = getDelhiLocationPreset(presetId);
+    if (!preset) return;
+    setSelectedPresetId(presetId);
+    setLocation(preset.location);
+  };
+
+  const handleUseCurrentLocation = async () => {
+    const currentLocation = await getLocation();
+    if (currentLocation) {
+      setSelectedPresetId('');
+      setLocation(currentLocation);
+    }
+  };
 
   // Initialize camera
   useEffect(() => {
@@ -253,16 +273,6 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
 
   return (
     <div className={styles.container}>
-      {/* Location status */}
-      <div className={styles.locationStatus}>
-        {locationLoading && <span className={styles.loading}>Getting location...</span>}
-        {location && (
-          <span className={styles.success}>
-            {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
-          </span>
-        )}
-      </div>
-
       {/* Main content */}
       <div className={styles.content}>
         {/* Capture step */}
@@ -400,6 +410,17 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
 
             <div className={styles.confidence}>
               Confidence: {Math.round(analysis.confidence * 100)}%
+            </div>
+
+            <div className={styles.locationChooserBlock}>
+              <LocationPresetPicker
+                selectedPresetId={selectedPresetId}
+                location={location}
+                locationLoading={locationLoading}
+                locationError={locationError}
+                onSelectPreset={handleSelectLocationPreset}
+                onUseCurrentLocation={handleUseCurrentLocation}
+              />
             </div>
 
             <div className={styles.confirmButtons}>

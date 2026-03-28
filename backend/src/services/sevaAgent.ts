@@ -33,6 +33,7 @@ export async function triggerSevaAgentForReport(reportId: string): Promise<Agent
   const task: DispatchTask = {
     id: taskRef.id,
     needReportId: reportId,
+    needDescription: report.description,
     category: report.category,
     urgency: report.urgency,
     status: matches.top3.length > 0 ? DispatchTaskStatus.INVITED : DispatchTaskStatus.ESCALATED,

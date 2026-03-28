@@ -440,7 +440,24 @@ export async function getMapStats(): Promise<ApiResponse<any>> {
 // ============ DISPATCH API ============
 
 export async function getDispatchTasks(): Promise<ApiResponse<any>> {
-  return apiFetch('/dispatch/tasks-list');
+  const response = await apiFetch('/dispatch/tasks-list');
+  const data = response.data as any;
+
+  if (response.success && Array.isArray(data?.tasks)) {
+    return {
+      ...response,
+      data: {
+        ...data,
+        tasks: data.tasks.map((task: any) => ({
+          ...task,
+          rankedDecisions: Array.isArray(task?.rankedDecisions) ? task.rankedDecisions : [],
+          coordinatorOverride: task?.coordinatorOverride || {},
+        })),
+      },
+    };
+  }
+
+  return response;
 }
 
 export async function runDispatchHeartbeat(): Promise<ApiResponse<any>> {

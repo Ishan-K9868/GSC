@@ -128,12 +128,24 @@ dispatchRouter.get(
       .get();
 
     const tasks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const reportIds = Array.from(new Set(tasks.map((task: any) => task.needReportId).filter(Boolean)));
+    const reportDocs = await Promise.all(
+      reportIds.map(async (reportId) => {
+        const reportDoc = await db.collection('needReports').doc(reportId).get();
+        return [reportId, reportDoc.exists ? reportDoc.data() : null] as const;
+      })
+    );
+    const reportMap = new Map(reportDocs);
+    const enrichedTasks = tasks.map((task: any) => ({
+      ...task,
+      needDescription: task.needDescription || reportMap.get(task.needReportId)?.description || '',
+    }));
 
     res.json({
       success: true,
       data: {
-        tasks,
-        count: tasks.length,
+        tasks: enrichedTasks,
+        count: enrichedTasks.length,
       },
     });
   } catch (error) {

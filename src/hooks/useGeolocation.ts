@@ -20,6 +20,7 @@ interface UseGeolocationReturn {
   loading: boolean;
   error: string | null;
   getLocation: () => Promise<Location | null>;
+  setLocation: (location: Location | null) => void;
   isSupported: boolean;
 }
 
@@ -136,6 +137,7 @@ export function useGeolocation(
     loading,
     error,
     getLocation,
+    setLocation,
     isSupported,
   };
 }

@@ -10,6 +10,7 @@ import styles from './SevaAgentDashboard.module.css';
 type DispatchTask = {
   id: string;
   needReportId: string;
+  needDescription?: string;
   category: string;
   urgency: string;
   status: string;
@@ -28,6 +29,10 @@ type DispatchTask = {
   };
   createdAt: string;
 };
+
+function getRankedDecisions(task?: DispatchTask) {
+  return Array.isArray(task?.rankedDecisions) ? task!.rankedDecisions : [];
+}
 
 function formatDateTime(value: string): string {
   const d = new Date(value);
@@ -59,7 +64,7 @@ export function SevaAgentDashboard() {
   const metrics = useMemo(() => {
     const accepted = tasks.filter((task) => task.acceptedVolunteerId).length;
     const overrideCount = tasks.filter((task) => task.coordinatorOverride?.overridden).length;
-    const lowConfidence = tasks.filter((task) => (task.rankedDecisions[0]?.totalScore || 0) < 0.72).length;
+    const lowConfidence = tasks.filter((task) => (getRankedDecisions(task)[0]?.totalScore || 0) < 0.72).length;
     return {
       queue: tasks.length,
       accepted,
@@ -69,8 +74,11 @@ export function SevaAgentDashboard() {
   }, [tasks]);
 
   useEffect(() => {
-    if (selectedTask?.rankedDecisions?.[0]) {
-      setOverrideVolunteerId(selectedTask.rankedDecisions[0].volunteerId);
+    const firstRankedDecision = getRankedDecisions(selectedTask)[0];
+    if (firstRankedDecision) {
+      setOverrideVolunteerId(firstRankedDecision.volunteerId);
+    } else {
+      setOverrideVolunteerId('');
     }
   }, [selectedTask?.id]);
 
@@ -172,7 +180,7 @@ export function SevaAgentDashboard() {
           {loading ? <p className={styles.notice}>Loading dispatch tasks...</p> : null}
           <div className={styles.queueList}>
             {tasks.map((task) => {
-              const best = task.rankedDecisions[0];
+              const best = getRankedDecisions(task)[0];
               const isActive = selectedTask?.id === task.id;
               return (
                 <button
@@ -189,6 +197,9 @@ export function SevaAgentDashboard() {
                     <span>{task.status}</span>
                     <span>{formatDateTime(task.createdAt)}</span>
                   </div>
+                  {task.needDescription ? (
+                    <p className={styles.queueDescription}>{task.needDescription}</p>
+                  ) : null}
                   <p className={styles.queueHint}>
                     Best: {best?.volunteerName || 'No ranking'} ·
                     {' '}{Math.round((best?.totalScore || 0) * 100)} score
@@ -217,9 +228,12 @@ export function SevaAgentDashboard() {
                   <span>{formatCategory(selectedTask.category)}</span>
                   <span>{selectedTask.status}</span>
                 </div>
+                {selectedTask.needDescription ? (
+                  <p className={styles.queueDescription}>{selectedTask.needDescription}</p>
+                ) : null}
               </div>
-              <div className={styles.decisionList}>
-                {selectedTask.rankedDecisions.slice(0, 4).map((decision, index) => (
+                <div className={styles.decisionList}>
+                {getRankedDecisions(selectedTask).slice(0, 4).map((decision, index) => (
                   <article key={decision.volunteerId} className={styles.decisionCard}>
                     <div className={styles.decisionTop}>
                       <span className={styles.rankBadge}>#{index + 1}</span>
@@ -240,6 +254,9 @@ export function SevaAgentDashboard() {
                     </div>
                   </article>
                 ))}
+                {getRankedDecisions(selectedTask).length === 0 ? (
+                  <p className={styles.notice}>No ranked decisions are available for this task yet.</p>
+                ) : null}
               </div>
             </div>
           )}
@@ -271,8 +288,9 @@ export function SevaAgentDashboard() {
                   value={overrideVolunteerId}
                   onChange={(e) => setOverrideVolunteerId(e.target.value)}
                   className={styles.select}
+                  disabled={getRankedDecisions(selectedTask).length === 0}
                 >
-                  {selectedTask.rankedDecisions.map((d) => (
+                  {getRankedDecisions(selectedTask).map((d) => (
                     <option key={d.volunteerId} value={d.volunteerId}>
                       {d.volunteerName} · {Math.round(d.totalScore * 100)} score
                     </option>
@@ -290,7 +308,12 @@ export function SevaAgentDashboard() {
                 />
               </label>
 
-              <button className={styles.btnPrimary} type="button" onClick={() => void applyOverride()}>
+              <button
+                className={styles.btnPrimary}
+                type="button"
+                onClick={() => void applyOverride()}
+                disabled={getRankedDecisions(selectedTask).length === 0}
+              >
                 <AppIcon name="check" size={15} />
                 Apply Override
               </button>

@@ -14,6 +14,8 @@ import { submitReport, classifyVoice, uploadAudio } from '../../../services/api'
 import { IntakeSource, SupportedLanguages, CategoryMetadata } from '../../../types';
 import type { Location, NeedCategoryType } from '../../../types';
 import { AppIcon } from '../../../components/shared';
+import LocationPresetPicker from '../../../components/shared/LocationPresetPicker';
+import { getDelhiLocationPreset } from '../../../data/delhiLocationPresets';
 import { getCategoryIcon } from '../../../utils/categoryIcons';
 import styles from './VoiceIntake.module.css';
 
@@ -31,6 +33,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [reportId, setReportId] = useState<string | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState('');
 
   const {
     isRecording: _isRecording,
@@ -51,6 +54,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     loading: locationLoading,
     error: locationError,
     getLocation,
+    setLocation,
     isSupported: geoSupported,
   } = useGeolocation();
 
@@ -60,6 +64,21 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
       getLocation();
     }
   }, [geoSupported, location, getLocation]);
+
+  const handleSelectLocationPreset = (presetId: string) => {
+    const preset = getDelhiLocationPreset(presetId);
+    if (!preset) return;
+    setSelectedPresetId(presetId);
+    setLocation(preset.location);
+  };
+
+  const handleUseCurrentLocation = async () => {
+    const currentLocation = await getLocation();
+    if (currentLocation) {
+      setSelectedPresetId('');
+      setLocation(currentLocation);
+    }
+  };
 
   // Handle recording start (press and hold)
   const handleRecordStart = async () => {
@@ -211,17 +230,6 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
         </select>
       </div>
 
-      {/* Location status */}
-      <div className={styles.locationStatus}>
-        {locationLoading && <span className={styles.loading}>Getting location...</span>}
-        {locationError && <span className={styles.error}>{locationError}</span>}
-        {location && (
-          <span className={styles.success}>
-            {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
-          </span>
-        )}
-      </div>
-
       {/* Main content based on step */}
       <div className={styles.content}>
         {/* Ready state - show mic button */}
@@ -310,6 +318,17 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
             {classification?.warning && (
               <p className={styles.error}>{classification.warning}</p>
             )}
+
+            <div className={styles.locationChooserBlock}>
+              <LocationPresetPicker
+                selectedPresetId={selectedPresetId}
+                location={location}
+                locationLoading={locationLoading}
+                locationError={locationError}
+                onSelectPreset={handleSelectLocationPreset}
+                onUseCurrentLocation={handleUseCurrentLocation}
+              />
+            </div>
 
             <div className={styles.confirmButtons}>
               <button

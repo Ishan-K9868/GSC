@@ -363,6 +363,10 @@
   margin-top: 0.5rem;
 }
 
+.locationChooserBlock {
+  width: 100%;
+}
+
 .confirmButton {
   padding: 0.75rem 2rem;
   background: var(--jade);

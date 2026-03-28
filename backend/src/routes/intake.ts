@@ -29,6 +29,7 @@ import { classifyNeedReport, type ClassifiedNeedReport } from '../services/class
 import { triggerAutoDispatch } from '../services/autoDispatch';
 import { computeFullUrgencyScore, type UrgencyBreakdown } from '../services/urgencyMultipliers';
 import { runDedupCheck } from '../services/dedupEngine';
+import { triggerSevaAgentForReport } from '../services/sevaAgent';
 
 export const intakeRouter = Router();
 
@@ -186,6 +187,16 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
       });
     }
 
+    let dispatchTaskId: string | undefined;
+    try {
+      const sevaAgentResult = await triggerSevaAgentForReport(reportId);
+      if (sevaAgentResult.success) {
+        dispatchTaskId = sevaAgentResult.taskId;
+      }
+    } catch (dispatchQueueError) {
+      console.error('SEVA Agent queue creation error:', dispatchQueueError);
+    }
+
     // Trigger auto-dispatch for critical/high urgency
     if (classification.urgency === UrgencyLevel.CRITICAL || classification.urgency === UrgencyLevel.HIGH) {
       // Fire and forget - don't block response
@@ -211,6 +222,7 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
           autoAction: categoryMeta.autoAction,
           confidence: classification.geminiExtraction?.confidence || 1,
         },
+        dispatchTaskId,
       },
     });
   } catch (error) {

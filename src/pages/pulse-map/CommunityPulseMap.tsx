@@ -38,6 +38,7 @@ type VolunteerPosition = {
   name?: string;
   availability?: string;
   skills?: string[];
+  categories?: string[];
   reliabilityScore?: number;
   stats?: {
     reliabilityScore?: number;
@@ -49,6 +50,12 @@ type VolunteerPosition = {
     district?: string;
     state?: string;
   };
+};
+
+type CuratedVolunteer = VolunteerPosition & {
+  duplicateCount: number;
+  reliability: number;
+  activeTasks: number;
 };
 
 type WardFeature = {
@@ -81,6 +88,12 @@ const statusConfig: Record<StatusFilterKey, { label: string; color: string }> = 
 
 function formatCategory(value: string): string {
   return value.replace(/_/g, ' ');
+}
+
+function summarizeNeed(report: NeedReport): string {
+  const text = (report.description || '').trim();
+  if (!text) return 'Fresh field signal waiting for operator review.';
+  return text.length > 88 ? `${text.slice(0, 85)}...` : text;
 }
 
 function toMillis(value: NeedReport['createdAt']): number {
@@ -221,12 +234,64 @@ export function CommunityPulseMap() {
     () => [...filteredNeeds].sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0)).slice(0, 8),
     [filteredNeeds]
   );
+  const watchlistPreview = useMemo(() => topWatchlist.slice(0, 6), [topWatchlist]);
 
   const availableVolunteers = useMemo(
     () => volunteerPositions.filter(
       (volunteer) => typeof volunteer.location?.latitude === 'number' && typeof volunteer.location?.longitude === 'number'
     ),
     [volunteerPositions]
+  );
+  const curatedVolunteers = useMemo(() => {
+    const grouped = new Map<string, CuratedVolunteer>();
+
+    for (const volunteer of availableVolunteers) {
+      const reliability = Number(volunteer.stats?.reliabilityScore ?? volunteer.reliabilityScore ?? 0.8);
+      const activeTasks = Number(volunteer.stats?.activeTasks ?? 0);
+      const key = `${(volunteer.name || volunteer.id).toLowerCase()}::${(volunteer.location?.district || 'unknown').toLowerCase()}`;
+      const current = grouped.get(key);
+
+      if (!current) {
+        grouped.set(key, {
+          ...volunteer,
+          duplicateCount: 1,
+          reliability,
+          activeTasks,
+        });
+        continue;
+      }
+
+      const preferred = reliability > current.reliability ? volunteer : current;
+      grouped.set(key, {
+        ...preferred,
+        duplicateCount: current.duplicateCount + 1,
+        reliability: Math.max(reliability, current.reliability),
+        activeTasks: Math.min(activeTasks, current.activeTasks),
+      });
+    }
+
+    const selectedDistrict = selectedNeed?.location?.district?.toLowerCase() || '';
+    const selectedCategory = selectedNeed?.category || '';
+
+    return Array.from(grouped.values())
+      .sort((a, b) => {
+        const aDistrictMatch = a.location?.district?.toLowerCase() === selectedDistrict ? 1 : 0;
+        const bDistrictMatch = b.location?.district?.toLowerCase() === selectedDistrict ? 1 : 0;
+        const aCategoryMatch = Array.isArray(a.categories) && selectedCategory ? (a.categories.includes(selectedCategory) ? 1 : 0) : 0;
+        const bCategoryMatch = Array.isArray(b.categories) && selectedCategory ? (b.categories.includes(selectedCategory) ? 1 : 0) : 0;
+
+        return (
+          bDistrictMatch - aDistrictMatch ||
+          bCategoryMatch - aCategoryMatch ||
+          b.reliability - a.reliability ||
+          a.activeTasks - b.activeTasks
+        );
+      })
+      .slice(0, 6);
+  }, [availableVolunteers, selectedNeed?.category, selectedNeed?.location?.district]);
+  const collapsedVolunteerDuplicates = useMemo(
+    () => Math.max(0, availableVolunteers.length - curatedVolunteers.length),
+    [availableVolunteers.length, curatedVolunteers.length]
   );
 
   const totals = useMemo(() => {
@@ -503,60 +568,89 @@ export function CommunityPulseMap() {
           <div className={styles.panel}>
             <div className={styles.panelHeading}>
               <AppIcon name="layers" size={16} />
-              Need status filters
+              Field controls
             </div>
-            <div className={styles.filterList}>
-              {(Object.keys(statusConfig) as StatusFilterKey[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`${styles.filterChip} ${filters[key] ? styles.filterChipActive : ''}`}
-                  onClick={() => toggleFilter(key)}
-                >
-                  <span className={styles.filterSwatch} style={{ background: statusConfig[key].color }} />
-                  {statusConfig[key].label}
-                </button>
-              ))}
+            <div className={styles.controlBlock}>
+              <div className={styles.controlIntro}>
+                <strong>Need status filters</strong>
+                <span>Trim the atlas to the exact stage you want to brief against.</span>
+              </div>
+              <div className={styles.filterList}>
+                {(Object.keys(statusConfig) as StatusFilterKey[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`${styles.filterChip} ${filters[key] ? styles.filterChipActive : ''}`}
+                    onClick={() => toggleFilter(key)}
+                  >
+                    <span className={styles.filterSwatch} style={{ background: statusConfig[key].color }} />
+                    {statusConfig[key].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.cueGrid}>
+              <article className={styles.cueCard}>
+                <strong>Fresh demand rises</strong>
+                <span>Need pins fade with age so newer unresolved cases stay visually loud.</span>
+              </article>
+              <article className={styles.cueCard}>
+                <strong>Cluster escalation</strong>
+                <span>Merged reports show a count badge; systemic clusters get a red outer ring.</span>
+              </article>
+              <article className={styles.cueCard}>
+                <strong>Equity context</strong>
+                <span>Ward shading mirrors the same vulnerability data driving urgency explainability.</span>
+              </article>
             </div>
           </div>
 
-          <div className={styles.panel}>
-            <div className={styles.panelHeading}>
-              <AppIcon name="alert" size={16} />
-              Priority watchlist
+          <div className={`${styles.panel} ${styles.watchlistPanel}`}>
+            <div className={styles.watchlistHeader}>
+              <div className={styles.panelHeading}>
+                <AppIcon name="alert" size={16} />
+                Priority watchlist
+              </div>
+              <div className={styles.watchlistMeta}>
+                <strong>{topWatchlist.length}</strong>
+                <span>live priorities</span>
+              </div>
             </div>
-            <div className={styles.clusterList}>
-              {topWatchlist.map((report) => (
+            <p className={styles.watchlistIntro}>Showing the six strongest field signals so the left rail briefs fast instead of becoming an endless scroll column.</p>
+            <div className={`${styles.clusterList} ${styles.watchlistList}`}>
+              {watchlistPreview.map((report) => (
                 <button
                   key={report.id}
                   type="button"
                   className={`${styles.clusterRow} ${selectedNeed?.id === report.id ? styles.clusterRowActive : ''}`}
                   onClick={() => setSelectedNeedId(report.id)}
                 >
-                  <div>
-                    <strong>{report.location?.district || formatCategory(report.category)}</strong>
-                    <span>{formatCategory(report.category)} · {report.status.replace(/_/g, ' ')}</span>
+                  <div className={styles.clusterContent}>
+                    <div className={styles.clusterHeader}>
+                      <strong>{report.location?.district || formatCategory(report.category)}</strong>
+                      <span className={styles.clusterUrgencyPill} data-urgency={report.urgency}>
+                        {report.urgency.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className={styles.clusterMetaRow}>
+                      <span className={styles.clusterTypePill}>{formatCategory(report.category)}</span>
+                      <span className={styles.clusterStatusPill}>{report.status.replace(/_/g, ' ')}</span>
+                    </div>
+                    <p className={styles.clusterDescription}>{summarizeNeed(report)}</p>
                   </div>
                   <div className={styles.clusterMeta}>
-                    <span>{Math.round(report.urgencyScore || 0)}</span>
+                    <span className={styles.clusterScore}>{Math.round(report.urgencyScore || 0)}</span>
+                    <small className={styles.clusterScoreLabel}>urgency</small>
                     <small>{(report.report_count || 1) >= 2 ? `x${report.report_count} reports` : 'single report'}</small>
                   </div>
                 </button>
               ))}
+              {topWatchlist.length > watchlistPreview.length ? (
+                <div className={styles.watchlistFooterNote}>+{topWatchlist.length - watchlistPreview.length} more cases remain visible on the map and detail rail.</div>
+              ) : null}
               {topWatchlist.length === 0 ? <p className={styles.helper}>No active needs visible right now.</p> : null}
             </div>
-          </div>
-
-          <div className={styles.panel}>
-            <div className={styles.panelHeading}>
-              <AppIcon name="shield" size={16} />
-              Coverage notes
-            </div>
-            <ul className={styles.notesList}>
-              <li>Need pins fade as they age, so fresh unresolved demand stays visually prominent.</li>
-              <li>Merged reports carry a report-count badge and systemic clusters get a red outer ring.</li>
-              <li>Ward overlay uses the same vulnerability dataset that drives urgency explainability.</li>
-            </ul>
           </div>
         </aside>
 
@@ -629,6 +723,58 @@ export function CommunityPulseMap() {
             ) : null}
             {error ? <div className={styles.mapOverlayMessage}>{error}</div> : null}
           </div>
+
+          <div className={styles.responseDeck}>
+            <div className={styles.responseDeckHeader}>
+              <div>
+                <div className={styles.panelHeading}>
+                  <AppIcon name="volunteer" size={16} />
+                  Response roster
+                </div>
+                <p>
+                  Use the empty atlas shelf below the map as a live staging row for nearby volunteers instead of burying them in a skinny sidebar.
+                </p>
+              </div>
+              <div className={styles.responseDeckMeta}>
+                <strong>{curatedVolunteers.length}</strong>
+                <span>unique responders</span>
+                {collapsedVolunteerDuplicates > 0 ? <small>{collapsedVolunteerDuplicates} duplicate profiles collapsed</small> : null}
+              </div>
+            </div>
+
+            <div className={styles.responseRosterGrid}>
+              {curatedVolunteers.map((volunteer) => {
+                const categorySummary = Array.isArray(volunteer.categories)
+                  ? volunteer.categories.slice(0, 2).map((category) => formatCategory(category)).join(' · ')
+                  : 'General support';
+
+                return (
+                  <article key={volunteer.id} className={styles.rosterCard}>
+                    <div className={styles.rosterCardTop}>
+                      <span className={styles.hubIcon}>
+                        <AppIcon name="volunteer" size={16} />
+                      </span>
+                      <div className={styles.rosterIdentity}>
+                        <strong>{volunteer.name || volunteer.id}</strong>
+                        <span>{volunteer.location?.district || 'Delhi NCR'}</span>
+                      </div>
+                      {volunteer.duplicateCount > 1 ? (
+                        <span className={styles.rosterDuplicateBadge}>x{volunteer.duplicateCount}</span>
+                      ) : null}
+                    </div>
+
+                    <div className={styles.rosterStatRow}>
+                      <span>{Math.round(volunteer.reliability * 100)}% reliability</span>
+                      <span>{volunteer.activeTasks} active tasks</span>
+                    </div>
+
+                    <p className={styles.rosterCategoryText}>{categorySummary}</p>
+                  </article>
+                );
+              })}
+              {curatedVolunteers.length === 0 ? <p className={styles.helper}>No available volunteer positions are visible right now.</p> : null}
+            </div>
+          </div>
         </div>
 
         <aside className={styles.detailColumn}>
@@ -691,24 +837,21 @@ export function CommunityPulseMap() {
           <div className={styles.panelLarge}>
             <div className={styles.panelHeading}>
               <AppIcon name="volunteer" size={16} />
-              Available volunteer layer
+              Volunteer coverage cues
             </div>
-            <div className={styles.hubList}>
-              {availableVolunteers.slice(0, 6).map((volunteer) => (
-                <div key={volunteer.id} className={styles.hubRow}>
-                  <span className={styles.hubIcon}>
-                    <AppIcon name="volunteer" size={16} />
-                  </span>
-                  <div>
-                    <strong>{volunteer.name || volunteer.id}</strong>
-                    <span>
-                      {(volunteer.location?.district || 'Delhi NCR')} · {volunteer.stats?.activeTasks || 0} active tasks ·{' '}
-                      {Math.round(((volunteer.stats?.reliabilityScore ?? volunteer.reliabilityScore ?? 0.8) || 0.8) * 100)}% reliability
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {availableVolunteers.length === 0 ? <p className={styles.helper}>No available volunteer positions are visible right now.</p> : null}
+            <div className={styles.cueGrid}>
+              <article className={styles.cueCard}>
+                <strong>{availableVolunteers.length}</strong>
+                <span>Total free volunteer dots visible on the map right now.</span>
+              </article>
+              <article className={styles.cueCard}>
+                <strong>{curatedVolunteers[0]?.location?.district || 'No district selected'}</strong>
+                <span>Best district match in the roster relative to the currently selected need.</span>
+              </article>
+              <article className={styles.cueCard}>
+                <strong>{Math.round((curatedVolunteers[0]?.reliability || 0) * 100)}%</strong>
+                <span>Top visible responder reliability after duplicate volunteer profiles are collapsed.</span>
+              </article>
             </div>
           </div>
         </aside>

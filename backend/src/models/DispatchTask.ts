@@ -32,6 +32,7 @@ export const DispatchDecisionSchema = z.object({
 export const DispatchTaskSchema = z.object({
   id: z.string().optional(),
   needReportId: z.string(),
+  needDescription: z.string().optional(),
   category: z.nativeEnum(NeedCategory),
   urgency: z.nativeEnum(UrgencyLevel),
   status: z.nativeEnum(DispatchTaskStatus).default(DispatchTaskStatus.PENDING),

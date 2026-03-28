@@ -28,6 +28,8 @@ import type {
 } from '../../../types';
 import { REPORT_TEMPLATES, getTemplateById } from '../../../data/reportTemplates';
 import { AppIcon } from '../../../components/shared';
+import LocationPresetPicker from '../../../components/shared/LocationPresetPicker';
+import { getDelhiLocationPreset } from '../../../data/delhiLocationPresets';
 import styles from './FormIntake.module.css';
 
 interface FormIntakeProps {
@@ -68,12 +70,14 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
   const [aiSuggestion, setAiSuggestion] = useState<any>(null);
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [selectedPresetId, setSelectedPresetId] = useState('');
 
   const {
     location,
     loading: locationLoading,
     error: locationError,
     getLocation,
+    setLocation,
     isSupported: geoSupported,
   } = useGeolocation();
 
@@ -83,6 +87,21 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
       getLocation();
     }
   }, [geoSupported, location, getLocation]);
+
+  const handleSelectLocationPreset = (presetId: string) => {
+    const preset = getDelhiLocationPreset(presetId);
+    if (!preset) return;
+    setSelectedPresetId(presetId);
+    setLocation(preset.location);
+  };
+
+  const handleUseCurrentLocation = async () => {
+    const currentLocation = await getLocation();
+    if (currentLocation) {
+      setSelectedPresetId('');
+      setLocation(currentLocation);
+    }
+  };
 
   // Get subcategories for selected category
   const subCategories = formData.category 
@@ -457,32 +476,6 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
         />
       </div>
 
-      {/* Location */}
-      <div className={styles.formGroup}>
-        <label>Location / स्थान</label>
-        <div className={styles.locationBox}>
-          {locationLoading && (
-            <span className={styles.loading}>Getting location...</span>
-          )}
-          {locationError && (
-            <span className={styles.locationError}>{locationError}</span>
-          )}
-          {location && (
-            <span className={styles.locationSuccess}>
-              {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
-            </span>
-          )}
-          <button 
-            type="button" 
-            className={styles.refreshLocation}
-            onClick={() => getLocation()}
-            disabled={locationLoading}
-          >
-            Refresh Location
-          </button>
-        </div>
-      </div>
-
       {/* Photo Upload */}
       <div className={styles.formGroup}>
         <label>Photo Attachment / फ़ोटो</label>
@@ -510,6 +503,40 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
           </div>
         )}
         {errors.photo && <span className={styles.error}>{errors.photo}</span>}
+      </div>
+
+      {/* Location */}
+      <div className={styles.formGroup}>
+        <label>Location / स्थान</label>
+        <div className={styles.locationBox}>
+          {locationLoading && (
+            <span className={styles.loading}>Getting location...</span>
+          )}
+          {locationError && (
+            <span className={styles.locationError}>{locationError}</span>
+          )}
+          {location && (
+            <span className={styles.locationSuccess}>
+              {location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
+            </span>
+          )}
+          <button
+            type="button"
+            className={styles.refreshLocation}
+            onClick={() => void handleUseCurrentLocation()}
+            disabled={locationLoading}
+          >
+            Refresh Location
+          </button>
+        </div>
+        <LocationPresetPicker
+          selectedPresetId={selectedPresetId}
+          location={location}
+          locationLoading={locationLoading}
+          locationError={locationError}
+          onSelectPreset={handleSelectLocationPreset}
+          onUseCurrentLocation={handleUseCurrentLocation}
+        />
       </div>
 
       {/* Submit Button */}

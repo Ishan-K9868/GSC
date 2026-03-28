@@ -20,6 +20,7 @@ const POSSIBLE_DUPLICATE_THRESHOLD = 0.65;
 const SYSTEMIC_COUNT_THRESHOLD = 4;
 
 type NeedReportCandidate = {
+  description?: string;
   location?: {
     latitude?: number;
     longitude?: number;
@@ -70,6 +71,42 @@ async function getEmbedding(text: string): Promise<number[]> {
   return result.embedding.values;
 }
 
+function tokenize(text: string): string[] {
+  const stopWords = new Set(['the', 'and', 'for', 'with', 'have', 'has', 'had', 'still', 'right', 'away', 'need', 'needs']);
+
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((token) => {
+      if (token.endsWith('ies') && token.length > 4) return `${token.slice(0, -3)}y`;
+      if (token.endsWith('es') && token.length > 4) return token.slice(0, -2);
+      if (token.endsWith('s') && token.length > 3) return token.slice(0, -1);
+      if (token.endsWith('ing') && token.length > 5) return token.slice(0, -3);
+      return token;
+    })
+    .filter((token) => token.length > 2 && !stopWords.has(token));
+}
+
+function lexicalSimilarity(a: string, b: string): number {
+  const tokensA = new Set(tokenize(a));
+  const tokensB = new Set(tokenize(b));
+
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+
+  let intersection = 0;
+  for (const token of tokensA) {
+    if (tokensB.has(token)) intersection += 1;
+  }
+
+  const union = new Set([...tokensA, ...tokensB]).size;
+  const jaccard = union === 0 ? 0 : intersection / union;
+  const normalizedA = a.toLowerCase();
+  const normalizedB = b.toLowerCase();
+  const containsBoost = normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA) ? 0.15 : 0;
+
+  return Math.min(1, Number((jaccard + containsBoost).toFixed(3)));
+}
+
 export async function runDedupCheck(
   newReportId: string,
   newDescription: string,
@@ -87,11 +124,16 @@ export async function runDedupCheck(
   };
 
   try {
-    const newEmbedding = await getEmbedding(newDescription);
+    let newEmbedding: number[] | null = null;
 
-    await db.collection('needReports').doc(newReportId).update({
-      embedding_vector: newEmbedding,
-    });
+    try {
+      newEmbedding = await getEmbedding(newDescription);
+      await db.collection('needReports').doc(newReportId).update({
+        embedding_vector: newEmbedding,
+      });
+    } catch (embeddingError) {
+      console.warn('[DedupEngine] Embedding unavailable, using lexical fallback:', embeddingError);
+    }
 
     const cutoffTime = new Date(Date.now() - TIME_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
     const snapshot = await db
@@ -120,10 +162,13 @@ export async function runDedupCheck(
     for (const doc of candidates) {
       const data = doc.data() as NeedReportCandidate;
       const embedding = data.embedding_vector;
+      const embeddingScore =
+        newEmbedding && Array.isArray(embedding) && embedding.length > 0
+          ? cosineSimilarity(newEmbedding, embedding)
+          : 0;
+      const lexicalScore = lexicalSimilarity(newDescription, data.description || '');
+      const score = Math.max(embeddingScore, lexicalScore);
 
-      if (!Array.isArray(embedding) || embedding.length === 0) continue;
-
-      const score = cosineSimilarity(newEmbedding, embedding);
       if (score > bestScore) {
         bestScore = score;
         bestDoc = doc;
