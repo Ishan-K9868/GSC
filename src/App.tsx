@@ -29,6 +29,7 @@ const Footer = lazy(() => import('./components/Footer'));
 // Lazy-loaded pages
 const IntakePage = lazy(() => import('./pages/intake/IntakePage'));
 const CommunityPulseMap = lazy(() => import('./pages/pulse-map/CommunityPulseMap'));
+const PublicKPIDashboard = lazy(() => import('./pages/pulse-map/PublicKPIDashboard'));
 const SevaAgentDashboard = lazy(() => import('./pages/seva-agent/SevaAgentDashboard'));
 const NgoDashboard = lazy(() => import('./pages/ngo-dashboard/NgoDashboard'));
 const VolunteerExperience = lazy(() => import('./pages/volunteer-app/VolunteerExperience'));
@@ -81,6 +82,10 @@ function InternalLayout() {
   return <AppShell />;
 }
 
+function PublicLayout() {
+  return <Outlet />;
+}
+
 function AppChrome() {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
@@ -93,6 +98,11 @@ function AppChrome() {
         <Routes>
           <Route element={<MarketingLayout />}>
             <Route path="/" element={<LandingPage />} />
+          </Route>
+
+          <Route element={<PublicLayout />}>
+            <Route path="/impact/live" element={<PublicKPIDashboard />} />
+            <Route path="/impact/:wardSlug" element={<PublicKPIDashboard />} />
           </Route>
 
           <Route element={<InternalLayout />}>

@@ -10,6 +10,7 @@ import {
 } from '../services/geminiFeatures';
 import { createError } from '../middleware/errorHandler';
 import { UserRole } from '../models/User';
+import { executeLiveTool, LIVE_FUNCTION_DECLARATIONS } from '../services/geminiLiveService';
 
 const geminiRouter = Router();
 
@@ -145,5 +146,33 @@ geminiRouter.post(
     next(error);
   }
 });
+
+geminiRouter.get(
+  '/live-functions',
+  verifyToken,
+  requireRoles(UserRole.NGO_STAFF, UserRole.NGO_ADMIN, UserRole.ADMIN),
+  async (_req: Request, res: Response) => {
+    res.json({ success: true, data: { functions: LIVE_FUNCTION_DECLARATIONS } });
+  }
+);
+
+geminiRouter.post(
+  '/live-tool-call',
+  verifyToken,
+  requireRoles(UserRole.NGO_STAFF, UserRole.NGO_ADMIN, UserRole.ADMIN),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { toolName, args } = req.body as { toolName?: string; args?: Record<string, any> };
+      if (!toolName) {
+        throw createError('toolName is required', 400, 'MISSING_TOOL_NAME');
+      }
+
+      const result = await executeLiveTool(toolName, args || {});
+      res.json({ success: true, data: { result } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default geminiRouter;

@@ -25,8 +25,10 @@ import {
   UrgencyLevel,
   CategoryMetadata,
 } from '../models/NeedReport';
-import { classifyNeedReport } from '../services/classification';
+import { classifyNeedReport, type ClassifiedNeedReport } from '../services/classification';
 import { triggerAutoDispatch } from '../services/autoDispatch';
+import { computeFullUrgencyScore, type UrgencyBreakdown } from '../services/urgencyMultipliers';
+import { runDedupCheck } from '../services/dedupEngine';
 
 export const intakeRouter = Router();
 
@@ -53,23 +55,45 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
     let classification: {
       category: NeedCategoryType;
       urgency: UrgencyLevelType;
-      geminiExtraction?: any;
+      geminiExtraction?: ClassifiedNeedReport;
+      urgencyScore?: number;
+      urgencyBreakdown?: UrgencyBreakdown;
     } = {
       category: input.category || NeedCategory.HEALTH,
       urgency: input.urgency || UrgencyLevel.MEDIUM,
-      geminiExtraction: undefined as any,
+      geminiExtraction: undefined,
     };
 
     if (!input.category || !input.urgency) {
       try {
-        const aiClassification = await classifyNeedReport(input.description, input.language);
+        const aiClassification = await classifyNeedReport(input.description, input.language, {
+          location: input.location,
+        });
         classification = {
           category: aiClassification.category as any,
           urgency: (aiClassification.severity || UrgencyLevel.MEDIUM) as any,
           geminiExtraction: aiClassification,
+          urgencyScore: aiClassification.urgencyScore,
+          urgencyBreakdown: aiClassification.urgencyBreakdown,
         };
       } catch (classificationError) {
         console.warn('AI classification failed, using defaults:', classificationError);
+      }
+    }
+
+    if (!classification.urgencyBreakdown) {
+      try {
+        const urgencyBreakdown = await computeFullUrgencyScore(
+          classification.urgency,
+          classification.category,
+          input.location.latitude,
+          input.location.longitude
+        );
+
+        classification.urgencyScore = urgencyBreakdown.finalScore;
+        classification.urgencyBreakdown = urgencyBreakdown;
+      } catch (urgencyError) {
+        console.warn('Urgency multiplier scoring failed, using base urgency only:', urgencyError);
       }
     }
 
@@ -77,7 +101,20 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
     const isPrivate = classification.category === NeedCategory.WOMEN_CHILD;
 
     // Build the report
-    const report: NeedReport = {
+    const report: NeedReport & {
+      urgencyScore?: number;
+      urgencyBreakdown?: UrgencyBreakdown;
+      urgencyDecayCount?: number;
+      urgencyDecayAlert?: boolean;
+      report_count?: number;
+      merged_from?: string[];
+      merged_into?: string;
+      possible_duplicate?: boolean;
+      possible_duplicate_of?: string;
+      possible_duplicate_score?: number;
+      systemic?: boolean;
+      embedding_vector?: number[];
+    } = {
       id: reportId,
       reporterId: uid,
       category: classification.category,
@@ -91,6 +128,14 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
       status: ReportStatus.CLASSIFIED,
       language: input.language || 'en',
       geminiExtraction: classification.geminiExtraction,
+      urgencyScore: classification.urgencyScore,
+      urgencyBreakdown: classification.urgencyBreakdown,
+      urgencyDecayCount: 0,
+      urgencyDecayAlert: false,
+      report_count: 1,
+      merged_from: [],
+      possible_duplicate: false,
+      systemic: false,
       isOfflineSubmission: input.isOfflineSubmission || false,
       isPrivate,
       createdAt: now,
@@ -123,6 +168,24 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
       updatedAt: now,
     }, { merge: true });
 
+    const dedupResult = await runDedupCheck(
+      reportId,
+      report.description,
+      report.category,
+      report.location.latitude,
+      report.location.longitude
+    );
+
+    if (dedupResult.isDuplicate) {
+      return res.status(200).json({
+        success: true,
+        action: 'merged',
+        mergedInto: dedupResult.mergedIntoReportId,
+        reportCount: dedupResult.reportCount,
+        isSystemic: dedupResult.isSystemic,
+      });
+    }
+
     // Trigger auto-dispatch for critical/high urgency
     if (classification.urgency === UrgencyLevel.CRITICAL || classification.urgency === UrgencyLevel.HIGH) {
       // Fire and forget - don't block response
@@ -143,6 +206,8 @@ intakeRouter.post('/report', verifyToken, async (req: Request, res: Response, ne
           categoryLabel: categoryMeta.label,
           categoryEmoji: categoryMeta.emoji,
           urgency: classification.urgency,
+          urgencyScore: classification.urgencyScore,
+          urgencyBreakdown: classification.urgencyBreakdown,
           autoAction: categoryMeta.autoAction,
           confidence: classification.geminiExtraction?.confidence || 1,
         },

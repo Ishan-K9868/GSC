@@ -1,276 +1,247 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import wardData from '../../../backend/src/data/ward_vulnerability_index.json';
+import { db } from '../../config/firebase';
 import { AppIcon } from '../../components/shared';
 import styles from './CommunityPulseMap.module.css';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const ACTIVE_NEED_STATUSES = ['pending', 'classified', 'dispatched', 'in_progress'] as const;
 
-type StatusKey = 'active' | 'in_progress' | 'resolved';
+type NeedStatus = typeof ACTIVE_NEED_STATUSES[number] | 'resolved' | 'cancelled';
 type UrgencyKey = 'critical' | 'high' | 'medium' | 'low';
+type StatusFilterKey = typeof ACTIVE_NEED_STATUSES[number];
 
-type Cluster = {
+type NeedReport = {
   id: string;
-  area: string;
-  district: string;
-  lat: number;
-  lng: number;
   category: string;
-  status: StatusKey;
   urgency: UrgencyKey;
-  needs: number;
-  households: number;
-  ngo: string;
-  volunteerLead: string;
-  responseEta: string;
-  notes: string;
+  status: NeedStatus;
+  description: string;
+  estimatedPeopleAffected?: number;
+  urgencyScore?: number;
+  report_count?: number;
+  systemic?: boolean;
+  createdAt?: string | { toMillis?: () => number; seconds?: number; nanoseconds?: number };
+  updatedAt?: string | { toMillis?: () => number; seconds?: number; nanoseconds?: number };
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    district?: string;
+    state?: string;
+  };
 };
 
-type Hub = {
+type VolunteerPosition = {
   id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  type: 'ngo_hub' | 'medical_store' | 'volunteer_base';
+  name?: string;
+  availability?: string;
+  skills?: string[];
+  reliabilityScore?: number;
+  stats?: {
+    reliabilityScore?: number;
+    activeTasks?: number;
+  };
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    district?: string;
+    state?: string;
+  };
 };
 
-const statusConfig = {
-  active: { label: 'Active', color: '#D4622A' },
-  in_progress: { label: 'In Progress', color: '#D4921A' },
-  resolved: { label: 'Resolved', color: '#2D9D78' },
+type WardFeature = {
+  properties: {
+    ward_name?: string;
+    district?: string;
+    bpl_pct?: number;
+    elderly_pct?: number;
+    hospital_dist_km?: number;
+    school_dist_km?: number;
+  };
+  geometry: {
+    coordinates: number[][][];
+  };
 };
 
-const urgencyConfig = {
+const urgencyConfig: Record<UrgencyKey, { label: string; color: string }> = {
   critical: { label: 'Critical', color: '#B73A1E' },
   high: { label: 'High', color: '#D4622A' },
   medium: { label: 'Medium', color: '#D4921A' },
   low: { label: 'Low', color: '#2D9D78' },
 };
 
-const delhiClusters: Cluster[] = [
-  {
-    id: 'okhla-shelter',
-    area: 'Okhla',
-    district: 'South East Delhi',
-    lat: 28.5453,
-    lng: 77.2734,
-    category: 'Shelter',
-    status: 'active',
-    urgency: 'critical',
-    needs: 6,
-    households: 44,
-    ngo: 'Night Relief Collective',
-    volunteerLead: 'Farah Khan',
-    responseEta: '9 min',
-    notes: 'Night shelter queue expanded after rain displacement near river-edge settlements.',
-  },
-  {
-    id: 'seelampur-water',
-    area: 'Seelampur',
-    district: 'North East Delhi',
-    lat: 28.6729,
-    lng: 77.2691,
-    category: 'Water & Sanitation',
-    status: 'active',
-    urgency: 'high',
-    needs: 5,
-    households: 31,
-    ngo: 'Jal Doot Foundation',
-    volunteerLead: 'Arjun Dabas',
-    responseEta: '18 min',
-    notes: 'Tankers delayed; community taps below normal output since morning.',
-  },
-  {
-    id: 'mustafabad-health',
-    area: 'Mustafabad',
-    district: 'North East Delhi',
-    lat: 28.6967,
-    lng: 77.2861,
-    category: 'Health',
-    status: 'in_progress',
-    urgency: 'high',
-    needs: 4,
-    households: 19,
-    ngo: 'Sehat Saathi Trust',
-    volunteerLead: 'Saba Parveen',
-    responseEta: '22 min',
-    notes: 'Fever-medicine restock underway; two paediatric cases escalated for home follow-up.',
-  },
-  {
-    id: 'yamuna-vihar-food',
-    area: 'Yamuna Vihar',
-    district: 'North East Delhi',
-    lat: 28.7052,
-    lng: 77.2846,
-    category: 'Food & Nutrition',
-    status: 'active',
-    urgency: 'high',
-    needs: 3,
-    households: 26,
-    ngo: 'Delhi Community Kitchen Network',
-    volunteerLead: 'Nidhi Batra',
-    responseEta: '24 min',
-    notes: 'Cooked-meal line increased after midday school kitchen disruption.',
-  },
-  {
-    id: 'bhajanpura-maternal',
-    area: 'Bhajanpura',
-    district: 'North East Delhi',
-    lat: 28.7041,
-    lng: 77.2668,
-    category: 'Women & Child',
-    status: 'in_progress',
-    urgency: 'critical',
-    needs: 2,
-    households: 8,
-    ngo: 'Sakhi Suraksha Line',
-    volunteerLead: 'Meenal Joshi',
-    responseEta: '14 min',
-    notes: 'Maternal-care support paired with privacy-safe case handling.',
-  },
-  {
-    id: 'lajpat-medicines',
-    area: 'Lajpat Nagar',
-    district: 'South East Delhi',
-    lat: 28.5677,
-    lng: 77.2434,
-    category: 'Health',
-    status: 'in_progress',
-    urgency: 'medium',
-    needs: 3,
-    households: 13,
-    ngo: 'City Health Van',
-    volunteerLead: 'Aman Malik',
-    responseEta: '31 min',
-    notes: 'Medicine pickup corridor steady; waiting on second courier wave.',
-  },
-  {
-    id: 'sarita-vihar-water',
-    area: 'Sarita Vihar',
-    district: 'South East Delhi',
-    lat: 28.5337,
-    lng: 77.2912,
-    category: 'Water & Sanitation',
-    status: 'resolved',
-    urgency: 'low',
-    needs: 1,
-    households: 11,
-    ngo: 'Aapda Jal Response',
-    volunteerLead: 'Ruchi Nanda',
-    responseEta: 'Resolved',
-    notes: 'Temporary purifier station restored and verified by field team.',
-  },
-  {
-    id: 'rohini-food',
-    area: 'Rohini',
-    district: 'North West Delhi',
-    lat: 28.7494,
-    lng: 77.0565,
-    category: 'Food & Nutrition',
-    status: 'active',
-    urgency: 'medium',
-    needs: 2,
-    households: 17,
-    ngo: 'North Grid Relief Circle',
-    volunteerLead: 'Tushar Yadav',
-    responseEta: '36 min',
-    notes: 'Weekend ration support required for migrant households near pocket clusters.',
-  },
-  {
-    id: 'dwarka-eldercare',
-    area: 'Dwarka',
-    district: 'South West Delhi',
-    lat: 28.5921,
-    lng: 77.0460,
-    category: 'Health',
-    status: 'resolved',
-    urgency: 'low',
-    needs: 1,
-    households: 6,
-    ngo: 'Urban Care Link',
-    volunteerLead: 'Karan Sethi',
-    responseEta: 'Resolved',
-    notes: 'Eldercare medicine handover completed and follow-up call scheduled.',
-  },
-];
+const statusConfig: Record<StatusFilterKey, { label: string; color: string }> = {
+  pending: { label: 'Pending', color: '#B73A1E' },
+  classified: { label: 'Classified', color: '#D4622A' },
+  dispatched: { label: 'Dispatched', color: '#D4921A' },
+  in_progress: { label: 'In Progress', color: '#2D9D78' },
+};
 
-const supportHubs: Hub[] = [
-  { id: 'hub-kashmere', name: 'Kashmere Gate Response Hub', lat: 28.6677, lng: 77.2289, type: 'ngo_hub' },
-  { id: 'hub-lajpat', name: 'Lajpat Medicine Node', lat: 28.5704, lng: 77.2396, type: 'medical_store' },
-  { id: 'hub-dwarka', name: 'Dwarka Volunteer Base', lat: 28.5880, lng: 77.0438, type: 'volunteer_base' },
-];
-
-function buildMarkerIcon(fill: string, stroke: string, glyph: string) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54" fill="none">
-      <circle cx="27" cy="27" r="20" fill="${fill}" fill-opacity="0.94" stroke="${stroke}" stroke-width="2.5" />
-      <circle cx="27" cy="27" r="24" stroke="${fill}" stroke-opacity="0.22" stroke-width="4" />
-      <path d="${glyph}" fill="${stroke}" />
-    </svg>`;
-
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(54, 54),
-    anchor: new google.maps.Point(27, 27),
-  };
+function formatCategory(value: string): string {
+  return value.replace(/_/g, ' ');
 }
 
-function getClusterGlyph(category: string) {
+function toMillis(value: NeedReport['createdAt']): number {
+  if (!value) return Date.now();
+  if (typeof value === 'string') {
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : Date.now();
+  }
+  if (typeof value.toMillis === 'function') return value.toMillis();
+  if (typeof value.seconds === 'number') return value.seconds * 1000;
+  return Date.now();
+}
+
+function computeVulnerabilityIndex(feature: WardFeature): number {
+  const {
+    bpl_pct = 0,
+    elderly_pct = 0,
+    hospital_dist_km = 0,
+    school_dist_km = 0,
+  } = feature.properties;
+
+  return (
+    Math.min(bpl_pct / 100, 1) * 0.35 +
+    Math.min(elderly_pct / 100, 1) * 0.25 +
+    Math.min(hospital_dist_km / 20, 1) * 0.25 +
+    Math.min(school_dist_km / 10, 1) * 0.15
+  );
+}
+
+function getVulnerabilityColor(score: number): string {
+  if (score > 0.7) return '#D44425';
+  if (score > 0.4) return '#D4921A';
+  return '#2D9D78';
+}
+
+function getClusterGlyph(category: string): string {
   switch (category) {
-    case 'Shelter':
+    case 'shelter':
       return 'M18 28.8 27 21l9 7.8v10.7h-4.6v-6.8h-8.8v6.8H18z';
-    case 'Water & Sanitation':
+    case 'water_sanitation':
       return 'M27 18c4.8 6 8.2 10.4 8.2 14.1A8.2 8.2 0 1 1 18.8 32c0-3.7 3.4-8.2 8.2-14Z';
-    case 'Food & Nutrition':
+    case 'food_nutrition':
       return 'M20.5 18.5v9.2M24 18.5v9.2M27.5 18.5v9.2M31 18.5v9.2M21.8 29.8c1.2 4.6 3.1 7.2 5.2 7.2s4-2.6 5.2-7.2Z';
+    case 'education':
+      return 'M18 21.5 27 18l9 3.5v11L27 36l-9-3.5v-11Zm9 1.7-5.6 2.2 5.6 2.1 5.6-2.1Z';
     default:
       return 'M27 17a7.5 7.5 0 0 1 7.5 7.5v4.5h2v3h-19v-3h2v-4.5A7.5 7.5 0 0 1 27 17Zm0 21.5a3.2 3.2 0 0 0 3.1-2.5h-6.2a3.2 3.2 0 0 0 3.1 2.5Z';
   }
 }
 
-function getHubGlyph(type: Hub['type']) {
-  switch (type) {
-    case 'ngo_hub':
-      return 'M18 26.5 27 20l9 6.5v12H18z';
-    case 'medical_store':
-      return 'M24.5 18.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z';
-    default:
-      return 'M27 17a8 8 0 1 1 0 16 8 8 0 0 1 0-16Zm-10 19.5c1.5-2.9 4.8-4.8 10-4.8s8.5 2 10 4.8';
-  }
+function buildNeedMarkerIcon(report: NeedReport, selected: boolean) {
+  const urgency = urgencyConfig[report.urgency] || urgencyConfig.medium;
+  const reportCount = report.report_count || 1;
+  const createdAtMs = toMillis(report.createdAt);
+  const ageHours = (Date.now() - createdAtMs) / (1000 * 60 * 60);
+  const opacity = Math.max(0.3, 1 - ageHours / 48);
+  const pinScale = 0.8 + ((report.urgencyScore || 0) / 20);
+  const size = Math.max(42, Math.round(54 * Math.min(pinScale, 1.9)));
+  const center = size / 2;
+  const badge = reportCount >= 2
+    ? `<circle cx="${size - 13}" cy="13" r="11" fill="#1C0E06" stroke="#F5EDE0" stroke-width="1.5" />
+       <text x="${size - 13}" y="16" text-anchor="middle" font-size="10" font-weight="700" font-family="Arial, sans-serif" fill="#F5EDE0">x${Math.min(reportCount, 9)}</text>`
+    : '';
+  const systemicRing = report.systemic
+    ? `<circle cx="${center}" cy="${center}" r="${center - 2}" stroke="#D44425" stroke-opacity="0.65" stroke-width="3" />`
+    : '';
+  const selectedRing = selected
+    ? `<circle cx="${center}" cy="${center}" r="${center - 6}" stroke="#1C0E06" stroke-opacity="0.32" stroke-width="2" />`
+    : '';
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">
+      ${systemicRing}
+      ${selectedRing}
+      <circle cx="${center}" cy="${center}" r="${center - 10}" fill="${urgency.color}" fill-opacity="${opacity.toFixed(2)}" stroke="#1C0E06" stroke-width="2.5" />
+      <circle cx="${center}" cy="${center}" r="${center - 5}" stroke="${urgency.color}" stroke-opacity="0.20" stroke-width="4" />
+      <g transform="translate(${(size - 54) / 2}, ${(size - 54) / 2})">
+        <path d="${getClusterGlyph(report.category)}" fill="#1C0E06" />
+      </g>
+      ${badge}
+    </svg>`;
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(center, center),
+  };
+}
+
+function buildVolunteerDotIcon() {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="9" cy="9" r="4" fill="#2F7EF7" />
+      <circle cx="9" cy="9" r="7" stroke="#2F7EF7" stroke-opacity="0.25" stroke-width="2" />
+    </svg>`;
+
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+    scaledSize: new google.maps.Size(18, 18),
+    anchor: new google.maps.Point(9, 9),
+  };
 }
 
 export function CommunityPulseMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const circlesRef = useRef<google.maps.Circle[]>([]);
-  const [selectedId, setSelectedId] = useState(delhiClusters[0].id);
+  const needMarkersRef = useRef<google.maps.Marker[]>([]);
+  const volunteerMarkersRef = useRef<google.maps.Marker[]>([]);
+  const weatherCirclesRef = useRef<google.maps.Circle[]>([]);
+  const dataLayerRef = useRef<google.maps.Data | null>(null);
+
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Record<StatusKey, boolean>>({
-    active: true,
+  const [needReports, setNeedReports] = useState<NeedReport[]>([]);
+  const [volunteerPositions, setVolunteerPositions] = useState<VolunteerPosition[]>([]);
+  const [selectedNeedId, setSelectedNeedId] = useState('');
+  const [filters, setFilters] = useState<Record<StatusFilterKey, boolean>>({
+    pending: true,
+    classified: true,
+    dispatched: true,
     in_progress: true,
-    resolved: true,
   });
+  const [showVolunteerLayer, setShowVolunteerLayer] = useState(true);
+  const [showVulnerabilityLayer, setShowVulnerabilityLayer] = useState(true);
+  const [showWeatherLayer, setShowWeatherLayer] = useState(false);
 
-  const filteredClusters = useMemo(
-    () => delhiClusters.filter((cluster) => filters[cluster.status]),
-    [filters]
+  const filteredNeeds = useMemo(
+    () => needReports.filter((report) => filters[report.status as StatusFilterKey] ?? false),
+    [filters, needReports]
   );
 
-  const selectedCluster = useMemo(
-    () => filteredClusters.find((cluster) => cluster.id === selectedId) || filteredClusters[0] || delhiClusters[0],
-    [filteredClusters, selectedId]
+  const selectedNeed = useMemo(
+    () => filteredNeeds.find((report) => report.id === selectedNeedId) || filteredNeeds[0] || null,
+    [filteredNeeds, selectedNeedId]
+  );
+
+  const topWatchlist = useMemo(
+    () => [...filteredNeeds].sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0)).slice(0, 8),
+    [filteredNeeds]
+  );
+
+  const availableVolunteers = useMemo(
+    () => volunteerPositions.filter(
+      (volunteer) => typeof volunteer.location?.latitude === 'number' && typeof volunteer.location?.longitude === 'number'
+    ),
+    [volunteerPositions]
   );
 
   const totals = useMemo(() => {
-    const activeCases = filteredClusters.reduce((sum, item) => sum + item.needs, 0);
-    const households = filteredClusters.reduce((sum, item) => sum + item.households, 0);
-    const critical = filteredClusters.filter((item) => item.urgency === 'critical').length;
-    return { activeCases, households, critical };
-  }, [filteredClusters]);
+    const visibleCases = filteredNeeds.length;
+    const households = filteredNeeds.reduce((sum, report) => sum + (report.estimatedPeopleAffected || report.report_count || 0), 0);
+    const critical = filteredNeeds.filter(
+      (report) => report.urgency === 'critical' || (report.urgencyScore || 0) >= 9
+    ).length;
+
+    return { visibleCases, households, critical };
+  }, [filteredNeeds]);
 
   useEffect(() => {
     if (!GOOGLE_MAPS_API_KEY) {
-      setError('Google Maps key missing. The Delhi atlas layout still loads, but live cartography is unavailable.');
+      setError('Google Maps key missing. Live cartography needs a browser key to render the field layers.');
       return;
     }
 
@@ -293,25 +264,98 @@ export function CommunityPulseMap() {
   }, []);
 
   useEffect(() => {
+    if (!(db as any)?.app) {
+      setError('Firebase is not configured for live Pulse Map reads in this environment.');
+      return;
+    }
+
+    const needQuery = query(
+      collection(db, 'needReports'),
+      where('status', 'in', [...ACTIVE_NEED_STATUSES]),
+      orderBy('urgencyScore', 'desc'),
+      limit(200)
+    );
+
+    const unsubscribe = onSnapshot(
+      needQuery,
+      (snapshot) => {
+        const nextReports = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport))
+          .filter(
+            (report) =>
+              typeof report.location?.latitude === 'number' && typeof report.location?.longitude === 'number'
+          );
+
+        setNeedReports(nextReports);
+      },
+      (snapshotError) => {
+        console.error('Pulse map need listener failed:', snapshotError);
+        setError(snapshotError.message || 'Unable to stream live need reports.');
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!(db as any)?.app) return;
+
+    const volunteerQuery = query(
+      collection(db, 'volunteers'),
+      where('availability', '==', 'free'),
+      limit(100)
+    );
+
+    const unsubscribe = onSnapshot(
+      volunteerQuery,
+      (snapshot) => {
+        const nextVolunteers = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as VolunteerPosition));
+        setVolunteerPositions(nextVolunteers);
+      },
+      (snapshotError) => {
+        console.error('Pulse map volunteer listener failed:', snapshotError);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedNeedId && filteredNeeds[0]?.id) {
+      setSelectedNeedId(filteredNeeds[0].id);
+      return;
+    }
+
+    if (selectedNeedId && !filteredNeeds.find((report) => report.id === selectedNeedId)) {
+      setSelectedNeedId(filteredNeeds[0]?.id || '');
+    }
+  }, [filteredNeeds, selectedNeedId]);
+
+  useEffect(() => {
     if (!mapInstance.current || !ready) return;
 
-    markersRef.current.forEach((marker) => marker.setMap(null));
-    circlesRef.current.forEach((circle) => circle.setMap(null));
-    markersRef.current = [];
-    circlesRef.current = [];
+    needMarkersRef.current.forEach((marker) => marker.setMap(null));
+    volunteerMarkersRef.current.forEach((marker) => marker.setMap(null));
+    weatherCirclesRef.current.forEach((circle) => circle.setMap(null));
+    needMarkersRef.current = [];
+    volunteerMarkersRef.current = [];
+    weatherCirclesRef.current = [];
 
     const bounds = new google.maps.LatLngBounds();
 
-    filteredClusters.forEach((cluster) => {
-      const urgency = urgencyConfig[cluster.urgency];
-      const status = statusConfig[cluster.status];
+    filteredNeeds.forEach((report) => {
+      const position = {
+        lat: report.location?.latitude || 0,
+        lng: report.location?.longitude || 0,
+      };
+
       const marker = new google.maps.Marker({
         map: mapInstance.current,
-        position: { lat: cluster.lat, lng: cluster.lng },
-        title: `${cluster.area} · ${cluster.category}`,
-        icon: buildMarkerIcon(urgency.color, '#1C0E06', getClusterGlyph(cluster.category)),
+        position,
+        title: `${formatCategory(report.category)} · ${report.location?.district || 'Unknown district'}`,
+        icon: buildNeedMarkerIcon(report, report.id === selectedNeed?.id),
         label: {
-          text: cluster.area,
+          text: report.location?.district || report.category,
           color: '#1C0E06',
           fontSize: '12px',
           fontWeight: '700',
@@ -319,41 +363,81 @@ export function CommunityPulseMap() {
         },
       });
 
-      const circle = new google.maps.Circle({
-        map: mapInstance.current,
-        center: { lat: cluster.lat, lng: cluster.lng },
-        radius: cluster.urgency === 'critical' ? 900 : cluster.urgency === 'high' ? 700 : 550,
-        strokeColor: status.color,
-        strokeOpacity: 0.52,
-        strokeWeight: 1.5,
-        fillColor: urgency.color,
-        fillOpacity: cluster.id === selectedCluster?.id ? 0.14 : 0.08,
-      });
+      marker.addListener('click', () => setSelectedNeedId(report.id));
+      needMarkersRef.current.push(marker);
+      bounds.extend(position);
 
-      marker.addListener('click', () => setSelectedId(cluster.id));
-      circle.addListener('click', () => setSelectedId(cluster.id));
-
-      markersRef.current.push(marker);
-      circlesRef.current.push(circle);
-      bounds.extend({ lat: cluster.lat, lng: cluster.lng });
+      if (showWeatherLayer && ['water_sanitation', 'shelter', 'health'].includes(report.category)) {
+        const circle = new google.maps.Circle({
+          map: mapInstance.current,
+          center: position,
+          radius: report.urgency === 'critical' ? 900 : 650,
+          strokeColor: '#D4921A',
+          strokeOpacity: 0.25,
+          strokeWeight: 1,
+          fillColor: '#D4921A',
+          fillOpacity: 0.08,
+        });
+        weatherCirclesRef.current.push(circle);
+      }
     });
 
-    supportHubs.forEach((hub) => {
-      const marker = new google.maps.Marker({
-        map: mapInstance.current,
-        position: { lat: hub.lat, lng: hub.lng },
-        title: hub.name,
-        icon: buildMarkerIcon('#2D9D78', '#F5EDE0', getHubGlyph(hub.type)),
+    if (showVolunteerLayer) {
+      availableVolunteers.forEach((volunteer) => {
+        const position = {
+          lat: volunteer.location?.latitude || 0,
+          lng: volunteer.location?.longitude || 0,
+        };
+
+        const marker = new google.maps.Marker({
+          map: mapInstance.current,
+          position,
+          title: volunteer.name || volunteer.id,
+          icon: buildVolunteerDotIcon(),
+        });
+
+        volunteerMarkersRef.current.push(marker);
+        bounds.extend(position);
       });
-      markersRef.current.push(marker);
-      bounds.extend({ lat: hub.lat, lng: hub.lng });
-    });
+    }
+
+    if (!dataLayerRef.current) {
+      dataLayerRef.current = new google.maps.Data({ map: mapInstance.current });
+      dataLayerRef.current.addGeoJson(wardData as any);
+    }
+
+    if (showVulnerabilityLayer) {
+      dataLayerRef.current.setMap(mapInstance.current);
+      dataLayerRef.current.setStyle((feature) => {
+        const score = computeVulnerabilityIndex({
+          properties: {
+            ward_name: feature.getProperty('ward_name') as string | undefined,
+            district: feature.getProperty('district') as string | undefined,
+            bpl_pct: Number(feature.getProperty('bpl_pct') || 0),
+            elderly_pct: Number(feature.getProperty('elderly_pct') || 0),
+            hospital_dist_km: Number(feature.getProperty('hospital_dist_km') || 0),
+            school_dist_km: Number(feature.getProperty('school_dist_km') || 0),
+          },
+          geometry: { coordinates: [] },
+        });
+
+        return {
+          fillColor: getVulnerabilityColor(score),
+          fillOpacity: 0.2,
+          strokeColor: getVulnerabilityColor(score),
+          strokeOpacity: 0.35,
+          strokeWeight: 1,
+        };
+      });
+    } else {
+      dataLayerRef.current.setMap(null);
+    }
 
     if (!bounds.isEmpty()) {
       mapInstance.current.fitBounds(bounds, 80);
-      mapInstance.current.setZoom(Math.min(mapInstance.current.getZoom() || 11, 11));
+      mapInstance.current.setZoom(Math.min(mapInstance.current.getZoom() || 11, 12));
     }
-  }, [filteredClusters, ready, selectedCluster?.id]);
+  }, [availableVolunteers, filteredNeeds, ready, selectedNeed?.id, showVolunteerLayer, showVulnerabilityLayer, showWeatherLayer]);
 
   function initialiseMap() {
     if (!mapRef.current || mapInstance.current || !(window as any).google?.maps) return;
@@ -375,10 +459,11 @@ export function CommunityPulseMap() {
         { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#b2d9d0' }] },
       ],
     });
+
     setReady(true);
   }
 
-  function toggleFilter(key: StatusKey) {
+  function toggleFilter(key: StatusFilterKey) {
     setFilters((current) => ({ ...current, [key]: !current[key] }));
   }
 
@@ -388,22 +473,22 @@ export function CommunityPulseMap() {
         <div>
           <div className={styles.eyebrow}>Delhi Operations Atlas</div>
           <h2>
-            Delhi-focused field visibility,
+            Live field pressure,
             <br />
-            not a full-country demo map.
+            volunteer movement, and vulnerability context.
           </h2>
           <p>
-            The atlas is now pinned to believable Delhi neighbourhoods and uses a tighter operational layout so filters,
-            labels, and decision context stay visible while the map remains readable.
+            The Pulse Map now streams active need reports from Firestore, layers available volunteers, and overlays ward
+            vulnerability so operators can read urgency in place instead of jumping across screens.
           </p>
         </div>
         <div className={styles.heroStats}>
           <div className={styles.heroStat}>
             <span>Visible cases</span>
-            <strong>{totals.activeCases}</strong>
+            <strong>{totals.visibleCases}</strong>
           </div>
           <div className={styles.heroStat}>
-            <span>Households</span>
+            <span>People affected</span>
             <strong>{totals.households}</strong>
           </div>
           <div className={styles.heroStat}>
@@ -418,10 +503,10 @@ export function CommunityPulseMap() {
           <div className={styles.panel}>
             <div className={styles.panelHeading}>
               <AppIcon name="layers" size={16} />
-              Incident layers
+              Need status filters
             </div>
             <div className={styles.filterList}>
-              {(Object.keys(statusConfig) as StatusKey[]).map((key) => (
+              {(Object.keys(statusConfig) as StatusFilterKey[]).map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -438,26 +523,27 @@ export function CommunityPulseMap() {
           <div className={styles.panel}>
             <div className={styles.panelHeading}>
               <AppIcon name="alert" size={16} />
-              Area watchlist
+              Priority watchlist
             </div>
             <div className={styles.clusterList}>
-              {filteredClusters.map((cluster) => (
+              {topWatchlist.map((report) => (
                 <button
-                  key={cluster.id}
+                  key={report.id}
                   type="button"
-                  className={`${styles.clusterRow} ${selectedCluster?.id === cluster.id ? styles.clusterRowActive : ''}`}
-                  onClick={() => setSelectedId(cluster.id)}
+                  className={`${styles.clusterRow} ${selectedNeed?.id === report.id ? styles.clusterRowActive : ''}`}
+                  onClick={() => setSelectedNeedId(report.id)}
                 >
                   <div>
-                    <strong>{cluster.area}</strong>
-                    <span>{cluster.category} · {cluster.district}</span>
+                    <strong>{report.location?.district || formatCategory(report.category)}</strong>
+                    <span>{formatCategory(report.category)} · {report.status.replace(/_/g, ' ')}</span>
                   </div>
                   <div className={styles.clusterMeta}>
-                    <span>{cluster.needs} alerts</span>
-                    <small>{cluster.responseEta}</small>
+                    <span>{Math.round(report.urgencyScore || 0)}</span>
+                    <small>{(report.report_count || 1) >= 2 ? `x${report.report_count} reports` : 'single report'}</small>
                   </div>
                 </button>
               ))}
+              {topWatchlist.length === 0 ? <p className={styles.helper}>No active needs visible right now.</p> : null}
             </div>
           </div>
 
@@ -467,9 +553,9 @@ export function CommunityPulseMap() {
               Coverage notes
             </div>
             <ul className={styles.notesList}>
-              <li>North East Delhi shows the highest density of water and child-health pressure.</li>
-              <li>Okhla remains the fastest-moving shelter cluster and should stay on top of the command queue.</li>
-              <li>Three support hubs are plotted so operators can see route support, not only distress points.</li>
+              <li>Need pins fade as they age, so fresh unresolved demand stays visually prominent.</li>
+              <li>Merged reports carry a report-count badge and systemic clusters get a red outer ring.</li>
+              <li>Ward overlay uses the same vulnerability dataset that drives urgency explainability.</li>
             </ul>
           </div>
         </aside>
@@ -481,7 +567,7 @@ export function CommunityPulseMap() {
                 <AppIcon name="map" size={16} />
                 Live cartography
               </div>
-              <p>Believable Delhi mock data, labelled neighbourhoods, and NGO support nodes.</p>
+              <p>Active needs stream live; volunteer dots and vulnerability shading can be toggled on demand.</p>
             </div>
             <div className={styles.legendInline}>
               {(Object.keys(urgencyConfig) as UrgencyKey[]).map((key) => (
@@ -490,13 +576,56 @@ export function CommunityPulseMap() {
                   {urgencyConfig[key].label}
                 </span>
               ))}
+              <span className={styles.legendChip}>
+                <span className={styles.filterSwatch} style={{ background: '#2F7EF7' }} />
+                Volunteer dot
+              </span>
             </div>
           </div>
 
           <div className={styles.mapWrap}>
             <div ref={mapRef} className={styles.mapCanvas} />
+
+            <div
+              style={{
+                position: 'absolute',
+                top: '0.85rem',
+                right: '0.85rem',
+                display: 'grid',
+                gap: '0.45rem',
+                padding: '0.75rem',
+                borderRadius: 'var(--radius-lg)',
+                background: 'var(--surface-glass)',
+                border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--shadow-md)',
+                backdropFilter: 'blur(10px)',
+                zIndex: 3,
+              }}
+            >
+              <span style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-subtle)' }}>
+                Layer toggles
+              </span>
+              <span className={styles.legendChip}>Active needs · always on</span>
+              <button type="button" className={styles.filterChip} onClick={() => setShowVolunteerLayer((current) => !current)}>
+                <span className={styles.filterSwatch} style={{ background: showVolunteerLayer ? '#2F7EF7' : 'var(--surface-3)' }} />
+                Volunteer positions
+              </button>
+              <button type="button" className={styles.filterChip} disabled style={{ opacity: 0.55, cursor: 'not-allowed' }}>
+                <span className={styles.filterSwatch} style={{ background: 'rgba(212,98,42,0.35)' }} />
+                Predicted needs
+              </button>
+              <button type="button" className={styles.filterChip} onClick={() => setShowVulnerabilityLayer((current) => !current)}>
+                <span className={styles.filterSwatch} style={{ background: showVulnerabilityLayer ? '#D44425' : 'var(--surface-3)' }} />
+                Vulnerability overlay
+              </button>
+              <button type="button" className={styles.filterChip} onClick={() => setShowWeatherLayer((current) => !current)}>
+                <span className={styles.filterSwatch} style={{ background: showWeatherLayer ? '#D4921A' : 'var(--surface-3)' }} />
+                Weather risk
+              </button>
+            </div>
+
             {!GOOGLE_MAPS_API_KEY ? (
-              <div className={styles.mapOverlayMessage}>Map key unavailable. Use the area watchlist and incident drawer meanwhile.</div>
+              <div className={styles.mapOverlayMessage}>Map key unavailable. Live reads can continue, but the map canvas cannot render.</div>
             ) : null}
             {error ? <div className={styles.mapOverlayMessage}>{error}</div> : null}
           </div>
@@ -506,68 +635,80 @@ export function CommunityPulseMap() {
           <div className={styles.panelLarge}>
             <div className={styles.detailTop}>
               <div>
-                <div className={styles.eyebrow}>Selected cluster</div>
-                <h3>{selectedCluster.area}</h3>
-                <p>{selectedCluster.district}</p>
+                <div className={styles.eyebrow}>Selected need</div>
+                <h3>{selectedNeed?.location?.district || 'Awaiting live data'}</h3>
+                <p>{selectedNeed?.location?.address || formatCategory(selectedNeed?.category || 'need')}</p>
               </div>
-              <span className={styles.urgencyBadge} style={{ background: urgencyConfig[selectedCluster.urgency].color }}>
-                {urgencyConfig[selectedCluster.urgency].label}
-              </span>
+              {selectedNeed ? (
+                <span className={styles.urgencyBadge} style={{ background: urgencyConfig[selectedNeed.urgency].color }}>
+                  {urgencyConfig[selectedNeed.urgency].label}
+                </span>
+              ) : null}
             </div>
 
-            <div className={styles.metricGrid}>
-              <div>
-                <span>Open alerts</span>
-                <strong>{selectedCluster.needs}</strong>
-              </div>
-              <div>
-                <span>Households</span>
-                <strong>{selectedCluster.households}</strong>
-              </div>
-              <div>
-                <span>Response ETA</span>
-                <strong>{selectedCluster.responseEta}</strong>
-              </div>
-              <div>
-                <span>Status</span>
-                <strong>{statusConfig[selectedCluster.status].label}</strong>
-              </div>
-            </div>
+            {selectedNeed ? (
+              <>
+                <div className={styles.metricGrid}>
+                  <div>
+                    <span>Urgency score</span>
+                    <strong>{Number(selectedNeed.urgencyScore || 0).toFixed(1)}</strong>
+                  </div>
+                  <div>
+                    <span>People affected</span>
+                    <strong>{selectedNeed.estimatedPeopleAffected || selectedNeed.report_count || 1}</strong>
+                  </div>
+                  <div>
+                    <span>Report count</span>
+                    <strong>{selectedNeed.report_count || 1}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{selectedNeed.status.replace(/_/g, ' ')}</strong>
+                  </div>
+                </div>
 
-            <div className={styles.storyBlock}>
-              <strong>{selectedCluster.category}</strong>
-              <p>{selectedCluster.notes}</p>
-            </div>
+                <div className={styles.storyBlock}>
+                  <strong>{formatCategory(selectedNeed.category)}</strong>
+                  <p>{selectedNeed.description}</p>
+                </div>
 
-            <div className={styles.assignmentBlock}>
-              <div>
-                <span>Assigned NGO</span>
-                <strong>{selectedCluster.ngo}</strong>
-              </div>
-              <div>
-                <span>Volunteer lead</span>
-                <strong>{selectedCluster.volunteerLead}</strong>
-              </div>
-            </div>
+                <div className={styles.assignmentBlock}>
+                  <div>
+                    <span>Reported from</span>
+                    <strong>{selectedNeed.location?.district || 'Unknown district'}</strong>
+                  </div>
+                  <div>
+                    <span>Systemic flag</span>
+                    <strong>{selectedNeed.systemic ? 'Escalated cluster' : 'Standard cluster'}</strong>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className={styles.helper}>No active need selected yet.</p>
+            )}
           </div>
 
           <div className={styles.panelLarge}>
             <div className={styles.panelHeading}>
-              <AppIcon name="network" size={16} />
-              Support nodes on map
+              <AppIcon name="volunteer" size={16} />
+              Available volunteer layer
             </div>
             <div className={styles.hubList}>
-              {supportHubs.map((hub) => (
-                <div key={hub.id} className={styles.hubRow}>
+              {availableVolunteers.slice(0, 6).map((volunteer) => (
+                <div key={volunteer.id} className={styles.hubRow}>
                   <span className={styles.hubIcon}>
-                    <AppIcon name={hub.type === 'ngo_hub' ? 'network' : hub.type === 'medical_store' ? 'shield' : 'volunteer'} size={16} />
+                    <AppIcon name="volunteer" size={16} />
                   </span>
                   <div>
-                    <strong>{hub.name}</strong>
-                    <span>{hub.type.replace(/_/g, ' ')}</span>
+                    <strong>{volunteer.name || volunteer.id}</strong>
+                    <span>
+                      {(volunteer.location?.district || 'Delhi NCR')} · {volunteer.stats?.activeTasks || 0} active tasks ·{' '}
+                      {Math.round(((volunteer.stats?.reliabilityScore ?? volunteer.reliabilityScore ?? 0.8) || 0.8) * 100)}% reliability
+                    </span>
                   </div>
                 </div>
               ))}
+              {availableVolunteers.length === 0 ? <p className={styles.helper}>No available volunteer positions are visible right now.</p> : null}
             </div>
           </div>
         </aside>

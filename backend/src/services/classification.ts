@@ -1,13 +1,26 @@
 /**
  * Need Classification Service
  * PRD: 5.1.6 Need Classification Engine
- * 
+ *
  * Uses Gemini Pro to classify need reports into categories and urgency levels.
  * Supports 8 Indian languages as specified in PRD 5.1.1
  */
 
 import { NeedCategory, UrgencyLevel, GeminiExtraction } from '../models/NeedReport';
 import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
+import { computeFullUrgencyScore, type UrgencyBreakdown } from './urgencyMultipliers';
+
+type ClassificationContext = {
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+export type ClassifiedNeedReport = GeminiExtraction & {
+  urgencyScore?: number;
+  urgencyBreakdown?: UrgencyBreakdown;
+};
 
 const CLASSIFICATION_SCHEMA = geminiSchema.object(
   {
@@ -38,8 +51,9 @@ function buildClassificationPrompt(text: string): string {
 
 export async function classifyNeedReport(
   text: string,
-  language: string = 'en'
-): Promise<GeminiExtraction> {
+  language: string = 'en',
+  context?: ClassificationContext
+): Promise<ClassifiedNeedReport> {
   try {
     const { data, meta } = await generateStructuredJson<Record<string, unknown>>(buildClassificationPrompt(text), {
       task: 'need classification',
@@ -55,7 +69,9 @@ export async function classifyNeedReport(
       severity: validateUrgency(String(data.severity || '')),
       estimatedCount: typeof data.estimatedCount === 'number' ? data.estimatedCount : undefined,
       description: typeof data.description === 'string' ? data.description : text.substring(0, 200),
-      keywords: Array.isArray(data.keywords) ? data.keywords.filter((item): item is string => typeof item === 'string') : [],
+      keywords: Array.isArray(data.keywords)
+        ? data.keywords.filter((item): item is string => typeof item === 'string')
+        : [],
       confidence: Math.min(1, Math.max(0, Number(data.confidence || 0.8))),
       language: typeof data.language === 'string' ? data.language : language,
       rawTranscript: text,
@@ -64,68 +80,60 @@ export async function classifyNeedReport(
       degraded: meta.degraded,
     };
 
-    return classification;
+    return enrichWithUrgencyScore(classification, context);
   } catch (error) {
     console.error('Classification error:', error);
-    return buildFallbackClassification(text, language, error);
+    return buildFallbackClassification(text, language, error, context);
   }
 }
 
-// Classify voice transcript with additional context
 export async function classifyVoiceTranscript(
   transcript: string,
-  language: string = 'hi'
-): Promise<GeminiExtraction> {
-  // Add voice-specific context
-  const enhancedPrompt = `This is a voice transcription from a field worker reporting a community need. 
-The speaker may use colloquial language or incomplete sentences. 
+  language: string = 'hi',
+  context?: ClassificationContext
+): Promise<ClassifiedNeedReport> {
+  const enhancedPrompt = `This is a voice transcription from a field worker reporting a community need.
+The speaker may use colloquial language or incomplete sentences.
 Extract the key information even if the text is informal.
 
 Transcript: ${transcript}`;
 
-  return classifyNeedReport(enhancedPrompt, language);
+  return classifyNeedReport(enhancedPrompt, language, context);
 }
 
-// Validate category against known values
 function validateCategory(category: string): string {
   const validCategories = Object.values(NeedCategory);
   const normalized = category?.toLowerCase().replace(/[^a-z_]/g, '');
-  
+
   if (validCategories.includes(normalized as any)) {
     return normalized;
   }
-  
-  // Try to match partial
-  const match = validCategories.find(c => 
-    c.includes(normalized) || normalized.includes(c)
-  );
-  
+
+  const match = validCategories.find((value) => value.includes(normalized) || normalized.includes(value));
   return match || NeedCategory.HEALTH;
 }
 
-// Validate urgency against known values
 function validateUrgency(urgency: string): string {
   const validUrgencies = Object.values(UrgencyLevel);
   const normalized = urgency?.toLowerCase().replace(/[^a-z]/g, '');
-  
+
   if (validUrgencies.includes(normalized as any)) {
     return normalized;
   }
-  
+
   return UrgencyLevel.MEDIUM;
 }
 
-// Mock classification for development without Vertex AI
 export async function mockClassifyNeedReport(
   text: string,
-  language: string = 'en'
-): Promise<GeminiExtraction> {
-  // Simple keyword-based classification for testing
+  language: string = 'en',
+  context?: ClassificationContext
+): Promise<ClassifiedNeedReport> {
   const textLower = text.toLowerCase();
-  
+
   let category: string = NeedCategory.HEALTH;
   let urgency: string = UrgencyLevel.MEDIUM;
-  
+
   if (textLower.includes('emergency') || textLower.includes('आपातकाल') || textLower.includes('accident')) {
     category = NeedCategory.EMERGENCY;
     urgency = UrgencyLevel.CRITICAL;
@@ -143,33 +151,74 @@ export async function mockClassifyNeedReport(
     urgency = UrgencyLevel.MEDIUM;
   }
 
-  return {
-    category,
-    severity: urgency,
-    description: text.substring(0, 200),
-    estimatedCount: Math.floor(Math.random() * 20) + 1,
-    confidence: 0.75,
-    language,
-    rawTranscript: text,
-    provider: 'fallback',
-    model: 'heuristic-fallback',
-    degraded: true,
-    warning: 'Voice classification used local fallback heuristic output.',
-  };
+  return enrichWithUrgencyScore(
+    {
+      category,
+      severity: urgency,
+      description: text.substring(0, 200),
+      estimatedCount: Math.floor(Math.random() * 20) + 1,
+      confidence: 0.75,
+      language,
+      rawTranscript: text,
+      provider: 'fallback',
+      model: 'heuristic-fallback',
+      degraded: true,
+      warning: 'Voice classification used local fallback heuristic output.',
+    },
+    context
+  );
 }
 
-function buildFallbackClassification(text: string, language: string, error?: unknown): GeminiExtraction {
+async function buildFallbackClassification(
+  text: string,
+  language: string,
+  error?: unknown,
+  context?: ClassificationContext
+): Promise<ClassifiedNeedReport> {
   const meta = buildFallbackMeta('need classification', error, 'flash');
-  return {
-    category: NeedCategory.HEALTH,
-    severity: UrgencyLevel.MEDIUM,
-    description: text.substring(0, 200),
-    confidence: 0.3,
-    language,
-    rawTranscript: text,
-    provider: meta.provider,
-    model: meta.model,
-    degraded: meta.degraded,
-    warning: meta.warning,
-  };
+
+  return enrichWithUrgencyScore(
+    {
+      category: NeedCategory.HEALTH,
+      severity: UrgencyLevel.MEDIUM,
+      description: text.substring(0, 200),
+      confidence: 0.3,
+      language,
+      rawTranscript: text,
+      provider: meta.provider,
+      model: meta.model,
+      degraded: meta.degraded,
+      warning: meta.warning,
+    },
+    context
+  );
+}
+
+async function enrichWithUrgencyScore(
+  classification: GeminiExtraction,
+  context?: ClassificationContext
+): Promise<ClassifiedNeedReport> {
+  const location = context?.location;
+
+  if (!location || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) {
+    return classification;
+  }
+
+  try {
+    const urgencyBreakdown = await computeFullUrgencyScore(
+      classification.severity || UrgencyLevel.MEDIUM,
+      classification.category,
+      location.latitude,
+      location.longitude
+    );
+
+    return {
+      ...classification,
+      urgencyScore: urgencyBreakdown.finalScore,
+      urgencyBreakdown,
+    };
+  } catch (error) {
+    console.warn('Urgency scoring enrichment failed:', error);
+    return classification;
+  }
 }

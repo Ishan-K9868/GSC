@@ -4,6 +4,7 @@ import { NeedCategory } from '../models/NeedReport';
 import type { Volunteer } from '../models/Volunteer';
 import { VolunteerAvailability } from '../models/Volunteer';
 import type { DispatchDecision } from '../models/DispatchTask';
+import { computeSupplyScore } from './inventoryEngine';
 
 export interface MatchWeights {
   proximity: number;
@@ -12,24 +13,27 @@ export interface MatchWeights {
   reliability: number;
   equityBoost: number;
   needUrgency: number;
+  supplyScore: number;
 }
 
 const DEFAULT_WEIGHTS: MatchWeights = {
   proximity: 0.3,
-  skillFit: 0.25,
+  skillFit: 0.15,
   availability: 0.2,
   reliability: 0.15,
-  equityBoost: 0.05,
+  equityBoost: 0,
   needUrgency: 0.05,
+  supplyScore: 0.15,
 };
 
 const EMERGENCY_WEIGHTS: MatchWeights = {
-  proximity: 0.5,
-  skillFit: 0.15,
+  proximity: 0.45,
+  skillFit: 0.08,
   availability: 0.2,
   reliability: 0.1,
-  equityBoost: 0.03,
+  equityBoost: 0,
   needUrgency: 0.02,
+  supplyScore: 0.15,
 };
 
 export interface MatchResult {
@@ -52,8 +56,7 @@ export async function computeVolunteerMatches(report: NeedReport): Promise<Match
     .map((doc) => ({ id: doc.id, ...doc.data() } as Volunteer))
     .filter((volunteer) => isEligibleForReport(volunteer, report));
 
-  const scored = volunteers
-    .map((volunteer) => buildDecision(volunteer, report, weights))
+  const scored = (await Promise.all(volunteers.map((volunteer) => buildDecision(volunteer, report, weights))))
     .sort((a, b) => b.totalScore - a.totalScore)
     .slice(0, 20);
 
@@ -77,7 +80,7 @@ function isEligibleForReport(volunteer: Volunteer, report: NeedReport): boolean 
   return canHandleCategory && underTaskCap && notOffline;
 }
 
-function buildDecision(volunteer: Volunteer, report: NeedReport, weights: MatchWeights): DispatchDecision {
+async function buildDecision(volunteer: Volunteer, report: NeedReport, weights: MatchWeights): Promise<DispatchDecision> {
   const distanceKm = calculateDistance(
     report.location.latitude,
     report.location.longitude,
@@ -90,7 +93,9 @@ function buildDecision(volunteer: Volunteer, report: NeedReport, weights: MatchW
   const availability = calculateAvailabilityScore(volunteer.availability);
   const reliability = calculateReliabilityScore(volunteer);
   const equityBoost = calculateEquityBoost(volunteer);
-  const needUrgency = urgencyToScore(report.urgency);
+  const needUrgency = urgencyToScore(report as NeedReport & { urgencyScore?: number });
+  const supplyResult = await computeSupplyScore(volunteer.id || volunteer.userId, report.category);
+  const supplyScore = supplyResult.score;
 
   const totalScore = clamp01(
     weights.proximity * proximity +
@@ -98,10 +103,11 @@ function buildDecision(volunteer: Volunteer, report: NeedReport, weights: MatchW
       weights.availability * availability +
       weights.reliability * reliability +
       weights.equityBoost * equityBoost +
-      weights.needUrgency * needUrgency
+      weights.needUrgency * needUrgency +
+      weights.supplyScore * supplyScore
   );
 
-  return {
+  const decision = {
     volunteerId: volunteer.id || volunteer.userId,
     volunteerName: volunteer.name,
     totalScore,
@@ -114,8 +120,13 @@ function buildDecision(volunteer: Volunteer, report: NeedReport, weights: MatchW
       needUrgency,
     },
     distanceKm,
-    explanation: buildExplanation(volunteer, distanceKm, skillFit, reliability),
+    explanation: buildExplanation(volunteer, distanceKm, skillFit, reliability, supplyResult),
+    supplyScore,
+    supplyReason: supplyResult.reason,
+    matchedItems: supplyResult.matchedItems,
   };
+
+  return decision as DispatchDecision;
 }
 
 function calculateProximityScore(distanceKm: number, maxDistanceKm: number): number {
@@ -165,18 +176,33 @@ function calculateEquityBoost(volunteer: Volunteer): number {
   return clamp01(boost);
 }
 
-function urgencyToScore(urgency: UrgencyLevelType): number {
+function urgencyToScore(report: NeedReport & { urgencyScore?: number }): number {
+  if (typeof report.urgencyScore === 'number' && Number.isFinite(report.urgencyScore)) {
+    return clamp01(report.urgencyScore / 10);
+  }
+
+  const urgency = report.urgency as UrgencyLevelType;
   if (urgency === 'critical') return 1;
   if (urgency === 'high') return 0.75;
   if (urgency === 'medium') return 0.5;
   return 0.25;
 }
 
-function buildExplanation(volunteer: Volunteer, distanceKm: number, skillFit: number, reliability: number): string {
+function buildExplanation(
+  volunteer: Volunteer,
+  distanceKm: number,
+  skillFit: number,
+  reliability: number,
+  supplyResult: { matchedItems: string[] }
+): string {
   const distanceText = `${distanceKm.toFixed(1)}km away`;
   const reliabilityText = `${Math.round(reliability * 100)}% reliability`;
   const skillText = `${Math.round(skillFit * 100)}% skill fit`;
-  return `Matched ${volunteer.name} because they are ${distanceText}, with ${skillText} and ${reliabilityText}.`;
+  const supplyText =
+    supplyResult.matchedItems.length > 0
+      ? ` Has relevant supplies: ${supplyResult.matchedItems.join(', ')}.`
+      : '';
+  return `Matched ${volunteer.name} because they are ${distanceText}, with ${skillText} and ${reliabilityText}.${supplyText}`;
 }
 
 function tokenize(text: string): Set<string> {

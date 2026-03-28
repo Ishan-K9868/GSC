@@ -48,6 +48,10 @@ function getClient(): GoogleGenerativeAI {
   return geminiClient;
 }
 
+export function getGeminiClient(): GoogleGenerativeAI {
+  return getClient();
+}
+
 export function getModelName(model: GeminiModelTier = 'flash'): string {
   return model === 'pro' ? PRO_MODEL : FLASH_MODEL;
 }

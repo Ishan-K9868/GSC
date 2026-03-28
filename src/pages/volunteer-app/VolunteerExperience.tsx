@@ -3,16 +3,38 @@ import {
   getVolunteerProfile,
   getVolunteerTasks,
   acceptVolunteerTask,
-  completeVolunteerTask,
   getVolunteerTaskChat,
   getVolunteerGamification,
+  getReport,
+  uploadPhoto,
 } from '../../services/api';
+import { auth } from '../../config/firebase';
 import { AppIcon } from '../../components/shared';
+import InventoryTab from './InventoryTab';
 import styles from './VolunteerExperience.module.css';
 
-type Tab = 'today' | 'missions' | 'chat' | 'rewards';
+type Tab = 'today' | 'missions' | 'chat' | 'rewards' | 'inventory';
 
 const DEMO_VOLUNTEER_ID = 'dev-user-001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+const DEV_TOKEN = 'dev-mock-token-for-prototype';
+
+type CompletionState = {
+  photoUrl?: string;
+  uploading?: boolean;
+  verifying?: boolean;
+  tier?: 'auto_resolved' | 'needs_review' | 'rejected';
+  message?: string;
+  error?: string;
+};
+
+async function getDispatchToken(): Promise<string | null> {
+  if (DEV_MODE) return DEV_TOKEN;
+  const user = auth.currentUser;
+  if (!user) return null;
+  return user.getIdToken();
+}
 
 export function VolunteerExperience() {
   const [tab, setTab] = useState<Tab>('today');
@@ -22,6 +44,7 @@ export function VolunteerExperience() {
   const [gamification, setGamification] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState('');
+  const [completionState, setCompletionState] = useState<Record<string, CompletionState>>({});
 
   useEffect(() => {
     void loadAll();
@@ -70,9 +93,161 @@ export function VolunteerExperience() {
     void loadAll();
   }
 
-  async function onCompleteTask(taskId: string) {
-    await completeVolunteerTask({ taskId, volunteerId: DEMO_VOLUNTEER_ID, photoEvidenceUrls: [], voiceDebriefText: 'Mission completed and beneficiary handoff verified.' });
-    void loadAll();
+  async function onSelectCompletionPhoto(taskId: string, file: File | null) {
+    if (!file) return;
+
+    setCompletionState((current) => ({
+      ...current,
+      [taskId]: { ...current[taskId], uploading: true, error: undefined, message: 'Uploading completion photo...' },
+    }));
+
+    const uploadResult = await uploadPhoto(file);
+
+    if (!uploadResult.success || !uploadResult.data?.url) {
+      setCompletionState((current) => ({
+        ...current,
+        [taskId]: {
+          ...current[taskId],
+          uploading: false,
+          error: uploadResult.error?.message || 'Photo upload failed',
+        },
+      }));
+      return;
+    }
+
+    const uploadedPhotoUrl = uploadResult.data.url;
+
+    setCompletionState((current) => ({
+      ...current,
+      [taskId]: {
+        ...current[taskId],
+        photoUrl: uploadedPhotoUrl,
+        uploading: false,
+        message: 'Photo ready. You can now submit completion for AI verification.',
+        error: undefined,
+      },
+    }));
+  }
+
+  async function onCompleteTask(task: any) {
+    const taskId = task.taskId;
+    const taskCompletion = completionState[taskId];
+
+    if (!taskCompletion?.photoUrl) {
+      setCompletionState((current) => ({
+        ...current,
+        [taskId]: { ...current[taskId], error: 'Upload a completion photo before marking this mission complete.' },
+      }));
+      return;
+    }
+
+    setCompletionState((current) => ({
+      ...current,
+      [taskId]: { ...current[taskId], verifying: true, error: undefined, message: 'AI is verifying your completion...' },
+    }));
+
+    try {
+      const reportId = task.reportId || task.id;
+      const reportResult = await getReport(reportId);
+      const reporterId = reportResult.success ? (reportResult.data?.report as any)?.reporterId : null;
+
+      if (!reporterId) {
+        throw new Error('Reporter context is missing for this task.');
+      }
+
+      const token = await getDispatchToken();
+      const response = await fetch(`${API_BASE_URL}/dispatch/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          taskId,
+          needReportId: reportId,
+          volunteerId: DEMO_VOLUNTEER_ID,
+          reporterId,
+          needCategory: task.category,
+          photoUrl: taskCompletion.photoUrl,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message || 'Completion verification failed');
+      }
+
+      const tier = result.data?.tier as CompletionState['tier'];
+      const tierMessage =
+        tier === 'auto_resolved'
+          ? 'Completion verified. Mission auto-resolved and reporter confirmation was requested.'
+          : tier === 'needs_review'
+            ? 'Completion submitted. Coordinator review is pending.'
+            : 'Photo rejected. Please upload a clearer completion photo and resubmit.';
+
+      setCompletionState((current) => ({
+        ...current,
+        [taskId]: {
+          ...current[taskId],
+          verifying: false,
+          tier,
+          message: tierMessage,
+          error: undefined,
+        },
+      }));
+
+      void loadAll();
+    } catch (completionError: any) {
+      setCompletionState((current) => ({
+        ...current,
+        [taskId]: {
+          ...current[taskId],
+          verifying: false,
+          error: completionError.message || 'Completion verification failed',
+        },
+      }));
+    }
+  }
+
+  function renderCompletionControls(task: any) {
+    const state = completionState[task.taskId] || {};
+    const toneColor =
+      state.tier === 'auto_resolved'
+        ? 'var(--jade)'
+        : state.tier === 'needs_review'
+          ? 'var(--amber)'
+          : state.tier === 'rejected'
+            ? '#D44425'
+            : 'var(--text-muted)';
+
+    return (
+      <div style={{ display: 'grid', gap: '0.4rem', marginTop: '0.45rem' }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+          <span>Completion photo</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => void onSelectCompletionPhoto(task.taskId, event.target.files?.[0] || null)}
+          />
+        </label>
+        {state.photoUrl ? (
+          <span style={{ fontSize: '0.72rem', color: 'var(--jade)' }}>Photo uploaded and ready for verification.</span>
+        ) : (
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>Photo evidence is required before completion.</span>
+        )}
+        {state.message ? <span style={{ fontSize: '0.72rem', color: toneColor }}>{state.message}</span> : null}
+        {state.error ? <span style={{ fontSize: '0.72rem', color: '#D44425' }}>{state.error}</span> : null}
+        <button
+          className={styles.btnSmall}
+          type="button"
+          disabled={!state.photoUrl || state.uploading || state.verifying}
+          onClick={() => void onCompleteTask(task)}
+        >
+          <AppIcon name={state.tier === 'auto_resolved' ? 'check' : state.tier === 'needs_review' ? 'alert' : 'check'} size={13} />
+          {state.uploading ? 'Uploading photo...' : state.verifying ? 'AI is verifying...' : 'Mark Complete'}
+        </button>
+      </div>
+    );
   }
 
   const tabs: { id: Tab; label: string; icon: any }[] = [
@@ -80,6 +255,7 @@ export function VolunteerExperience() {
     { id: 'missions', label: 'Missions', icon: 'dispatch' },
     { id: 'chat', label: 'Chat', icon: 'network' },
     { id: 'rewards', label: 'Rewards', icon: 'spark' },
+    { id: 'inventory', label: 'Inventory', icon: 'shield' },
   ];
 
   const activeTasks = tasks.filter((t) => t.status === 'accepted' || t.status === 'in_progress');
@@ -179,12 +355,8 @@ export function VolunteerExperience() {
                       <strong>{task.category?.replace(/_/g, ' ') || 'Task'}</strong>
                       <span className={styles.badge}>{task.urgency || task.status}</span>
                     </div>
-                     <p>{task.description || task.location?.address || task.title || 'Field task assigned'}</p>
-                    <div className={styles.taskActions}>
-                      <button className={styles.btnSmall} type="button" onClick={() => void onCompleteTask(task.taskId)}>
-                        <AppIcon name="check" size={13} /> Complete
-                      </button>
-                    </div>
+                    <p>{task.description || task.location?.address || task.title || 'Field task assigned'}</p>
+                    {renderCompletionControls(task)}
                   </div>
                 ))}
               </div>
@@ -218,13 +390,11 @@ export function VolunteerExperience() {
                            Accept
                         </button>
                       ) : null}
-                      {task.status === 'accepted' || task.status === 'in_progress' ? (
-                        <button className={styles.btnSmall} type="button" onClick={() => void onCompleteTask(task.taskId)}>
-                          <AppIcon name="check" size={13} /> Complete
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
+                       {task.status === 'accepted' || task.status === 'in_progress' ? (
+                         renderCompletionControls(task)
+                       ) : null}
+                     </div>
+                   </div>
                 ))}
                 {tasks.length === 0 ? <p className={styles.notice}>No missions available right now.</p> : null}
               </div>
@@ -290,6 +460,15 @@ export function VolunteerExperience() {
                   </div>
                 </div>
               ) : null}
+            </section>
+          )}
+
+          {tab === 'inventory' && (
+            <section className={styles.tabContent}>
+              <div className={styles.panelHeader}>
+                <AppIcon name="shield" size={15} /> Inventory + supplies
+              </div>
+              <InventoryTab volunteerId={DEMO_VOLUNTEER_ID} />
             </section>
           )}
         </main>

@@ -9,6 +9,7 @@ import {
 } from '../services/sevaAgent';
 import { getFirestore } from '../config/firebase';
 import { UserRole } from '../models/User';
+import { handleReporterResponse, reviewPendingVerification, verifyTaskCompletion } from '../services/verifierAgent';
 
 const dispatchRouter = Router();
 
@@ -139,6 +140,86 @@ dispatchRouter.get(
     next(error);
   }
 });
+
+dispatchRouter.post('/complete', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { taskId, needReportId, volunteerId, reporterId, needCategory, photoUrl } = req.body as {
+      taskId?: string;
+      needReportId?: string;
+      volunteerId?: string;
+      reporterId?: string;
+      needCategory?: string;
+      photoUrl?: string;
+    };
+
+    if (!taskId || !needReportId || !volunteerId || !reporterId || !needCategory || !photoUrl) {
+      throw createError('taskId, needReportId, volunteerId, reporterId, needCategory, and photoUrl are required', 400, 'INVALID_COMPLETION_INPUT');
+    }
+
+    const result = await verifyTaskCompletion(taskId, needReportId, volunteerId, reporterId, needCategory, photoUrl);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+dispatchRouter.post('/reporter-confirm', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { verificationRequestId, confirmed } = req.body as {
+      verificationRequestId?: string;
+      confirmed?: boolean;
+    };
+
+    if (!verificationRequestId || typeof confirmed !== 'boolean') {
+      throw createError('verificationRequestId and confirmed are required', 400, 'INVALID_REPORTER_CONFIRMATION');
+    }
+
+    await handleReporterResponse(verificationRequestId, confirmed);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+dispatchRouter.get(
+  '/pending-review',
+  verifyToken,
+  requireRoles(UserRole.NGO_STAFF, UserRole.NGO_ADMIN, UserRole.ADMIN),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const ngoId = typeof req.query.ngoId === 'string' ? req.query.ngoId : undefined;
+      const db = getFirestore();
+      const snapshot = await db.collection('dispatchTasks').where('pendingCoordinatorReview', '==', true).get();
+      const tasks = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((task: any) => !ngoId || task.ngoId === ngoId || task.assignedNgoId === ngoId);
+
+      res.json({ success: true, data: { tasks, count: tasks.length } });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+dispatchRouter.post(
+  '/review-decision',
+  verifyToken,
+  requireRoles(UserRole.NGO_STAFF, UserRole.NGO_ADMIN, UserRole.ADMIN),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { taskId, approved } = req.body as { taskId?: string; approved?: boolean };
+
+      if (!taskId || typeof approved !== 'boolean') {
+        throw createError('taskId and approved are required', 400, 'INVALID_REVIEW_DECISION');
+      }
+
+      await reviewPendingVerification(taskId, approved);
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 dispatchRouter.post(
   '/tasks/:taskId/override',

@@ -34,6 +34,7 @@ import geminiRouter from './routes/gemini';
 import csrRouter from './routes/csr';
 import panchayatRouter from './routes/panchayat';
 import crisisRouter from './routes/crisis';
+import inventoryRouter from './routes/inventory';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -83,6 +84,7 @@ app.use('/api/map', mapRouter);
 app.use('/api/dispatch', dispatchRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/volunteer-app', volunteerAppRouter);
+app.use('/api/inventory', inventoryRouter);
 app.use('/api/gemini', aiLimiter, geminiRouter);
 app.use('/api/csr', csrRouter);
 app.use('/api/panchayat', panchayatRouter);

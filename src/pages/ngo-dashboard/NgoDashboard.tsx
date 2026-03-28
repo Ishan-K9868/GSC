@@ -1,7 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getDashboardOverview } from '../../services/api';
+import { getDashboardOverview, getReport } from '../../services/api';
+import { auth } from '../../config/firebase';
 import { AppIcon } from '../../components/shared';
+import VoiceCommandButton from './VoiceCommandButton';
 import styles from './NgoDashboard.module.css';
+
+type UrgencyBreakdown = {
+  base: number;
+  weatherMult: number;
+  vulnerabilityMult: number;
+  timeMult: number;
+  finalScore: number;
+  weatherReason: string;
+  vulnerabilityReason: string;
+  timeReason: string;
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+const DEV_TOKEN = 'dev-mock-token-for-prototype';
+
+async function getDispatchToken(): Promise<string | null> {
+  if (DEV_MODE) return DEV_TOKEN;
+  const user = auth.currentUser;
+  if (!user) return null;
+  return user.getIdToken();
+}
 
 type DashboardOverview = {
   liveOperations: {
@@ -104,6 +128,9 @@ export function NgoDashboard() {
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [urgencyBreakdowns, setUrgencyBreakdowns] = useState<Record<string, UrgencyBreakdown>>({});
+  const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
+  const [pendingReviewTasks, setPendingReviewTasks] = useState<any[]>([]);
 
   useEffect(() => {
     void loadDashboard();
@@ -119,7 +146,43 @@ export function NgoDashboard() {
       return;
     }
     setData(response.data as DashboardOverview);
+    await loadPendingReviews();
     setLoading(false);
+  }
+
+  async function loadPendingReviews() {
+    try {
+      const token = await getDispatchToken();
+      const response = await fetch(`${API_BASE_URL}/dispatch/pending-review`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const payload = await response.json();
+      if (response.ok && payload.success) {
+        setPendingReviewTasks(payload.data?.tasks || []);
+      }
+    } catch (pendingReviewError) {
+      console.error('Failed to load pending verification review queue:', pendingReviewError);
+    }
+  }
+
+  async function onReviewDecision(taskId: string, approved: boolean) {
+    const token = await getDispatchToken();
+    const response = await fetch(`${API_BASE_URL}/dispatch/review-decision`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ taskId, approved }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      setError(payload?.error?.message || 'Verification review update failed');
+      return;
+    }
+
+    await loadDashboard();
   }
 
   const topLiveTasks = useMemo(() => data?.liveOperations.activeTasks.slice(0, 5) || [], [data]);
@@ -136,6 +199,116 @@ export function NgoDashboard() {
     ],
     [data]
   );
+  const visibleReportIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...topLiveTasks.map((task) => task.reportId),
+          ...pipelineColumns.flatMap((column) => column.items.slice(0, 4).map((item) => item.reportId)),
+        ])
+      ),
+    [pipelineColumns, topLiveTasks]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUrgencyBreakdowns() {
+      if (visibleReportIds.length === 0) {
+        setUrgencyBreakdowns({});
+        return;
+      }
+
+      const entries = await Promise.all(
+        visibleReportIds.map(async (reportId) => {
+          const response = await getReport(reportId);
+          const breakdown = response.success ? (response.data?.report as any)?.urgencyBreakdown : null;
+          return [reportId, breakdown] as const;
+        })
+      );
+
+      if (cancelled) return;
+
+      const nextBreakdowns = entries.reduce<Record<string, UrgencyBreakdown>>((acc, [reportId, breakdown]) => {
+        if (breakdown) {
+          acc[reportId] = breakdown as UrgencyBreakdown;
+        }
+        return acc;
+      }, {});
+
+      setUrgencyBreakdowns(nextBreakdowns);
+    }
+
+    void loadUrgencyBreakdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visibleReportIds]);
+
+  function renderUrgencyBadge(reportId: string, label: string, badgeClassName: string) {
+    const breakdown = urgencyBreakdowns[reportId];
+
+    return (
+      <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+        <span className={badgeClassName}>{label}</span>
+        {breakdown ? (
+          <>
+            <button
+              type="button"
+              aria-label={`Urgency breakdown for ${reportId}`}
+              onFocus={() => setOpenTooltipId(reportId)}
+              onBlur={() => setOpenTooltipId((current) => (current === reportId ? null : current))}
+              onMouseEnter={() => setOpenTooltipId(reportId)}
+              onMouseLeave={() => setOpenTooltipId((current) => (current === reportId ? null : current))}
+              style={{
+                width: '1rem',
+                height: '1rem',
+                borderRadius: '999px',
+                border: '1px solid var(--glass-border)',
+                background: 'var(--surface-1)',
+                color: 'var(--text-subtle)',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'help',
+                padding: 0,
+              }}
+              title={`Base: ${breakdown.base} x Weather: ${breakdown.weatherMult} (${breakdown.weatherReason}) x Vulnerability: ${breakdown.vulnerabilityMult} (${breakdown.vulnerabilityReason}) x Time: ${breakdown.timeMult} (${breakdown.timeReason}) = Final Score: ${breakdown.finalScore}`}
+            >
+              i
+            </button>
+            {openTooltipId === reportId ? (
+              <span
+                role="tooltip"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 0.4rem)',
+                  right: 0,
+                  width: '18rem',
+                  padding: '0.7rem 0.8rem',
+                  borderRadius: '14px',
+                  background: 'var(--surface-glass)',
+                  border: '1px solid var(--glass-border)',
+                  boxShadow: 'var(--shadow-md)',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.72rem',
+                  lineHeight: 1.45,
+                  zIndex: 5,
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                {`Base: ${breakdown.base} x Weather: ${breakdown.weatherMult} (${breakdown.weatherReason}) x Vulnerability: ${breakdown.vulnerabilityMult} (${breakdown.vulnerabilityReason}) x Time: ${breakdown.timeMult} (${breakdown.timeReason}) = Final Score: ${breakdown.finalScore}`}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+      </span>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -197,7 +370,7 @@ export function NgoDashboard() {
                 <div key={task.reportId} className={styles.taskCard}>
                   <div className={styles.taskTop}>
                     <strong>{formatCategory(task.category)}</strong>
-                    <span className={`${styles.badge} ${task.stalled ? styles.badgeAlert : ''}`}>{task.urgency}</span>
+                    {renderUrgencyBadge(task.reportId, task.urgency, `${styles.badge} ${task.stalled ? styles.badgeAlert : ''}`)}
                   </div>
                   <div className={styles.taskMeta}>
                     <span>{task.status}</span>
@@ -246,7 +419,7 @@ export function NgoDashboard() {
                     <div key={item.reportId} className={styles.pipelineCard}>
                       <strong>{formatCategory(item.category)}</strong>
                       <div className={styles.taskMeta}>
-                        <span>{item.urgency}</span>
+                        <span>{renderUrgencyBadge(item.reportId, item.urgency, styles.badge)}</span>
                         <span>{item.timeInStageHours}h in stage</span>
                       </div>
                       {item.escalationDraft ? <p>{item.escalationDraft}</p> : null}
@@ -255,6 +428,63 @@ export function NgoDashboard() {
                   {col.items.length === 0 ? <p className={styles.helper}>No records</p> : null}
                 </div>
               ))}
+            </div>
+          </article>
+
+          <article className={`${styles.panel} ${styles.span12}`}>
+            <div className={styles.panelHeader}>
+              <AppIcon name="check" size={15} /> Pending verification review
+            </div>
+            <div className={styles.panelBody}>
+              {pendingReviewTasks.length > 0 ? (
+                pendingReviewTasks.slice(0, 6).map((task) => (
+                  <div key={task.id} className={styles.taskCard}>
+                    <div className={styles.taskTop}>
+                      <strong>{formatCategory(task.category || 'field_task')}</strong>
+                      <span className={styles.badge}>{Math.round((task.verificationConfidence || 0) * 100)}% confidence</span>
+                    </div>
+                    <div className={styles.taskMeta}>
+                      <span>{task.needReportId || 'No report link'}</span>
+                      <span>{task.acceptedVolunteerId || 'Volunteer pending'}</span>
+                    </div>
+                    <p>{task.verificationReason || 'AI routed this completion for coordinator review.'}</p>
+                    {task.verificationPhoto ? (
+                      <a
+                        href={task.verificationPhoto}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: '0.74rem', color: 'var(--accent)', textDecoration: 'none' }}
+                      >
+                        Open verification photo
+                      </a>
+                    ) : null}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+                      <button className={styles.btnPrimary} type="button" onClick={() => void onReviewDecision(task.id, true)}>
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void onReviewDecision(task.id, false)}
+                        style={{
+                          background: 'transparent',
+                          color: '#D44425',
+                          border: '1.5px solid rgba(212,68,37,0.22)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '0.5rem 0.95rem',
+                          fontFamily: 'General Sans, sans-serif',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className={styles.helper}>No AI verification items are waiting for coordinator review.</p>
+              )}
             </div>
           </article>
 
@@ -363,6 +593,10 @@ export function NgoDashboard() {
           </article>
         </section>
       ) : null}
+      <VoiceCommandButton
+        suggestedNeedId={topLiveTasks[0]?.reportId || data?.needsPipeline.unassigned[0]?.reportId}
+        suggestedVolunteerId={data?.volunteerHealth.volunteers[0]?.volunteerId}
+      />
     </div>
   );
 }
