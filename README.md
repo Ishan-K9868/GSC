@@ -115,6 +115,12 @@ npm run build --prefix backend
 npm run preview
 ```
 
+### Windows launcher
+
+```bash
+start-dev.bat
+```
+
 ### Seed demo data
 
 ```bash
@@ -123,7 +129,7 @@ npm run seed --prefix backend -- --clear --count=24
 
 ### Example env keys
 
-#### Root `.env`
+#### Root `.env.local`
 
 ```env
 VITE_API_BASE_URL=http://localhost:3001/api
@@ -185,6 +191,7 @@ RATE_LIMIT_AI_MAX=50
 | `@googlemaps/js-api-loader` | `^2.0.2` | direct map script loading |
 | `motion` | `^12.0.0` | page/section motion |
 | `h3-js` | `^4.4.0` | hex mapping utilities |
+| `react-hot-toast` | `^2.4.1` | toast notifications |
 | `zustand` | `^4.4.7` | installed but not materially used in inspected source |
 | `papaparse` | `^5.4.1` | CSV intake/import support |
 | `lenis` | `^1.1.0` | smooth scroll layer |
@@ -552,6 +559,7 @@ This index focuses on source modules that define runtime behavior. Generated fil
 | `src/pages/panchayat/PanchayatInterface.tsx` | civic dashboard and scheme gap finder | overview/history/reporting state | Panchayat page | panchayat APIs | none found | Hindi-first civic ops |
 | `src/pages/crisis-mode/CrisisModePage.tsx` | crisis activation / post-crisis reporting | dashboard, activation/report state | crisis page | crisis endpoints | none found | stateful incident view |
 | `src/pages/for-ngos/ForNgosPage.tsx` | partner-NGO CTA page | static UI state | for-NGOs page | none | none found | lightweight marketing/internal bridge |
+| `src/pages/intake/components/LocationPicker.tsx` | location selection modal with GPS, search, reverse geocode, and manual coordinates | `value?: Location`, `onChange(location)`, `onClose?`, `showMap?` | active tab, search state, manual coordinate state, map refs | `LocationPicker` | `useGeolocation`, Google Maps globals, Nominatim | none found | network + map API bound |
 
 ### Frontend Platform / Shared Modules
 
@@ -561,6 +569,12 @@ This index focuses on source modules that define runtime behavior. Generated fil
 | `src/components/Navbar/Navbar.tsx` | marketing navbar | menu/open state | navbar component | theme + waitlist | none found | marketing shell |
 | `src/components/shared/AppIcons.tsx` | icon system for app and marketing surfaces | `name`, `size` | `AppIcon` | none | none found | O(1) icon switch |
 | `src/components/shared/LocationPresetPicker.tsx` | Delhi map section picker | selected preset, current location, callbacks | picker component | Delhi presets | none found | stateless helper |
+| `src/components/shared/SectionNavigator/SectionNavigator.tsx` | landing-page section dots / jump navigation | window scroll position | section navigator | landing section ids | none found | small scroll listener |
+| `src/components/shared/SectionSkeleton/SectionSkeleton.tsx` | suspense fallback for lazy sections/pages | no required props | skeleton component | none | none found | presentational |
+| `src/components/shared/CustomCursor/CustomCursor.tsx` | landing-page custom cursor layer | mouse position and hover states | cursor component | browser pointer events | none found | animation/pointer bound |
+| `src/components/shared/WaitlistModal/WaitlistModal.tsx` | accessible waitlist modal with focus trap | `isOpen`, `onClose` | email field, focus refs | modal component | `motion/react` | none found | UI-only; no backend submit yet |
+| `src/components/shared/AnimatedCounter/AnimatedCounter.tsx` | animated numeric counters for marketing stats | count-up props | animated value lifecycle | counter component | `motion/react` | none found | O(animation frames) |
+| `src/components/shared/NoiseTexture/NoiseTexture.tsx` | decorative SVG/noise layer for surface texture | style/class props | stateless | texture component | none | none found | presentational |
 | `src/context/AuthContext.tsx` | Firebase auth + dev bypass | current user, OTP states | `useAuth()` | Firebase Auth | none found | auth provider |
 | `src/context/ThemeContext.tsx` | light/dark theme persistence | theme state | `useTheme()` | DOM attrs/localStorage | none found | theme provider |
 | `src/hooks/useVoiceRecording.ts` | MediaRecorder + speech recognition | recording state, transcript accumulation | voice hook | browser media APIs | none found | asynchronous media state |
@@ -821,8 +835,8 @@ Representative response:
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | `GET` | `/api/volunteer-app/profile/:volunteerId` | authenticated | volunteer profile |
-| `POST` | `/api/volunteer-app/onboarding/assessment` | authenticated | onboarding assessment |
-| `POST` | `/api/volunteer-app/onboarding/preferences` | authenticated | preferences save |
+| `POST` | `/api/volunteer-app/onboarding/assess` | authenticated | onboarding assessment |
+| `PATCH` | `/api/volunteer-app/onboarding/preferences` | authenticated | preferences save |
 | `GET` | `/api/volunteer-app/tasks/:volunteerId` | authenticated | mission feed |
 | `POST` | `/api/volunteer-app/tasks/:taskId/accept` | authenticated | accept mission |
 | `GET` | `/api/volunteer-app/tasks/:taskId/chat` | authenticated | load task chat |
@@ -906,6 +920,26 @@ Representative response:
 ---
 
 ## Data Flow & State Management
+
+```mermaid
+flowchart LR
+  UI[Pages + Components] --> Local[Local React state]
+  UI --> Ctx[AuthContext + ThemeContext]
+  UI --> API[src/services/api.ts]
+  UI --> Live[Direct Firestore listeners]
+  UI --> Offline[IndexedDB offline queue]
+  API --> Token[Firebase ID token / dev token]
+  Token --> Backend[Express routes]
+  Offline --> API
+  Backend --> Firestore[(Firestore / Storage / Gemini)]
+  Firestore --> Live
+```
+
+State is intentionally lightweight on the client: page-local hooks carry most UI state, `AuthContext` and `ThemeContext` are the only global providers, and `src/services/api.ts` acts as the contract adapter between UI and backend. The Pulse Map and public KPI surfaces also subscribe directly to Firestore, so the product mixes REST-driven mutations with realtime reads instead of funneling everything through one store.
+
+Caption: State ownership across local React state, context providers, API helpers, offline queueing, and realtime Firestore listeners.
+
+Alt text: A state-management diagram showing pages using local state, auth/theme contexts, the API client, direct Firestore listeners, and an IndexedDB offline queue that syncs through backend routes into Firestore and Gemini-backed services.
 
 ### Frontend state map
 
@@ -1111,19 +1145,20 @@ npm run dev:all
 ```json
 {
   "docs_manifest": {
-    "files_scanned_count": 167,
+    "files_scanned_count": 496,
     "diagrams_generated": [
       "Layered System Architecture",
       "Privacy & Trust Layer",
       "Application Role Flows",
       "Data Flow Diagram",
       "AI / ML Pipeline Diagram",
-      "Why-this-stack Diagram"
+      "Why-this-stack Diagram",
+      "Data Flow & State Management"
     ],
-    "components_indexed_count": 64,
+    "components_indexed_count": 71,
     "api_routes_count": 93,
-    "issues_flagged_count": 8,
-    "run_timestamp": "2026-03-29T00:00:00Z"
+    "issues_flagged_count": 10,
+    "run_timestamp": "2026-04-11T00:00:00Z"
   }
 }
 ```
@@ -1137,7 +1172,7 @@ npm run dev:all
 - [x] Frontend route structure verified from `src/App.tsx`
 - [x] Firebase/Gemini env usage verified from runtime config files
 - [x] Public KPI, Pulse Map, CSR Portal, Panchayat, Gemini Lab, NGO Dashboard, Volunteer App, and intake flows all have source-backed documentation entries
-- [x] All 6 required Mermaid diagrams are embedded in this file
+- [x] All 6 required Mermaid diagrams are embedded in this file, plus a state-management diagram for the dedicated section
 - [x] No FHIR / ABDM / HealthLake integration was verified; marked explicitly instead of guessed
 - [ ] Human review: `backend/.env` contains real-looking secrets and should be checked for exposure/rotation risk
 - [ ] Human review: no formal automated test suite was found, so coverage claims should not be overstated
@@ -1145,6 +1180,10 @@ npm run dev:all
 - [ ] Human review: some route groups accept ids in params/body without strict ownership enforcement; verify final RBAC expectations route-by-route
 - [ ] Human review: Google Maps deprecation warning for `google.maps.Marker` remains a future maintenance item
 - [ ] Human review: current README package/env facts are code-verified, but deployment topology remains inferential because no CI/CD manifests or Dockerfiles were found
+- [ ] Human review: `src/pages/workspace/WorkspaceDashboard.tsx:5` is explicitly static data only, so treat workspace metrics as demo content unless replaced with live API calls
+- [ ] Human review: `backend/src/routes/map.ts:17` keeps map endpoints public; do not assume authenticated map access in downstream deployment docs
+- [ ] Human review: `SETUP_GUIDE.md:153` mentions Vertex AI enablement, but runtime inference currently uses direct Gemini API-key access in `backend/src/services/geminiClient.ts:31`
+- [ ] Human review: `src/pages/ngo-dashboard/VoiceCommandButton.tsx:243` describes the voice dispatch shell as text fallback with real Firestore actions, not full live speech execution
 
 ---
 
