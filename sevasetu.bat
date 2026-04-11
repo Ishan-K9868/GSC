@@ -55,10 +55,10 @@ echo Checking application status...
 echo.
 echo Backend (Port 3001):
 netstat -aon 2>nul | findstr ":3001.*LISTENING" >nul 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo   [RUNNING] Backend is active
     curl -s http://localhost:3001/health >nul 2>&1
-    if %errorlevel% equ 0 (
+    if not errorlevel 1 (
         echo   [HEALTHY] Health check passed
     ) else (
         echo   [WARNING] Health check failed
@@ -69,7 +69,7 @@ if %errorlevel% equ 0 (
 echo.
 echo Frontend (Port 5173):
 netstat -aon 2>nul | findstr ":5173.*LISTENING" >nul 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     echo   [RUNNING] Frontend is active
 ) else (
     echo   [STOPPED] Frontend is not running

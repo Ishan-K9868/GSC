@@ -1,11 +1,27 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireRoles, verifyToken } from './auth';
-import { getDashboardOverview } from '../services/dashboardIntelligence';
+import { getDashboardOverview, getWorkspaceSummary } from '../services/dashboardIntelligence';
 import { getFirestore } from '../config/firebase';
 import { createError } from '../middleware/errorHandler';
 import { UserRole } from '../models/User';
 
 const dashboardRouter = Router();
+
+dashboardRouter.get(
+  '/workspace-summary',
+  verifyToken,
+  requireRoles(UserRole.NGO_STAFF, UserRole.NGO_ADMIN, UserRole.ADMIN),
+  async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await getWorkspaceSummary();
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 dashboardRouter.get(
   '/overview',

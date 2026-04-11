@@ -12,7 +12,7 @@ cd /d "%~dp0"
 
 :: Check if Node.js is installed
 where node >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     color 0C
     echo [ERROR] Node.js is not installed or not in PATH
     pause
@@ -41,6 +41,23 @@ if not exist "backend\.env" (
     color 0E
     echo [WARNING] backend\.env not found - copy from backend\.env.example
 )
+
+echo.
+choice /C YN /N /M "Run fresh demo seed before starting? [Y/N]: "
+if errorlevel 2 goto skip_seed
+if errorlevel 1 (
+    echo.
+    echo [INFO] Running backend demo seed...
+    call npm run seed --prefix backend -- --clear --count=24
+    if errorlevel 1 (
+        color 0C
+        echo [ERROR] Demo seed failed. Fix the backend setup and try again.
+        pause
+        exit /b 1
+    )
+    echo [INFO] Demo seed completed successfully.
+)
+:skip_seed
 
 echo.
 echo Starting servers in separate windows...
@@ -76,10 +93,12 @@ echo.
 
 :: Open browser after a short delay
 choice /C YN /T 5 /D Y /M "Open browser to http://localhost:5173"
-if %errorlevel% equ 1 (
+if errorlevel 2 goto skip_browser
+if errorlevel 1 (
     timeout /t 3 /nobreak >nul
     start http://localhost:5173
 )
+:skip_browser
 
 echo.
 echo You can close this launcher window.

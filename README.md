@@ -121,6 +121,9 @@ npm run preview
 start-dev.bat
 ```
 
+- `start-dev.bat` opens frontend/backend in separate windows and now offers an optional fresh demo reseed before startup.
+- `start.bat` runs the same startup flow in background mode with logs in `logs/`.
+
 ### Seed demo data
 
 ```bash
@@ -517,7 +520,7 @@ This index focuses on source modules that define runtime behavior. Generated fil
 | `backend/src/services/autoDispatch.ts` | NGO auto-dispatch path and NGO lookup | report docs | `triggerAutoDispatch(...)` | matcher/NGO data | none found | may require composite indexes |
 | `backend/src/services/visionAnalysis.ts` | Gemini vision abstraction for photo analysis | image buffer + mime type | `analyzeImageWithGemini(...)` | Gemini multimodal | none found | image-size bound |
 | `backend/src/services/verifierAgent.ts` | completion verification, review queue, reporter loop | task/report/photo/reporter ids | `verifyTaskCompletion(...)` | visionAnalysis + Firestore | none found | branch-heavy but linear |
-| `backend/src/services/dashboardIntelligence.ts` | NGO dashboard analytics: live ops, volunteer health, impact, inventory | dashboard query context | `getDashboardOverview()` | Firestore aggregates | none found | aggregation-heavy |
+| `backend/src/services/dashboardIntelligence.ts` | NGO dashboard analytics plus workspace summary cards/highlights | dashboard query context | `getDashboardOverview()`, `getWorkspaceSummary()` | Firestore aggregates | none found | aggregation-heavy |
 | `backend/src/services/mapAggregation.ts` | hex stats and map layers | optional bounds/filters | `getMapLayersData(...)` | H3 + Firestore | none found | O(n) over fetched reports |
 | `backend/src/services/volunteerExperience.ts` | volunteer profile/task/chat/gamification workflow | volunteer/task ids | task feed + chat methods | Firestore | none found | UI adapter service |
 | `backend/src/services/geminiFeatures.ts` | coordinator copilot, skill match, impact report, surge, burnout, escalation | plain operator input | tool-specific exported fns | Gemini client + dashboard | none found | prompt-bound |
@@ -530,9 +533,9 @@ This index focuses on source modules that define runtime behavior. Generated fil
 
 | Path | Purpose | Inputs / State | Exports / Example | Dependencies | Tests | Complexity / Notes |
 |---|---|---|---|---|---|---|
-| `backend/src/scripts/seedData.ts` | seeds reports, volunteers, inventory, duplicate-ready state | `--clear`, `--count` | `npm run seed --prefix backend -- --clear --count=24` | Firestore | none found | demo data critical |
+| `backend/src/scripts/seedData.ts` | seeds reports, volunteers, inventory, and demo-ready dispatch tasks | `--clear`, `--count` | `npm run seed --prefix backend -- --clear --count=24` | Firestore | none found | demo data critical; loads `backend/.env` directly |
 | `backend/src/scripts/seedVolunteers.ts` | volunteer-only bulk seed helper | `--clear`, `--count` | volunteer seeding CLI | Firestore | none found | demo helper |
-| `backend/src/scripts/urgencyDecay.ts` | batch urgency escalation job | Firestore unresolved reports | `runUrgencyDecay()` | Firestore | none found | scheduler wiring external |
+| `backend/src/scripts/urgencyDecay.ts` | batch urgency escalation job | Firestore unresolved reports | `runUrgencyDecay()` | Firestore | none found | invoked at startup and every 30 minutes by backend runtime |
 | `backend/src/services/conflictResolution.ts` | report conflict rules | report states | exported helpers | backend services | none found | small utility |
 
 ### Frontend Application Surfaces
@@ -541,7 +544,7 @@ This index focuses on source modules that define runtime behavior. Generated fil
 |---|---|---|---|---|---|---|
 | `src/App.tsx` | root route graph + layout split | route tree | `AppChrome` | Router + pages | none found | core navigation |
 | `src/main.tsx` | browser bootstrap | DOM root | app mount | `StrictMode` | none found | bootstrap only |
-| `src/pages/workspace/WorkspaceDashboard.tsx` | internal hub for role surfaces | fetched summary + nav links | workspace page | shared icons/styles | none found | static/dashboard hybrid |
+| `src/pages/workspace/WorkspaceDashboard.tsx` | internal hub for role surfaces with live workspace summary stats | fetched summary + nav links | workspace page | shared icons/styles + `/api/dashboard/workspace-summary` | none found | live/dashboard hybrid |
 | `src/pages/intake/IntakePage.tsx` | mode switcher for four intake paths | active mode state | intake page | four intake components | none found | small mode router |
 | `src/pages/intake/components/VoiceIntake.tsx` | capture, classify, confirm, submit voice reports | transcript, audio blob, location, confirmation state | voice intake component | `useVoiceRecording`, `useGeolocation`, API | none found | media + AI flow |
 | `src/pages/intake/components/PhotoIntake.tsx` | photo upload/analyze/submit path | selected file, analysis, location | photo intake component | upload API + geolocation | none found | file-driven flow |
@@ -825,6 +828,7 @@ Representative response:
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
+| `GET` | `/api/dashboard/workspace-summary` | coordinator/admin | lightweight workspace hero metrics and highlights |
 | `GET` | `/api/dashboard/overview` | coordinator/admin | master NGO dashboard payload |
 | `GET` | `/api/dashboard/surge-forecast` | coordinator/admin | surge forecast snapshot |
 | `GET` | `/api/dashboard/cross-ngo` | coordinator/admin | cross-NGO coordination summary |
@@ -987,7 +991,7 @@ Alt text: A state-management diagram showing pages using local state, auth/theme
 ### Inference modes
 
 - Realtime-ish: intake classification, queue creation, dashboard tool queries, verification routing
-- Batch / infra-ready: urgency decay script, inventory alert checks
+- Batch / scheduler-backed: urgency decay script and inventory alert checks now run from backend bootstrap on fixed intervals
 - Human-in-loop: verification review, reporter confirmation, coordinator override
 
 ### Explainability notes
@@ -1088,7 +1092,7 @@ npm run dev:all
 
 - Backend serves `/uploads` as static files when cloud storage falls back to disk.
 - Firestore composite indexes are required for some production query paths; see `FIRESTORE_INDEXES.md`.
-- Scheduler deployment for `urgencyDecay` and inventory alert checks is an operational follow-up outside the current runtime bootstrap.
+- The backend now starts in-process schedulers for `runUrgencyDecay()` and `checkInventoryAlerts()` during local/runtime bootstrap. Multi-instance production deployments should move those jobs to a single scheduler/cron target to avoid duplicate execution.
 
 ### CI/CD / hosting clues
 
@@ -1113,10 +1117,14 @@ npm run dev:all
   - fixed by routing intake into `triggerSevaAgentForReport(...)`, not just `needReports`
 - duplicate volunteer names in map roster
   - caused by duplicate demo docs in Firestore; UI now collapses them
+- backend starts but all internal pages show `Failed to fetch`
+  - usually means the API process crashed during bootstrap; one historical cause was Firestore access at module-load time before Firebase Admin initialization
 - `ERR_BLOCKED_BY_CLIENT`
   - usually browser extension/adblock, not a SevaSetu runtime bug
 - `google.maps.Marker` deprecation warning
   - non-blocking today, but future migration to `AdvancedMarkerElement` is recommended
+- Google Maps watermark / `This page can't load Google Maps correctly`
+  - usually billing, API enablement, or referrer restrictions on `VITE_GOOGLE_MAPS_API_KEY`, not a SevaSetu rendering bug
 
 ---
 
@@ -1157,8 +1165,8 @@ npm run dev:all
     ],
     "components_indexed_count": 71,
     "api_routes_count": 93,
-    "issues_flagged_count": 10,
-    "run_timestamp": "2026-04-11T00:00:00Z"
+    "issues_flagged_count": 8,
+    "run_timestamp": "2026-04-11T14:15:00Z"
   }
 }
 ```
@@ -1174,13 +1182,15 @@ npm run dev:all
 - [x] Public KPI, Pulse Map, CSR Portal, Panchayat, Gemini Lab, NGO Dashboard, Volunteer App, and intake flows all have source-backed documentation entries
 - [x] All 6 required Mermaid diagrams are embedded in this file, plus a state-management diagram for the dedicated section
 - [x] No FHIR / ABDM / HealthLake integration was verified; marked explicitly instead of guessed
+- [x] `backend/src/index.ts` now wires `runUrgencyDecay()` and `checkInventoryAlerts()` on startup intervals
+- [x] `src/pages/workspace/WorkspaceDashboard.tsx` now uses live summary data from `GET /api/dashboard/workspace-summary`
+- [x] Standalone backend scripts now load `backend/.env` before Firebase initialization (`backend/src/scripts/seedData.ts`, `backend/src/scripts/seedVolunteers.ts`, `backend/src/scripts/urgencyDecay.ts`)
+- [x] Backend startup no longer fails from eager Firestore access in service module scope; Firestore access is now lazy in affected services
 - [ ] Human review: `backend/.env` contains real-looking secrets and should be checked for exposure/rotation risk
 - [ ] Human review: no formal automated test suite was found, so coverage claims should not be overstated
-- [ ] Human review: scheduler deployment for `backend/src/scripts/urgencyDecay.ts` and inventory alerts is not wired in bootstrap code
 - [ ] Human review: some route groups accept ids in params/body without strict ownership enforcement; verify final RBAC expectations route-by-route
 - [ ] Human review: Google Maps deprecation warning for `google.maps.Marker` remains a future maintenance item
 - [ ] Human review: current README package/env facts are code-verified, but deployment topology remains inferential because no CI/CD manifests or Dockerfiles were found
-- [ ] Human review: `src/pages/workspace/WorkspaceDashboard.tsx:5` is explicitly static data only, so treat workspace metrics as demo content unless replaced with live API calls
 - [ ] Human review: `backend/src/routes/map.ts:17` keeps map endpoints public; do not assume authenticated map access in downstream deployment docs
 - [ ] Human review: `SETUP_GUIDE.md:153` mentions Vertex AI enablement, but runtime inference currently uses direct Gemini API-key access in `backend/src/services/geminiClient.ts:31`
 - [ ] Human review: `src/pages/ngo-dashboard/VoiceCommandButton.tsx:243` describes the voice dispatch shell as text fallback with real Firestore actions, not full live speech execution

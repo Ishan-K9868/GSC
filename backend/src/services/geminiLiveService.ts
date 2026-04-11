@@ -1,6 +1,8 @@
 import { getFirestore } from '../config/firebase';
 
-const db = getFirestore();
+function getDb() {
+  return getFirestore();
+}
 
 export const LIVE_FUNCTION_DECLARATIONS = [
   {
@@ -72,7 +74,7 @@ export async function executeLiveTool(
     switch (toolName) {
       case 'assign_volunteer': {
         const { needReportId, volunteerId } = args;
-        const taskSnapshot = await db.collection('dispatchTasks').where('needReportId', '==', needReportId).limit(1).get();
+        const taskSnapshot = await getDb().collection('dispatchTasks').where('needReportId', '==', needReportId).limit(1).get();
 
         if (!taskSnapshot.empty) {
           await taskSnapshot.docs[0].ref.update({
@@ -85,7 +87,7 @@ export async function executeLiveTool(
           });
         }
 
-        await db.collection('needReports').doc(needReportId).set(
+        await getDb().collection('needReports').doc(needReportId).set(
           {
             assignedVolunteerId: volunteerId,
             status: 'dispatched',
@@ -94,7 +96,7 @@ export async function executeLiveTool(
           { merge: true }
         );
 
-        const volunteerDoc = await db.collection('volunteers').doc(volunteerId).get();
+        const volunteerDoc = await getDb().collection('volunteers').doc(volunteerId).get();
         const volunteerName = volunteerDoc.data()?.name || volunteerId;
 
         return `Done. ${volunteerName} has been assigned to ${needReportId}.`;
@@ -102,7 +104,7 @@ export async function executeLiveTool(
 
       case 'get_needs_summary': {
         const { category, status, urgencyMin } = args;
-        let query: FirebaseFirestore.Query = db.collection('needReports').where(
+        let query: FirebaseFirestore.Query = getDb().collection('needReports').where(
           'status',
           'in',
           status ? [status] : ['pending', 'classified', 'dispatched', 'in_progress']
@@ -135,7 +137,7 @@ export async function executeLiveTool(
 
       case 'escalate_need': {
         const { needReportId, reason } = args;
-        await db.collection('needReports').doc(needReportId).set(
+        await getDb().collection('needReports').doc(needReportId).set(
           {
             urgency: 'critical',
             urgencyScore: 9,
@@ -151,7 +153,7 @@ export async function executeLiveTool(
 
       case 'mark_resolved': {
         const { needReportId, coordinatorId } = args;
-        await db.collection('needReports').doc(needReportId).set(
+        await getDb().collection('needReports').doc(needReportId).set(
           {
             status: 'resolved',
             resolvedAt: new Date().toISOString(),
@@ -170,7 +172,7 @@ export async function executeLiveTool(
 
       case 'get_volunteer_list': {
         const { ward, category } = args;
-        const snapshot = await db.collection('volunteers').where('availability', '==', 'free').limit(12).get();
+        const snapshot = await getDb().collection('volunteers').where('availability', '==', 'free').limit(12).get();
         let volunteers = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
 
         if (ward) {

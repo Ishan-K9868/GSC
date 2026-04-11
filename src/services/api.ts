@@ -482,6 +482,10 @@ export async function getDashboardOverview(): Promise<ApiResponse<any>> {
   return apiFetch('/dashboard/overview');
 }
 
+export async function getWorkspaceSummary(): Promise<ApiResponse<any>> {
+  return apiFetch('/dashboard/workspace-summary');
+}
+
 export async function getSurgeForecast(): Promise<ApiResponse<any>> {
   return apiFetch('/dashboard/surge-forecast');
 }

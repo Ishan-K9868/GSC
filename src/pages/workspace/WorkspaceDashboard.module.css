@@ -44,6 +44,40 @@
   max-width: 50ch;
 }
 
+.statusRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.statusPill[data-state="live"] {
+  color: var(--jade);
+}
+
+.statusPill[data-state="error"] {
+  color: var(--accent);
+}
+
+.statusDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 14%, transparent);
+}
+
 /* ---- STAT GRID ---- */
 .statGrid {
   display: grid;

@@ -1,8 +1,10 @@
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore } from '../config/firebase';
 import { analyzeImageWithGemini } from './visionAnalysis';
 import { triggerAutoDispatch } from './autoDispatch';
 
-const db = getFirestore();
+function getDb() {
+  return getFirestore();
+}
 
 export interface VerificationResult {
   verified: boolean;
@@ -59,7 +61,7 @@ export async function verifyTaskCompletion(
     tier = 'auto_resolved';
 
     await Promise.all([
-      db.collection('dispatchTasks').doc(taskId).set(
+      getDb().collection('dispatchTasks').doc(taskId).set(
         {
           status: 'completed',
           verificationPhoto: photoUrl,
@@ -72,7 +74,7 @@ export async function verifyTaskCompletion(
         },
         { merge: true }
       ),
-      db.collection('needReports').doc(needReportId).set(
+      getDb().collection('needReports').doc(needReportId).set(
         {
           status: 'resolved',
           resolvedAt: new Date().toISOString(),
@@ -86,7 +88,7 @@ export async function verifyTaskCompletion(
   } else if (geminiResult.confidence >= 0.4) {
     tier = 'needs_review';
 
-    await db.collection('dispatchTasks').doc(taskId).set(
+    await getDb().collection('dispatchTasks').doc(taskId).set(
       {
         verificationPhoto: photoUrl,
         verificationConfidence: geminiResult.confidence,
@@ -97,11 +99,11 @@ export async function verifyTaskCompletion(
       { merge: true }
     );
 
-    const task = await db.collection('dispatchTasks').doc(taskId).get();
+    const task = await getDb().collection('dispatchTasks').doc(taskId).get();
     const ngoId = task.data()?.ngoId || task.data()?.assignedNgoId || null;
 
     if (ngoId) {
-      await db.collection('notifications').add({
+      await getDb().collection('notifications').add({
         ngoId,
         type: 'verification_review_needed',
         taskId,
@@ -116,7 +118,7 @@ export async function verifyTaskCompletion(
     tier = 'rejected';
 
     await Promise.all([
-      db.collection('notifications').add({
+      getDb().collection('notifications').add({
         userId: volunteerId,
         type: 'verification_rejected',
         taskId,
@@ -124,7 +126,7 @@ export async function verifyTaskCompletion(
         createdAt: new Date().toISOString(),
         read: false,
       }),
-      db.collection('dispatchTasks').doc(taskId).set(
+      getDb().collection('dispatchTasks').doc(taskId).set(
         {
           status: 'in_progress',
           verificationRejected: true,
@@ -149,16 +151,16 @@ export async function handleReporterResponse(
   verificationRequestId: string,
   confirmed: boolean
 ): Promise<void> {
-  const requestDoc = await db.collection('verificationRequests').doc(verificationRequestId).get();
+  const requestDoc = await getDb().collection('verificationRequests').doc(verificationRequestId).get();
   if (!requestDoc.exists) return;
 
   const { needReportId, taskId } = requestDoc.data() as { needReportId: string; taskId: string };
 
   if (confirmed) {
     await Promise.all([
-      db.collection('verificationRequests').doc(verificationRequestId).set({ status: 'confirmed' }, { merge: true }),
-      db.collection('dispatchTasks').doc(taskId).set({ reporterConfirmed: true }, { merge: true }),
-      db.collection('needReports').doc(needReportId).set(
+      getDb().collection('verificationRequests').doc(verificationRequestId).set({ status: 'confirmed' }, { merge: true }),
+      getDb().collection('dispatchTasks').doc(taskId).set({ reporterConfirmed: true }, { merge: true }),
+      getDb().collection('needReports').doc(needReportId).set(
         {
           status: 'resolved',
           reporterConfirmed: true,
@@ -172,9 +174,9 @@ export async function handleReporterResponse(
   }
 
   await Promise.all([
-    db.collection('verificationRequests').doc(verificationRequestId).set({ status: 'denied' }, { merge: true }),
-    db.collection('dispatchTasks').doc(taskId).set({ status: 'escalated', reporterConfirmed: false }, { merge: true }),
-    db.collection('needReports').doc(needReportId).set(
+    getDb().collection('verificationRequests').doc(verificationRequestId).set({ status: 'denied' }, { merge: true }),
+    getDb().collection('dispatchTasks').doc(taskId).set({ status: 'escalated', reporterConfirmed: false }, { merge: true }),
+    getDb().collection('needReports').doc(needReportId).set(
       {
         status: 'classified',
         updatedAt: new Date().toISOString(),
@@ -183,14 +185,14 @@ export async function handleReporterResponse(
     ),
   ]);
 
-  const reportDoc = await db.collection('needReports').doc(needReportId).get();
+  const reportDoc = await getDb().collection('needReports').doc(needReportId).get();
   if (reportDoc.exists) {
     await triggerAutoDispatch({ id: needReportId, ...reportDoc.data() } as any);
   }
 }
 
 export async function reviewPendingVerification(taskId: string, approved: boolean): Promise<void> {
-  const taskDoc = await db.collection('dispatchTasks').doc(taskId).get();
+  const taskDoc = await getDb().collection('dispatchTasks').doc(taskId).get();
   if (!taskDoc.exists) return;
 
   const task = taskDoc.data() as {
@@ -202,12 +204,12 @@ export async function reviewPendingVerification(taskId: string, approved: boolea
 
   if (!task.needReportId) return;
 
-  const reportDoc = await db.collection('needReports').doc(task.needReportId).get();
+  const reportDoc = await getDb().collection('needReports').doc(task.needReportId).get();
   const reporterId = reportDoc.data()?.reporterId as string | undefined;
 
   if (approved) {
     await Promise.all([
-      db.collection('dispatchTasks').doc(taskId).set(
+      getDb().collection('dispatchTasks').doc(taskId).set(
         {
           status: 'completed',
           pendingCoordinatorReview: false,
@@ -217,7 +219,7 @@ export async function reviewPendingVerification(taskId: string, approved: boolea
         },
         { merge: true }
       ),
-      db.collection('needReports').doc(task.needReportId).set(
+      getDb().collection('needReports').doc(task.needReportId).set(
         {
           status: 'resolved',
           resolvedAt: new Date().toISOString(),
@@ -235,7 +237,7 @@ export async function reviewPendingVerification(taskId: string, approved: boolea
   }
 
   await Promise.all([
-    db.collection('dispatchTasks').doc(taskId).set(
+    getDb().collection('dispatchTasks').doc(taskId).set(
       {
         status: 'in_progress',
         pendingCoordinatorReview: false,
@@ -246,7 +248,7 @@ export async function reviewPendingVerification(taskId: string, approved: boolea
       { merge: true }
     ),
     task.acceptedVolunteerId
-      ? db.collection('notifications').add({
+      ? getDb().collection('notifications').add({
           userId: task.acceptedVolunteerId,
           type: 'verification_rejected',
           taskId,
@@ -263,7 +265,7 @@ async function sendReporterConfirmationRequest(
   reporterId: string,
   taskId: string
 ): Promise<void> {
-  await db.collection('verificationRequests').add({
+  await getDb().collection('verificationRequests').add({
     needReportId,
     reporterId,
     taskId,
@@ -272,7 +274,7 @@ async function sendReporterConfirmationRequest(
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   });
 
-  await db.collection('notifications').add({
+  await getDb().collection('notifications').add({
     userId: reporterId,
     type: 'reporter_confirmation_request',
     needReportId,

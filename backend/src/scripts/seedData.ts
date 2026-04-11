@@ -3,10 +3,14 @@
  * Populates Firestore with sample need reports for testing and demos.
  */
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { getFirestore } from '../config/firebase';
 import { IntakeSource, NeedCategory, ReportStatus, UrgencyLevel, type NeedCategoryType, type NeedReport, type UrgencyLevelType } from '../models/NeedReport';
 import { urgencyEnumToBase } from '../services/urgencyMultipliers';
 import { VolunteerAvailability } from '../models/Volunteer';
+import { DispatchTaskStatus } from '../models/DispatchTask';
 
 const firestore = getFirestore();
 
@@ -39,6 +43,7 @@ type SeedNeedReport = NeedReport & {
   merged_from: string[];
   systemic: boolean;
   possible_duplicate: boolean;
+  reporterConfirmed?: boolean;
 };
 
 type SeedVolunteer = {
@@ -85,6 +90,61 @@ type SeedInventoryItem = {
   unit: string;
   categoriesRelevant: NeedCategoryType[];
   expiryDate: string | null;
+  updatedAt: string;
+};
+
+type SeedDispatchDecision = {
+  volunteerId: string;
+  volunteerName: string;
+  totalScore: number;
+  componentScores: {
+    proximity: number;
+    skillFit: number;
+    availability: number;
+    reliability: number;
+    equityBoost: number;
+    needUrgency: number;
+  };
+  distanceKm: number;
+  explanation: string;
+};
+
+type SeedDispatchTask = {
+  id: string;
+  needReportId: string;
+  needDescription: string;
+  category: NeedCategoryType;
+  urgency: UrgencyLevelType;
+  status: string;
+  candidateVolunteerIds: string[];
+  rankedDecisions: SeedDispatchDecision[];
+  currentInviteIndex: number;
+  acceptedVolunteerId?: string;
+  acceptedAt?: string;
+  escalated: boolean;
+  escalatedReason?: string;
+  escalatedAt?: string;
+  coordinatorOverride: {
+    overridden: boolean;
+    coordinatorId?: string;
+    reason?: string;
+    selectedVolunteerId?: string;
+    at?: string;
+  };
+  invitationHistory: Array<{
+    volunteerId: string;
+    invitedAt: string;
+    status: 'pending' | 'accepted' | 'declined' | 'expired';
+    respondedAt?: string;
+  }>;
+  ngoId: string;
+  assignedNgoId: string;
+  verificationConfidence?: number;
+  verificationReason?: string;
+  verificationRejected?: boolean;
+  reporterConfirmed?: boolean;
+  pendingCoordinatorReview?: boolean;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -559,10 +619,154 @@ function buildSeedInventoryItems(): SeedInventoryItem[] {
   ];
 }
 
+function buildDispatchDecision(
+  volunteerId: string,
+  volunteerName: string,
+  totalScore: number,
+  distanceKm: number,
+  explanation: string
+): SeedDispatchDecision {
+  return {
+    volunteerId,
+    volunteerName,
+    totalScore,
+    componentScores: {
+      proximity: Math.max(0.4, Math.min(1, totalScore + 0.03)),
+      skillFit: Math.max(0.45, Math.min(1, totalScore + 0.01)),
+      availability: 1,
+      reliability: Math.max(0.5, Math.min(1, totalScore + 0.02)),
+      equityBoost: 0.12,
+      needUrgency: Math.max(0.5, Math.min(1, totalScore + 0.04)),
+    },
+    distanceKm,
+    explanation,
+  };
+}
+
+function asIsoString(value: string | Date | undefined): string {
+  if (!value) return new Date().toISOString();
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function buildSeedDispatchTasks(reports: SeedNeedReport[]): SeedDispatchTask[] {
+  const volunteerDirectory = [
+    { id: 'seed-volunteer-001', name: 'Farah Khan', ngoId: 'ngo-1', fallbackDistanceKm: 0.4 },
+    { id: 'seed-volunteer-002', name: 'Arjun Dabas', ngoId: 'ngo-2', fallbackDistanceKm: 0.7 },
+  ];
+
+  const completedReports = reports.filter((report) => report.status === ReportStatus.RESOLVED).slice(0, 5);
+  const activeReports = reports.filter((report) => report.status === ReportStatus.IN_PROGRESS).slice(0, 2);
+  const escalatedReport = reports.find((report) => report.status === ReportStatus.DISPATCHED) || reports[0];
+  const tasks: SeedDispatchTask[] = [];
+
+  completedReports.forEach((report, index) => {
+    const volunteer = volunteerDirectory[index % volunteerDirectory.length];
+    const createdAt = asIsoString(report.createdAt);
+    const acceptedAt = new Date(new Date(createdAt).getTime() + 20 * 60 * 1000).toISOString();
+    const updatedAt = asIsoString(report.resolvedAt || report.updatedAt);
+
+    report.assignedVolunteerId = volunteer.id;
+    report.assignedNgoId = volunteer.ngoId;
+    report.reporterConfirmed = true;
+
+    tasks.push({
+      id: `seed-task-${String(index + 1).padStart(3, '0')}`,
+      needReportId: report.id,
+      needDescription: report.description,
+      category: report.category,
+      urgency: report.urgency,
+      status: DispatchTaskStatus.COMPLETED,
+      candidateVolunteerIds: volunteerDirectory.map((entry) => entry.id),
+      rankedDecisions: [
+        buildDispatchDecision(volunteer.id, volunteer.name, 0.92, volunteer.fallbackDistanceKm, `${volunteer.name} - nearby, stocked, high reliability`),
+        buildDispatchDecision(volunteerDirectory[(index + 1) % volunteerDirectory.length].id, volunteerDirectory[(index + 1) % volunteerDirectory.length].name, 0.79, 1.1, 'Strong backup candidate with slower ETA'),
+      ],
+      currentInviteIndex: 0,
+      acceptedVolunteerId: volunteer.id,
+      acceptedAt,
+      escalated: false,
+      coordinatorOverride: { overridden: false },
+      invitationHistory: [{ volunteerId: volunteer.id, invitedAt: createdAt, status: 'accepted', respondedAt: acceptedAt }],
+      ngoId: volunteer.ngoId,
+      assignedNgoId: volunteer.ngoId,
+      verificationConfidence: 0.86 + index * 0.01,
+      verificationReason: 'Seeded completion evidence accepted for demo KPI coverage.',
+      verificationRejected: false,
+      reporterConfirmed: true,
+      pendingCoordinatorReview: false,
+      createdAt,
+      updatedAt,
+    });
+  });
+
+  activeReports.forEach((report, index) => {
+    const volunteer = volunteerDirectory[index % volunteerDirectory.length];
+    const createdAt = asIsoString(report.createdAt);
+    const acceptedAt = new Date(new Date(createdAt).getTime() + 15 * 60 * 1000).toISOString();
+
+    report.assignedVolunteerId = volunteer.id;
+    report.assignedNgoId = volunteer.ngoId;
+
+    tasks.push({
+      id: `seed-task-${String(tasks.length + 1).padStart(3, '0')}`,
+      needReportId: report.id,
+      needDescription: report.description,
+      category: report.category,
+      urgency: report.urgency,
+      status: DispatchTaskStatus.ACCEPTED,
+      candidateVolunteerIds: volunteerDirectory.map((entry) => entry.id),
+      rankedDecisions: [
+        buildDispatchDecision(volunteer.id, volunteer.name, 0.88, volunteer.fallbackDistanceKm, `${volunteer.name} - on-route and best category fit`),
+        buildDispatchDecision(volunteerDirectory[(index + 1) % volunteerDirectory.length].id, volunteerDirectory[(index + 1) % volunteerDirectory.length].name, 0.76, 1.4, 'Backup responder for overflow handling'),
+      ],
+      currentInviteIndex: 0,
+      acceptedVolunteerId: volunteer.id,
+      acceptedAt,
+      escalated: false,
+      coordinatorOverride: { overridden: false },
+      invitationHistory: [{ volunteerId: volunteer.id, invitedAt: createdAt, status: 'accepted', respondedAt: acceptedAt }],
+      ngoId: volunteer.ngoId,
+      assignedNgoId: volunteer.ngoId,
+      pendingCoordinatorReview: false,
+      createdAt,
+      updatedAt: asIsoString(report.updatedAt),
+    });
+  });
+
+  if (escalatedReport) {
+    tasks.push({
+      id: `seed-task-${String(tasks.length + 1).padStart(3, '0')}`,
+      needReportId: escalatedReport.id,
+      needDescription: escalatedReport.description,
+      category: escalatedReport.category,
+      urgency: escalatedReport.urgency,
+      status: DispatchTaskStatus.ESCALATED,
+      candidateVolunteerIds: volunteerDirectory.map((entry) => entry.id),
+      rankedDecisions: [
+        buildDispatchDecision('seed-volunteer-002', 'Arjun Dabas', 0.82, 0.9, 'Initial match timed out and was escalated for coordinator attention'),
+      ],
+      currentInviteIndex: 1,
+      escalated: true,
+      escalatedReason: 'No volunteer response within SLA window.',
+      escalatedAt: asIsoString(escalatedReport.updatedAt),
+      coordinatorOverride: { overridden: false },
+      invitationHistory: [{ volunteerId: 'seed-volunteer-002', invitedAt: asIsoString(escalatedReport.createdAt), status: 'expired' }],
+      ngoId: escalatedReport.assignedNgoId || 'ngo-2',
+      assignedNgoId: escalatedReport.assignedNgoId || 'ngo-2',
+      pendingCoordinatorReview: false,
+      createdAt: asIsoString(escalatedReport.createdAt),
+      updatedAt: asIsoString(escalatedReport.updatedAt),
+    });
+  }
+
+  return tasks;
+}
+
 async function generateSeedReports(count: number = 24) {
   console.log(`Generating ${count} seed reports...`);
 
   const reports = buildSeedReports(count);
+  const dispatchTasks = buildSeedDispatchTasks(reports);
   const batch = firestore.batch();
 
   for (const report of reports) {
@@ -570,8 +774,13 @@ async function generateSeedReports(count: number = 24) {
     batch.set(docRef, JSON.parse(JSON.stringify(report)), { merge: true });
   }
 
+  for (const task of dispatchTasks) {
+    const docRef = firestore.collection('dispatchTasks').doc(task.id);
+    batch.set(docRef, JSON.parse(JSON.stringify(task)), { merge: true });
+  }
+
   await batch.commit();
-  console.log(`✅ Successfully upserted ${reports.length} seed reports.`);
+  console.log(`✅ Successfully upserted ${reports.length} seed reports and ${dispatchTasks.length} dispatch tasks.`);
 }
 
 async function generateSeedVolunteersAndInventory() {
@@ -618,7 +827,14 @@ async function clearExistingData() {
     await firestore.collection('volunteers').doc(volunteerId).delete().catch(() => undefined);
   }
 
-  console.log('✅ Cleared seeded need reports and inventory volunteers');
+  const dispatchSnapshot = await firestore.collection('dispatchTasks').get();
+  const dispatchBatch = firestore.batch();
+  dispatchSnapshot.docs
+    .filter((doc) => doc.id.startsWith('seed-task-'))
+    .forEach((doc) => dispatchBatch.delete(doc.ref));
+  await dispatchBatch.commit();
+
+  console.log('✅ Cleared seeded need reports, dispatch tasks, and inventory volunteers');
 }
 
 async function main() {

@@ -59,6 +59,64 @@ export async function getDashboardOverview() {
   };
 }
 
+export async function getWorkspaceSummary() {
+  const db = getFirestore();
+  const [needReportsSnapshot, volunteersSnapshot, dispatchTasksSnapshot] = await Promise.all([
+    db.collection('needReports').limit(2000).get(),
+    db.collection('volunteers').limit(2000).get(),
+    db.collection('dispatchTasks').limit(2000).get(),
+  ]);
+
+  const reports = needReportsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport));
+  const volunteers = volunteersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Volunteer));
+  const dispatchTasks = dispatchTasksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as any));
+  const now = Date.now();
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTodayMs = startOfToday.getTime();
+
+  const activeNeedStatuses = new Set<string>([ReportStatus.PENDING, ReportStatus.CLASSIFIED, ReportStatus.DISPATCHED, ReportStatus.IN_PROGRESS]);
+  const activeDispatchStatuses = new Set(['pending', 'invited', 'accepted']);
+
+  const activeNeeds = reports.filter((report) => activeNeedStatuses.has(report.status));
+  const reportsToday = reports.filter((report) => parseDateMs(report.createdAt) >= startOfTodayMs);
+  const resolvedToday = reports.filter(
+    (report) => report.status === ReportStatus.RESOLVED && parseDateMs(report.resolvedAt || report.updatedAt) >= startOfTodayMs
+  );
+  const activeDeployments = dispatchTasks.filter((task) => activeDispatchStatuses.has(String(task.status || '').toLowerCase())).length;
+
+  const responseDurationsHours = reports
+    .filter((report) => report.status === ReportStatus.RESOLVED)
+    .map((report) => {
+      const createdMs = parseDateMs(report.createdAt);
+      const endedMs = parseDateMs(report.resolvedAt || report.updatedAt);
+      if (!Number.isFinite(createdMs) || !Number.isFinite(endedMs) || endedMs < createdMs) return null;
+      return (endedMs - createdMs) / (1000 * 60 * 60);
+    })
+    .filter((value): value is number => value !== null);
+
+  const averageResponseHours = responseDurationsHours.length > 0
+    ? responseDurationsHours.reduce((sum, value) => sum + value, 0) / responseDurationsHours.length
+    : 0;
+
+  const highlights = buildWorkspaceHighlights(activeNeeds, dispatchTasks);
+  const districtSnapshots = buildWorkspaceDistrictSnapshots(activeNeeds);
+
+  return {
+    stats: {
+      activeNeeds: activeNeeds.length,
+      activeDeployments,
+      reportsToday: reportsToday.length,
+      resolvedToday: resolvedToday.length,
+      volunteerBase: volunteers.length,
+      averageResponseHours: Number(averageResponseHours.toFixed(1)),
+    },
+    highlights,
+    districtSnapshots,
+    generatedAt: new Date(now).toISOString(),
+  };
+}
+
 function buildLiveOperations(reports: NeedReport[], dispatchTasks: any[]) {
   const active = reports.filter(
     (report) => report.status === ReportStatus.DISPATCHED || report.status === ReportStatus.IN_PROGRESS
@@ -133,6 +191,57 @@ function buildVolunteerHealth(volunteers: Volunteer[]) {
   };
 }
 
+function buildWorkspaceHighlights(reports: NeedReport[], dispatchTasks: any[]) {
+  const sortedReports = [...reports].sort((a, b) => parseDateMs(b.updatedAt || b.createdAt) - parseDateMs(a.updatedAt || a.createdAt));
+  const criticalReports = sortedReports
+    .filter((report) => report.urgency === UrgencyLevel.CRITICAL || Number((report as any).urgencyScore || 0) >= 9)
+    .slice(0, 3)
+    .map((report) => ({
+      text: `${formatDistrict(report.location?.district)} ${formatCategoryLabel(report.category)} cluster - ${report.urgency} priority`,
+      accent: report.urgency === UrgencyLevel.CRITICAL ? 'amber' : 'terra',
+    }));
+
+  const stalledTasks = dispatchTasks
+    .filter((task) => ['pending', 'invited', 'accepted'].includes(String(task.status || '').toLowerCase()))
+    .sort((a, b) => parseDateMs(b.updatedAt || b.createdAt) - parseDateMs(a.updatedAt || a.createdAt))
+    .slice(0, 2)
+    .map((task) => ({
+      text: `${formatCategoryLabel(task.category || 'Need')} dispatch - ${String(task.status || 'pending').replace(/_/g, ' ')}`,
+      accent: 'jade',
+    }));
+
+  const fallback = [{ text: 'Live updates will appear here once new reports and dispatches stream in.', accent: 'jade' }];
+  return [...criticalReports, ...stalledTasks].slice(0, 5).concat(criticalReports.length + stalledTasks.length === 0 ? fallback : []).slice(0, 5);
+}
+
+function buildWorkspaceDistrictSnapshots(reports: NeedReport[]) {
+  const byDistrict = reports.reduce<Record<string, { count: number; critical: number; categoryCounts: Record<string, number> }>>((acc, report) => {
+    const district = formatDistrict(report.location?.district);
+    if (!acc[district]) {
+      acc[district] = { count: 0, critical: 0, categoryCounts: {} };
+    }
+
+    acc[district].count += 1;
+    if (report.urgency === UrgencyLevel.CRITICAL || Number((report as any).urgencyScore || 0) >= 9) {
+      acc[district].critical += 1;
+    }
+    acc[district].categoryCounts[report.category] = (acc[district].categoryCounts[report.category] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(byDistrict)
+    .map(([district, value]) => ({
+      zone: district,
+      clusters: value.count,
+      urgency: value.critical > 0 ? 'high' : value.count >= 3 ? 'medium' : 'low',
+      topCategory: formatCategoryLabel(
+        Object.entries(value.categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || NeedCategory.HEALTH
+      ),
+    }))
+    .sort((a, b) => b.clusters - a.clusters)
+    .slice(0, 4);
+}
+
 function buildNeedsPipeline(reports: NeedReport[]) {
   const now = Date.now();
   const enrich = (report: NeedReport) => {
@@ -164,6 +273,26 @@ function buildNeedsPipeline(reports: NeedReport[]) {
     inProgress: reports.filter((r) => r.status === ReportStatus.IN_PROGRESS).map(enrich),
     resolved: reports.filter((r) => r.status === ReportStatus.RESOLVED).map(enrich),
   };
+}
+
+function parseDateMs(value: unknown): number {
+  if (!value) return 0;
+  if (typeof value === 'string') {
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  return 0;
+}
+
+function formatCategoryLabel(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
+function formatDistrict(value?: string | null) {
+  return value || 'Delhi';
 }
 
 function buildImpactAnalytics(reports: NeedReport[], volunteers: Volunteer[]) {

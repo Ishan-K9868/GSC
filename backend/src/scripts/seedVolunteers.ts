@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { getFirestore } from '../config/firebase';
 import { NeedCategory } from '../models/NeedReport';
 import { VolunteerAvailability } from '../models/Volunteer';

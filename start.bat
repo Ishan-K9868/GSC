@@ -12,7 +12,7 @@ cd /d "%~dp0"
 
 :: Check if Node.js is installed
 where node >nul 2>nul
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     color 0C
     echo [ERROR] Node.js is not installed or not in PATH
     echo Please install Node.js from https://nodejs.org
@@ -24,7 +24,7 @@ if %errorlevel% neq 0 (
 if not exist "node_modules" (
     echo [INFO] Frontend dependencies not found. Installing...
     call npm install
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         color 0C
         echo [ERROR] Failed to install frontend dependencies
         pause
@@ -37,7 +37,7 @@ if not exist "backend\node_modules" (
     cd backend
     call npm install
     cd ..
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         color 0C
         echo [ERROR] Failed to install backend dependencies
         pause
@@ -59,6 +59,23 @@ if not exist "backend\.env" (
     echo Please copy backend\.env.example to backend\.env and configure it.
     echo.
 )
+
+choice /C YN /N /M "Run fresh demo seed before startup? [Y/N]: "
+if errorlevel 2 goto skip_seed
+if errorlevel 1 (
+    echo.
+    echo [INFO] Running backend demo seed...
+    call npm run seed --prefix backend -- --clear --count=24
+    if errorlevel 1 (
+        color 0C
+        echo [ERROR] Demo seed failed. Check backend env/Firebase setup, then retry.
+        pause
+        exit /b 1
+    )
+    echo [INFO] Demo seed completed successfully.
+    echo.
+)
+:skip_seed
 
 echo.
 echo [INFO] Starting SevaSetu application...

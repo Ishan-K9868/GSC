@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { getFirestore } from '../config/firebase';
 import { ReportStatus, UrgencyLevel, type NeedReport } from '../models/NeedReport';
 

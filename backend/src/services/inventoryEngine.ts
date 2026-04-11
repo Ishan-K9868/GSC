@@ -1,6 +1,10 @@
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore } from '../config/firebase';
 
-const db = getFirestore();
+const ALERT_DEDUP_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+function getDb() {
+  return getFirestore();
+}
 
 export interface InventoryItem {
   itemId: string;
@@ -36,7 +40,7 @@ export async function upsertInventoryItem(
 ): Promise<string> {
   const itemId = item.itemName.toLowerCase().trim().replace(/\s+/g, '_');
 
-  await db
+  await getDb()
     .collection('resources')
     .doc(volunteerId)
     .collection('items')
@@ -55,7 +59,7 @@ export async function upsertInventoryItem(
 }
 
 export async function getVolunteerInventory(volunteerId: string): Promise<InventoryItem[]> {
-  const snapshot = await db
+  const snapshot = await getDb()
     .collection('resources')
     .doc(volunteerId)
     .collection('items')
@@ -70,7 +74,7 @@ export async function decrementInventory(
   itemId: string,
   amountUsed: number
 ): Promise<void> {
-  const docRef = db.collection('resources').doc(volunteerId).collection('items').doc(itemId);
+  const docRef = getDb().collection('resources').doc(volunteerId).collection('items').doc(itemId);
   const doc = await docRef.get();
 
   if (!doc.exists) return;
@@ -140,7 +144,7 @@ export async function checkInventoryAlerts(): Promise<void> {
     ORS: 5,
   };
 
-  const snapshot = await db.collectionGroup('items').get();
+  const snapshot = await getDb().collectionGroup('items').get();
 
   for (const doc of snapshot.docs) {
     const item = doc.data() as InventoryItem;
@@ -148,14 +152,17 @@ export async function checkInventoryAlerts(): Promise<void> {
     const threshold = lowStockThresholds[normalizedName] ?? null;
 
     if (threshold && item.quantity <= threshold) {
-      await db.collection('notifications').add({
-        userId: item.volunteerId,
-        type: 'low_stock_alert',
-        message: `Your ${item.itemName} stock is low (${item.quantity} ${item.unit} remaining). Consider restocking before your next deployment.`,
-        itemName: item.itemName,
-        createdAt: new Date().toISOString(),
-        read: false,
-      });
+      const shouldNotify = await shouldCreateInventoryAlert(item.volunteerId, 'low_stock_alert', item.itemName);
+      if (shouldNotify) {
+        await getDb().collection('notifications').add({
+          userId: item.volunteerId,
+          type: 'low_stock_alert',
+          message: `Your ${item.itemName} stock is low (${item.quantity} ${item.unit} remaining). Consider restocking before your next deployment.`,
+          itemName: item.itemName,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      }
     }
 
     if (item.expiryDate) {
@@ -163,16 +170,37 @@ export async function checkInventoryAlerts(): Promise<void> {
       const in72h = Date.now() + 72 * 60 * 60 * 1000;
 
       if (expiryMs <= in72h && expiryMs > Date.now()) {
-        await db.collection('notifications').add({
-          userId: item.volunteerId,
-          type: 'expiry_alert',
-          message: `Your ${item.itemName} expires on ${item.expiryDate}. Please use or return to NGO depot.`,
-          itemName: item.itemName,
-          expiryDate: item.expiryDate,
-          createdAt: new Date().toISOString(),
-          read: false,
-        });
+        const shouldNotify = await shouldCreateInventoryAlert(item.volunteerId, 'expiry_alert', item.itemName);
+        if (shouldNotify) {
+          await getDb().collection('notifications').add({
+            userId: item.volunteerId,
+            type: 'expiry_alert',
+            message: `Your ${item.itemName} expires on ${item.expiryDate}. Please use or return to NGO depot.`,
+            itemName: item.itemName,
+            expiryDate: item.expiryDate,
+            createdAt: new Date().toISOString(),
+            read: false,
+          });
+        }
       }
     }
   }
+}
+
+async function shouldCreateInventoryAlert(userId: string, type: string, itemName: string): Promise<boolean> {
+  const recentSnapshot = await getDb()
+    .collection('notifications')
+    .where('userId', '==', userId)
+    .where('type', '==', type)
+    .where('itemName', '==', itemName)
+    .limit(10)
+    .get();
+
+  const cutoffMs = Date.now() - ALERT_DEDUP_WINDOW_MS;
+
+  return !recentSnapshot.docs.some((notificationDoc) => {
+    const createdAt = notificationDoc.data()?.createdAt;
+    const createdAtMs = typeof createdAt === 'string' ? new Date(createdAt).getTime() : NaN;
+    return Number.isFinite(createdAtMs) && createdAtMs >= cutoffMs;
+  });
 }

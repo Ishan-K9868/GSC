@@ -2,7 +2,9 @@ import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { getFirestore } from '../config/firebase';
 import { getGeminiClient } from './geminiClient';
 
-const db = getFirestore();
+function getDb() {
+  return getFirestore();
+}
 
 export interface DedupResult {
   isDuplicate: boolean;
@@ -128,7 +130,7 @@ export async function runDedupCheck(
 
     try {
       newEmbedding = await getEmbedding(newDescription);
-      await db.collection('needReports').doc(newReportId).update({
+      await getDb().collection('needReports').doc(newReportId).update({
         embedding_vector: newEmbedding,
       });
     } catch (embeddingError) {
@@ -136,7 +138,7 @@ export async function runDedupCheck(
     }
 
     const cutoffTime = new Date(Date.now() - TIME_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
-    const snapshot = await db
+    const snapshot = await getDb()
       .collection('needReports')
       .where('category', '==', newCategory)
       .where('status', 'in', ['pending', 'classified', 'dispatched', 'in_progress'])
@@ -188,7 +190,7 @@ export async function runDedupCheck(
       const existingLat = existingData.location?.latitude ?? newLat;
       const existingLon = existingData.location?.longitude ?? newLon;
 
-      await db.collection('needReports').doc(existingId).update({
+      await getDb().collection('needReports').doc(existingId).update({
         report_count: newReportCount,
         merged_from: [...(existingData.merged_from ?? []), newReportId],
         systemic: isSystemic,
@@ -203,7 +205,7 @@ export async function runDedupCheck(
         updatedAt: new Date().toISOString(),
       });
 
-      await db.collection('needReports').doc(newReportId).update({
+      await getDb().collection('needReports').doc(newReportId).update({
         status: 'cancelled',
         merged_into: existingId,
         updatedAt: new Date().toISOString(),
@@ -219,7 +221,7 @@ export async function runDedupCheck(
       };
     }
 
-    await db.collection('needReports').doc(newReportId).update({
+    await getDb().collection('needReports').doc(newReportId).update({
       possible_duplicate: true,
       possible_duplicate_of: existingId,
       possible_duplicate_score: bestScore,

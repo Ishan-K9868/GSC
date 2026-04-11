@@ -20,6 +20,8 @@ import path from 'path';
 
 import { getFirebaseStatus, initializeFirebase, verifyFirebaseRuntimeAvailability } from './config/firebase';
 import { getModelName, hasGeminiApiKey } from './services/geminiClient';
+import { runUrgencyDecay } from './scripts/urgencyDecay';
+import { checkInventoryAlerts } from './services/inventoryEngine';
 import { errorHandler } from './middleware/errorHandler';
 import { aiLimiter, authLimiter, globalApiLimiter, uploadLimiter } from './middleware/rateLimit';
 import { authRouter } from './routes/auth';
@@ -38,6 +40,24 @@ import inventoryRouter from './routes/inventory';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+function scheduleRecurringTask(taskName: string, intervalMs: number, runner: () => Promise<unknown>) {
+  const execute = async () => {
+    try {
+      const result = await runner();
+      console.log(`[scheduler] ${taskName} completed`, result ?? '');
+    } catch (error) {
+      console.error(`[scheduler] ${taskName} failed`, error);
+    }
+  };
+
+  void execute();
+  return setInterval(() => {
+    void execute();
+  }, intervalMs);
+}
 
 // Initialize Firebase Admin
 initializeFirebase();
@@ -92,6 +112,9 @@ app.use('/api/crisis', crisisRouter);
 
 // Error handling
 app.use(errorHandler);
+
+scheduleRecurringTask('urgency_decay', THIRTY_MINUTES_MS, runUrgencyDecay);
+scheduleRecurringTask('inventory_alerts', ONE_HOUR_MS, checkInventoryAlerts);
 
 // Start server
 app.listen(PORT, () => {

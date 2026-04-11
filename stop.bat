@@ -46,7 +46,7 @@ echo.
 :: Verify ports are free
 echo Verifying ports are free...
 netstat -aon 2>nul | findstr ":3001.*LISTENING" >nul 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     color 0C
     echo   Port 3001: Still in use [WARNING]
 ) else (
@@ -54,7 +54,7 @@ if %errorlevel% equ 0 (
 )
 
 netstat -aon 2>nul | findstr ":5173.*LISTENING" >nul 2>&1
-if %errorlevel% equ 0 (
+if not errorlevel 1 (
     color 0C
     echo   Port 5173: Still in use [WARNING]
 ) else (
