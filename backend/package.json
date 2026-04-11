@@ -5,8 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "dev:scheduler": "ts-node-dev --respawn --transpile-only src/scheduler.ts",
+    "build": "tsc && node scripts/copy-runtime-assets.mjs",
     "start": "node dist/index.js",
+    "start:scheduler": "node dist/scheduler.js",
+    "docker:build": "docker build -t sevasetu-backend .",
+    "docker:smoke": "node scripts/docker-smoke-test.mjs",
     "lint": "eslint src/**/*.ts",
     "seed": "ts-node-dev src/scripts/seedData.ts",
     "seed:volunteers": "ts-node-dev src/scripts/seedVolunteers.ts"

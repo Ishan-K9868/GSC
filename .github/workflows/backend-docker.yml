@@ -1,0 +1,30 @@
+name: Backend Docker CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-docker.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-docker.yml'
+
+jobs:
+  build-backend-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: sevasetu-backend:ci

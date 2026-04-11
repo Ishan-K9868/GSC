@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs/promises';
 import { getStorage } from '../config/firebase';
+import { allowLocalUploadFallback, isProduction } from '../config/runtime';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
 import { analyzeImageWithGemini } from '../services/visionAnalysis';
@@ -73,6 +74,14 @@ async function persistUpload(req: Request, fileName: string, file: Express.Multe
       storageMode: 'cloud',
     };
   } catch (error) {
+    if (!allowLocalUploadFallback()) {
+      throw createError(
+        `Cloud storage unavailable and local fallback is disabled${isProduction() ? ' in production' : ''}: ${stringifyError(error)}`,
+        503,
+        'UPLOAD_STORAGE_UNAVAILABLE'
+      );
+    }
+
     const uploadsRoot = path.join(process.cwd(), 'uploads');
     const localPath = path.join(uploadsRoot, ...fileName.split('/'));
 

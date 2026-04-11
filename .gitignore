@@ -23,11 +23,18 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
+backend/.env
+backend/.env.production
 
 # Firebase
 serviceAccountKey.json
 firebase-service-account.json
 *-firebase-adminsdk-*.json
+
+# Local deployment / hosting metadata
+.vercel/
+.railway/
 
 # IDE
 .idea/
@@ -42,6 +49,11 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+logs/
+
+# Local runtime uploads
+uploads/
+backend/uploads/
 
 # Test coverage
 coverage/

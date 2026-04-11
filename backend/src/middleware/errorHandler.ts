@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { RequestWithContext } from './requestContext';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -16,7 +17,8 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
-  console.error('❌ Error:', err.message);
+  const requestId = (req as RequestWithContext).requestId || 'unknown';
+  console.error(`❌ Error [${requestId}] ${req.method} ${req.originalUrl}:`, err.message);
   console.error(err.stack);
 
   const statusCode = err.statusCode || 500;
@@ -27,6 +29,7 @@ export function errorHandler(
     error: {
       message,
       code: err.code || 'INTERNAL_ERROR',
+      requestId,
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     },
   });

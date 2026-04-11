@@ -21,6 +21,16 @@ function stringifyError(error: unknown): string {
   return String(error);
 }
 
+function normalizePrivateKey(value: string): string {
+  const trimmed = value.trim();
+  const withoutWrappingQuotes =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+
+  return withoutWrappingQuotes.replace(/\\n/g, '\n');
+}
+
 function initializeMockFirebase(reason?: string): admin.app.App {
   firebaseMockMode = true;
   firebaseMode = 'mock';
@@ -62,7 +72,7 @@ export function initializeFirebase(): admin.app.App {
       firebaseApp = admin.initializeApp({
         credential: admin.credential.cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+          privateKey: normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY!),
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         }),
         storageBucket: process.env.GCS_BUCKET_NAME,

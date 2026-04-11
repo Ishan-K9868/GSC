@@ -118,11 +118,21 @@ npm run preview
 ### Windows launcher
 
 ```bash
-start-dev.bat
+start.bat
 ```
 
-- `start-dev.bat` opens frontend/backend in separate windows and now offers an optional fresh demo reseed before startup.
-- `start.bat` runs the same startup flow in background mode with logs in `logs/`.
+- `start.bat` is the single local launcher: it optionally reseeds demo data, builds/starts the backend Docker container, and starts the frontend locally.
+- `start-dev.bat` now just forwards to `start.bat` for backward compatibility.
+- `stop.bat` stops both the local frontend process and the Docker backend container.
+- `start.bat` opens a frontend terminal window and a backend Docker-log window, then opens `http://localhost:5173` automatically.
+
+### Docker smoke test
+
+```bash
+npm run docker:smoke --prefix backend
+```
+
+- Builds the backend image, runs it in production mode with envs from `backend/.env`, and verifies `/health`, `/api/health/deps`, and `/api/health/ready`.
 
 ### Seed demo data
 
@@ -1093,13 +1103,17 @@ npm run dev:all
 - Backend serves `/uploads` as static files when cloud storage falls back to disk.
 - Firestore composite indexes are required for some production query paths; see `FIRESTORE_INDEXES.md`.
 - The backend now starts in-process schedulers for `runUrgencyDecay()` and `checkInventoryAlerts()` during local/runtime bootstrap. Multi-instance production deployments should move those jobs to a single scheduler/cron target to avoid duplicate execution.
+- Production upload fallback should be disabled with `ALLOW_LOCAL_UPLOAD_FALLBACK=false` so Railway does not silently write to ephemeral local disk.
+- Frontend production builds now fail fast if critical `VITE_*` deployment env vars are missing.
+- Detailed Vercel + Railway rollout steps live in `DEPLOYMENT_GUIDE.md`.
 
 ### CI/CD / hosting clues
 
-- No Dockerfile found
-- No GitHub Actions / CI workflow files verified
-- No Firebase Hosting manifest verified
-- Human review is required for final production deployment topology
+- Backend Docker image definition exists in `backend/Dockerfile`
+- Railway deploy defaults are codified in `backend/railway.json`
+- Vercel SPA rewrites are codified in `vercel.json`
+- Backend Docker CI workflow exists in `.github/workflows/backend-docker.yml`
+- Human review is still required for final platform account wiring, domains, and console-side secrets
 
 ---
 
@@ -1119,6 +1133,8 @@ npm run dev:all
   - caused by duplicate demo docs in Firestore; UI now collapses them
 - backend starts but all internal pages show `Failed to fetch`
   - usually means the API process crashed during bootstrap; one historical cause was Firestore access at module-load time before Firebase Admin initialization
+- Docker container starts but `/api/health/ready` returns `503`
+  - usually means one of the production readiness checks failed (mock Firebase, missing Gemini key, missing bucket, or bad `ALLOWED_ORIGINS`)
 - `ERR_BLOCKED_BY_CLIENT`
   - usually browser extension/adblock, not a SevaSetu runtime bug
 - `google.maps.Marker` deprecation warning
@@ -1165,8 +1181,8 @@ npm run dev:all
     ],
     "components_indexed_count": 71,
     "api_routes_count": 93,
-    "issues_flagged_count": 8,
-    "run_timestamp": "2026-04-11T14:15:00Z"
+    "issues_flagged_count": 6,
+    "run_timestamp": "2026-04-11T17:05:00Z"
   }
 }
 ```
@@ -1186,11 +1202,15 @@ npm run dev:all
 - [x] `src/pages/workspace/WorkspaceDashboard.tsx` now uses live summary data from `GET /api/dashboard/workspace-summary`
 - [x] Standalone backend scripts now load `backend/.env` before Firebase initialization (`backend/src/scripts/seedData.ts`, `backend/src/scripts/seedVolunteers.ts`, `backend/src/scripts/urgencyDecay.ts`)
 - [x] Backend startup no longer fails from eager Firestore access in service module scope; Firestore access is now lazy in affected services
+- [x] Backend Dockerization assets are present and locally validated (`backend/Dockerfile`, `backend/.dockerignore`, `backend/railway.json`)
+- [x] Production readiness checks now gate hosted startup requirements and are exposed via `GET /api/health/ready`
+- [x] SPA rewrites for direct Vercel route hits are codified in `vercel.json`
+- [x] Backend Docker CI workflow is present in `.github/workflows/backend-docker.yml`
 - [ ] Human review: `backend/.env` contains real-looking secrets and should be checked for exposure/rotation risk
 - [ ] Human review: no formal automated test suite was found, so coverage claims should not be overstated
 - [ ] Human review: some route groups accept ids in params/body without strict ownership enforcement; verify final RBAC expectations route-by-route
 - [ ] Human review: Google Maps deprecation warning for `google.maps.Marker` remains a future maintenance item
-- [ ] Human review: current README package/env facts are code-verified, but deployment topology remains inferential because no CI/CD manifests or Dockerfiles were found
+- [ ] Human review: current code now encodes Docker/Vercel/Railway defaults, but final platform account wiring still requires Vercel/Railway/Firebase/Google Cloud console access
 - [ ] Human review: `backend/src/routes/map.ts:17` keeps map endpoints public; do not assume authenticated map access in downstream deployment docs
 - [ ] Human review: `SETUP_GUIDE.md:153` mentions Vertex AI enablement, but runtime inference currently uses direct Gemini API-key access in `backend/src/services/geminiClient.ts:31`
 - [ ] Human review: `src/pages/ngo-dashboard/VoiceCommandButton.tsx:243` describes the voice dispatch shell as text fallback with real Firestore actions, not full live speech execution
@@ -1224,6 +1244,7 @@ npm run build && npm run build --prefix backend
 curl http://localhost:3001/health
 curl -H "Authorization: Bearer dev-mock-token-for-prototype" http://localhost:3001/api/dashboard/overview
 curl -H "Authorization: Bearer dev-mock-token-for-prototype" http://localhost:3001/api/dispatch/tasks-list
+curl http://localhost:3001/api/health/ready
 ```
 
 ### Notes on completeness
