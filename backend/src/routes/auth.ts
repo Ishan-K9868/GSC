@@ -15,8 +15,8 @@ import { UserRole, UserRoleType } from '../models/User';
 
 export const authRouter = Router();
 
-// DEV MODE: Accept mock token for prototype usage
-const DEV_MODE = process.env.NODE_ENV === 'development';
+// Prototype auth bypass can be enabled explicitly for hosted demos.
+const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.PROTOTYPE_AUTH_BYPASS === 'true';
 const DEV_TOKEN = 'dev-mock-token-for-prototype';
 
 const DEV_USER = {

@@ -13,8 +13,10 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
-// DEV MODE: Same check as AuthContext
-const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+// Prototype auth bypass can be enabled explicitly for hosted demos.
+const DEV_MODE =
+  import.meta.env.VITE_DEV_AUTH_BYPASS === 'true' ||
+  (import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false');
 const DEV_TOKEN = 'dev-mock-token-for-prototype';
 
 async function getAuthToken(): Promise<string | null> {

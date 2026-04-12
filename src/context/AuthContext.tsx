@@ -17,8 +17,10 @@ import {
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
-// DEV MODE: Set to true to bypass authentication for prototype usage
-const DEV_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false';
+// Prototype auth bypass can be enabled explicitly for hosted demos.
+const DEV_MODE =
+  import.meta.env.VITE_DEV_AUTH_BYPASS === 'true' ||
+  (import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH_BYPASS !== 'false');
 
 // Mock user for dev mode
 const DEV_USER: User = {
