@@ -7,65 +7,210 @@
 .heroContent { max-width: 38ch; }
 .eyebrow { font-family: 'General Sans', sans-serif; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
 .heroTitle { font-family: 'Bricolage Grotesque', Georgia, serif; font-size: clamp(1.5rem, 3vw, 2.4rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.035em; color: var(--text); }
-.heroSub { margin-top: 0.55rem; font-size: 0.9rem; color: var(--text-muted); line-height: 1.55; }
+.heroSub { margin-top: 0.55rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.55; }
 
-/* ---- PILLAR GRID ---- */
-.pillarGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
+/* ---- PILLAR GRID — Bento with stagger offset ---- */
+.pillarGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Middle pillar — raised to form subtle arch */
+.pillarGrid > *:nth-child(2) { margin-top: -12px; }
 
 .pillarCard {
-  padding: 1.35rem 1.15rem;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  background: var(--internal-grain), linear-gradient(180deg, var(--surface-glass) 0%, var(--bg) 100%);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
   box-shadow: var(--shadow-sm);
-  display: flex; flex-direction: column; gap: 0.45rem;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--duration-base) var(--ease-out),
+              box-shadow var(--duration-base) var(--ease-out),
+              border-color var(--duration-base) var(--ease-out);
 }
 
-.pillarCard:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+/* Grain */
+.pillarCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.pillarCard > * { position: relative; z-index: 1; }
+
+.pillarCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+}
 
 .pillarIcon {
-  width: 2.6rem; height: 2.6rem; border-radius: 0.75rem;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--accent-light); color: var(--accent);
-  margin-bottom: 0.3rem;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-wash);
+  color: var(--accent);
+  margin-bottom: var(--space-1);
+  transition: transform var(--duration-base) var(--ease-spring),
+              box-shadow var(--duration-base) var(--ease-out);
 }
 
-.pillarCard:hover .pillarIcon { transform: scale(1.08); box-shadow: 0 0 0 5px var(--accent-light); }
+.pillarCard:hover .pillarIcon {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px var(--accent-wash);
+}
 
-.pillarIcon[data-accent="jade"] { background: var(--jade-light); color: var(--jade); }
-.pillarIcon[data-accent="amber"] { background: var(--amber-light); color: var(--amber); }
-.pillarCard:hover .pillarIcon[data-accent="jade"] { box-shadow: 0 0 0 5px var(--jade-light); }
-.pillarCard:hover .pillarIcon[data-accent="amber"] { box-shadow: 0 0 0 5px var(--amber-light); }
+.pillarIcon[data-accent="jade"] { background: var(--jade-wash); color: var(--jade); }
+.pillarIcon[data-accent="amber"] { background: var(--amber-wash); color: var(--amber); }
 
-.pillarCard strong { font-size: 0.92rem; font-weight: 700; }
-.pillarCard p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+.pillarCard:hover .pillarIcon[data-accent="jade"] { box-shadow: 0 0 0 6px var(--jade-wash); }
+.pillarCard:hover .pillarIcon[data-accent="amber"] { box-shadow: 0 0 0 6px var(--amber-wash); }
+
+.pillarCard strong { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.pillarCard p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
 
 /* ---- ONBOARDING CARD ---- */
 .onboardingCard {
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  background: var(--internal-grain), var(--surface-glass);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
+  position: relative;
 }
 
-.panelHeader { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--glass-border); background: var(--surface-1); font-family: 'General Sans', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.onboardingCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
 
-.stepList { padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.stepRow { display: flex; align-items: flex-start; gap: 0.65rem; }
-.stepNum { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: var(--text-inverse); font-size: 0.72rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.stepRow p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.45; }
+.onboardingCard > * { position: relative; z-index: 1; }
 
-/* ---- ACTION ROW ---- */
-.actionRow { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-inset);
+  font-family: 'General Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
 
-.btnPrimary { background: var(--accent); color: var(--text-inverse); border: none; border-radius: var(--radius-md); padding: 0.55rem 1.1rem; font-family: 'General Sans', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-.btnPrimary:hover { transform: translateY(-1px); box-shadow: var(--shadow-accent); }
+/* Onboarding steps with numbered bubbles */
+.stepList { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
+.stepRow { display: flex; align-items: flex-start; gap: var(--space-4); }
 
-.btnGhost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: 0.55rem 1.1rem; font-family: 'General Sans', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; transition: border-color 0.15s ease, color 0.15s ease; }
+.stepNum {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--text-inverse);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(212, 98, 42, 0.30);
+}
+
+/* Completed step */
+.stepRow[data-done="true"] .stepNum {
+  background: var(--jade);
+  box-shadow: 0 2px 8px rgba(26, 122, 74, 0.30);
+}
+
+.stepRow p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-top: 5px;
+}
+
+.stepRow strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  padding-top: 3px;
+}
+
+/* ---- ACTIONS ---- */
+.actionRow { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+.btnPrimary {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1.25rem;
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: transform var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+.btnPrimary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212, 98, 42, 0.30); }
+
+.btnGhost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1.25rem;
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
 .btnGhost:hover { border-color: var(--accent); color: var(--accent); }
 
-@media (max-width: 768px) { .pillarGrid { grid-template-columns: 1fr; } }
+/* ===================================
+   DARK MODE
+   =================================== */
+[data-theme="dark"] .pillarCard, [data-theme="dark"] .onboardingCard { background: var(--bg-surface); border-color: var(--border-hairline); box-shadow: none; }
+[data-theme="dark"] .pillarCard:hover { box-shadow: none; transform: translateY(-2px); border-color: var(--border-subtle); }
+[data-theme="dark"] .panelHeader { background: var(--bg-base); border-color: var(--border-hairline); }
+
+@media (max-width: 768px) {
+  .pillarGrid { grid-template-columns: 1fr; }
+  .pillarGrid > *:nth-child(2) { margin-top: 0; }
+}

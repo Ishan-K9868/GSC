@@ -222,19 +222,24 @@ export function VolunteerExperience() {
 
     return (
       <div style={{ display: 'grid', gap: '0.4rem', marginTop: '0.45rem' }}>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-          <span>Completion photo</span>
+        {/* Upload zone — wraps native input, never shows native UI */}
+        <div
+          className={`${styles.uploadZone} ${state.photoUrl ? styles.uploadZone__hasFile : ''}`}
+          role="button"
+          tabIndex={0}
+        >
           <input
             type="file"
             accept="image/*"
             onChange={(event) => void onSelectCompletionPhoto(task.taskId, event.target.files?.[0] || null)}
           />
-        </label>
-        {state.photoUrl ? (
-          <span style={{ fontSize: '0.72rem', color: 'var(--jade)' }}>Photo uploaded and ready for verification.</span>
-        ) : (
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>Photo evidence is required before completion.</span>
-        )}
+          <span className={styles.uploadZoneText}>
+            {state.photoUrl ? '✓ Photo ready' : 'Upload completion photo'}
+          </span>
+          <span className={styles.uploadZoneHint}>
+            {state.photoUrl ? 'Photo uploaded. AI verification ready.' : 'JPG or PNG — tap to select'}
+          </span>
+        </div>
         {state.message ? <span style={{ fontSize: '0.72rem', color: toneColor }}>{state.message}</span> : null}
         {state.error ? <span style={{ fontSize: '0.72rem', color: '#D44425' }}>{state.error}</span> : null}
         <button

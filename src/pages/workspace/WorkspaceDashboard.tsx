@@ -145,8 +145,12 @@ export function WorkspaceDashboard() {
       </section>
 
       <section className={styles.statGrid}>
-        {missionStats.map((stat) => (
-          <article key={stat.label} className={styles.statCard} data-accent={stat.accent}>
+        {missionStats.map((stat, index) => (
+          <article
+            key={stat.label}
+            className={`${styles.statCard} ${index === 0 ? styles.statCard__hero : ''}`}
+            data-accent={stat.accent}
+          >
             <span className={styles.statLabel}>{stat.label}</span>
             <strong className={styles.statValue}>{stat.value}</strong>
             <span className={styles.statHint}>{stat.hint}</span>
@@ -157,14 +161,18 @@ export function WorkspaceDashboard() {
       <section className={styles.ribbon}>
         <div className={styles.ribbonHeader}>
           <AppIcon name="alert" size={14} />
-          <span>Live feed</span>
+          <span>Live</span>
         </div>
         <div className={styles.ribbonTrack}>
-          {liveRibbon.map((item) => (
-            <div key={item.text} className={styles.ribbonItem} data-accent={item.accent}>
-              {item.text}
-            </div>
-          ))}
+          {/* Duplicate items for seamless marquee loop */}
+          <div className={styles.ribbonItems}>
+            {[...liveRibbon, ...liveRibbon].map((item, i) => (
+              <div key={i} className={styles.ribbonItem}>
+                <span className={styles.ribbonDot} data-accent={item.accent} />
+                {item.text}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

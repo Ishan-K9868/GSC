@@ -11,112 +11,190 @@
 .heroTitle { font-family: 'Bricolage Grotesque', Georgia, serif; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; color: var(--text); }
 
 .statusPanel { display: flex; flex-direction: column; gap: 0.35rem; flex-shrink: 0; padding-top: 0.3rem; }
-.statusRow { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
-.statusDot { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--text-subtle); }
-.statusDot[data-online="true"] { background: var(--jade); box-shadow: 0 0 0 3px var(--jade-light); }
-.inlineBtn { background: transparent; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 0.2rem 0.5rem; font-size: 0.72rem; font-weight: 600; color: var(--accent); cursor: pointer; }
+.statusRow { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+
+/* Upgraded live dot — expanding ring */
+.statusDot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.statusDot[data-online="true"] {
+  background: var(--jade);
+}
+
+.statusDot[data-online="true"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--jade);
+  opacity: 0;
+  animation: livePulse 2.4s ease-out infinite;
+}
+
+.inlineBtn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+}
+.inlineBtn:hover { border-color: var(--accent); background: var(--accent-wash); }
 
 /* ---- WORKSPACE ---- */
 .workspace {
   display: grid;
   grid-template-columns: 15rem 1fr;
-  gap: 0.85rem;
+  gap: var(--space-4);
   min-height: 28rem;
 }
 
-/* ---- MODE RAIL ---- */
+/* ---- MODE RAIL — Left border accent on active ---- */
 .modeRail {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 
 .modeBtn {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-3);
   width: 100%;
-  padding: 0.65rem 0.7rem;
-  border: 1.5px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  background: transparent;
+  padding: var(--space-4) var(--space-4);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
 .modeBtn:hover {
-  background: var(--surface-1);
-  border-color: var(--border-strong);
+  background: var(--bg-inset);
+  border-color: var(--border-subtle);
+  border-left-color: var(--border-default);
 }
 
+/* Active mode — left accent stripe replaces background fill */
 .modeBtnActive {
-  background: var(--accent-light);
-  border-color: var(--accent);
+  background: var(--accent-wash);
+  border-color: var(--border-hairline);
+  border-left-color: var(--accent);
 }
 
 .modeIcon {
-  width: 2rem; height: 2rem;
-  border-radius: 0.5rem;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--surface-1); color: var(--text-muted);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-inset);
+  color: var(--text-tertiary);
   flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .modeBtnActive .modeIcon {
-  background: var(--accent); color: var(--text-inverse);
-  box-shadow: 0 2px 8px rgba(212,98,42,0.2);
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: 0 2px 8px rgba(212, 98, 42, 0.25);
 }
 
-.modeCopy strong { font-size: 0.82rem; font-weight: 600; color: var(--text); display: block; }
-.modeHi { font-size: 0.68rem; color: var(--text-subtle); letter-spacing: 0.04em; }
+.modeCopy strong { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); display: block; }
+.modeHi { font-size: 0.68rem; color: var(--text-tertiary); letter-spacing: 0.04em; }
 
 .tipCard {
   margin-top: auto;
-  padding: 0.75rem 0.8rem;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-1);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  border-left: 3px solid var(--amber);
 }
 
-.tipCard strong { font-size: 0.78rem; display: block; margin-bottom: 0.2rem; }
-.tipCard p { font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+.tipCard strong { font-size: 0.78rem; display: block; margin-bottom: 0.2rem; color: var(--text-primary); }
+.tipCard p { font-size: 0.74rem; color: var(--text-secondary); line-height: 1.4; }
 
 /* ---- SURFACE ---- */
 .surface {
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  background: var(--internal-grain), var(--surface-glass);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
+.surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.surface > * { position: relative; z-index: 1; }
+
 .surfaceHeader {
-  display: flex; align-items: center; gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.7rem 1rem;
-  border-bottom: 1px solid var(--glass-border);
-  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-inset);
   font-family: 'General Sans', sans-serif;
-  font-size: 0.72rem; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
 }
 
 .surfaceBody {
   flex: 1;
-  padding: 1.25rem;
+  padding: var(--space-6);
   overflow-y: auto;
 }
 
-/* ---- RESPONSIVE ---- */
+/* ===================================
+   DARK MODE
+   =================================== */
+[data-theme="dark"] .surface { background: var(--bg-surface); border-color: var(--border-hairline); box-shadow: none; }
+[data-theme="dark"] .surfaceHeader { background: var(--bg-base); border-color: var(--border-hairline); }
+[data-theme="dark"] .modeBtn { background: var(--bg-surface); border-color: var(--border-hairline); }
+[data-theme="dark"] .modeBtn:hover { background: var(--bg-elevated); }
+[data-theme="dark"] .modeBtnActive { background: rgba(212, 98, 42, 0.10); }
+[data-theme="dark"] .tipCard { background: var(--bg-inset); border-color: var(--border-hairline); }
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
 @media (max-width: 768px) {
   .hero { flex-direction: column; }
   .workspace { grid-template-columns: 1fr; }
-  .modeRail { flex-direction: row; flex-wrap: wrap; gap: 0.35rem; }
+  .modeRail { flex-direction: row; flex-wrap: wrap; gap: var(--space-2); }
   .modeBtn { flex: 1; min-width: 7rem; }
   .tipCard { display: none; }
 }

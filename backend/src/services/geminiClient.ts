@@ -32,6 +32,7 @@ const FLASH_MODEL = process.env.GEMINI_FLASH_MODEL || 'gemini-1.5-flash';
 const PRO_MODEL = process.env.GEMINI_PRO_MODEL || 'gemini-1.5-pro';
 
 let geminiClient: GoogleGenerativeAI | null = null;
+let cachedApiKey: string | null = null;
 
 function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -42,8 +43,11 @@ function getApiKey(): string {
 }
 
 function getClient(): GoogleGenerativeAI {
-  if (!geminiClient) {
-    geminiClient = new GoogleGenerativeAI(getApiKey());
+  const apiKey = getApiKey();
+  // Re-create client if key changed (e.g. dotenv loaded after first import)
+  if (!geminiClient || apiKey !== cachedApiKey) {
+    geminiClient = new GoogleGenerativeAI(apiKey);
+    cachedApiKey = apiKey;
   }
   return geminiClient;
 }
