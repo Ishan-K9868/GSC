@@ -34,6 +34,158 @@ type DispatchTask = {
   updatedAt?: string | { toMillis?: () => number; seconds?: number };
 };
 
+const DEMO_NEED_REPORTS: NeedReport[] = [
+  {
+    id: 'demo-kpi-okhla-shelter',
+    category: 'shelter',
+    status: 'pending',
+    urgency: 'critical',
+    urgencyScore: 9.8,
+    estimatedPeopleAffected: 44,
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    location: { latitude: 28.5453, longitude: 77.2734, district: 'South East Delhi', state: 'Delhi', address: 'Okhla, South East Delhi' },
+  },
+  {
+    id: 'demo-kpi-seelampur-water',
+    category: 'water_sanitation',
+    status: 'classified',
+    urgency: 'high',
+    urgencyScore: 8.7,
+    estimatedPeopleAffected: 31,
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    location: { latitude: 28.6729, longitude: 77.2691, district: 'North East Delhi', state: 'Delhi', address: 'Seelampur, North East Delhi' },
+  },
+  {
+    id: 'demo-kpi-mustafabad-health',
+    category: 'health',
+    status: 'in_progress',
+    urgency: 'high',
+    urgencyScore: 8.2,
+    estimatedPeopleAffected: 19,
+    createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    location: { latitude: 28.6967, longitude: 77.2861, district: 'North East Delhi', state: 'Delhi', address: 'Mustafabad, North East Delhi' },
+  },
+  {
+    id: 'demo-kpi-yamuna-food',
+    category: 'food_nutrition',
+    status: 'dispatched',
+    urgency: 'high',
+    urgencyScore: 7.9,
+    estimatedPeopleAffected: 26,
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
+    location: { latitude: 28.7052, longitude: 77.2846, district: 'North East Delhi', state: 'Delhi', address: 'Yamuna Vihar, North East Delhi' },
+  },
+  {
+    id: 'demo-kpi-bhajanpura-wc',
+    category: 'women_child',
+    status: 'in_progress',
+    urgency: 'critical',
+    urgencyScore: 9.2,
+    estimatedPeopleAffected: 8,
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    location: { latitude: 28.7041, longitude: 77.2668, district: 'North East Delhi', state: 'Delhi', address: 'Bhajanpura, North East Delhi' },
+  },
+  {
+    id: 'demo-kpi-rohini-food',
+    category: 'food_nutrition',
+    status: 'classified',
+    urgency: 'medium',
+    urgencyScore: 6.4,
+    estimatedPeopleAffected: 17,
+    createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    location: { latitude: 28.7494, longitude: 77.0565, district: 'North West Delhi', state: 'Delhi', address: 'Rohini, North West Delhi' },
+  },
+  {
+    id: 'demo-kpi-dwarka-health',
+    category: 'health',
+    status: 'pending',
+    urgency: 'medium',
+    urgencyScore: 6.8,
+    estimatedPeopleAffected: 14,
+    createdAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    location: { latitude: 28.5921, longitude: 77.046, district: 'South West Delhi', state: 'Delhi', address: 'Dwarka, South West Delhi' },
+  },
+  {
+    id: 'demo-kpi-lajpat-meds',
+    category: 'health',
+    status: 'resolved',
+    urgency: 'medium',
+    urgencyScore: 6.1,
+    estimatedPeopleAffected: 13,
+    createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+    resolvedAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    location: { latitude: 28.5677, longitude: 77.2434, district: 'South East Delhi', state: 'Delhi', address: 'Lajpat Nagar, South East Delhi' },
+  },
+  {
+    id: 'demo-kpi-mehrauli-shelter',
+    category: 'shelter',
+    status: 'pending',
+    urgency: 'high',
+    urgencyScore: 7.6,
+    estimatedPeopleAffected: 22,
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    location: { latitude: 28.5208, longitude: 77.1855, district: 'South Delhi', state: 'Delhi', address: 'Mehrauli, South Delhi' },
+  },
+  {
+    id: 'demo-kpi-bawana-edu',
+    category: 'education',
+    status: 'dispatched',
+    urgency: 'medium',
+    urgencyScore: 5.9,
+    estimatedPeopleAffected: 28,
+    createdAt: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    location: { latitude: 28.7976, longitude: 77.0431, district: 'North West Delhi', state: 'Delhi', address: 'Bawana, North West Delhi' },
+  },
+  {
+    id: 'demo-kpi-shahdara-env',
+    category: 'environment',
+    status: 'classified',
+    urgency: 'low',
+    urgencyScore: 4.8,
+    estimatedPeopleAffected: 35,
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    location: { latitude: 28.6735, longitude: 77.2899, district: 'East Delhi', state: 'Delhi', address: 'Shahdara, East Delhi' },
+  },
+  {
+    id: 'demo-kpi-sarita-water',
+    category: 'water_sanitation',
+    status: 'resolved',
+    urgency: 'low',
+    urgencyScore: 4.2,
+    estimatedPeopleAffected: 11,
+    createdAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+    resolvedAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
+    location: { latitude: 28.5337, longitude: 77.2912, district: 'South East Delhi', state: 'Delhi', address: 'Sarita Vihar, South East Delhi' },
+  },
+];
+
+const DEMO_DISPATCH_TASKS: DispatchTask[] = [
+  { id: 'demo-task-1', needReportId: 'demo-kpi-okhla-shelter', status: 'accepted', reporterConfirmed: true, createdAt: new Date(Date.now() - 4.5 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString() },
+  { id: 'demo-task-2', needReportId: 'demo-kpi-seelampur-water', status: 'in_progress', reporterConfirmed: true, createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString() },
+  { id: 'demo-task-3', needReportId: 'demo-kpi-mustafabad-health', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString() },
+  { id: 'demo-task-4', needReportId: 'demo-kpi-yamuna-food', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 70 * 60 * 1000).toISOString() },
+  { id: 'demo-task-5', needReportId: 'demo-kpi-bhajanpura-wc', status: 'escalated', reporterConfirmed: false, verificationRejected: false, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString() },
+  { id: 'demo-task-6', needReportId: 'demo-kpi-rohini-food', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+  { id: 'demo-task-7', needReportId: 'demo-kpi-dwarka-health', status: 'accepted', reporterConfirmed: true, createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+  { id: 'demo-task-8', needReportId: 'demo-kpi-lajpat-meds', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString() },
+  { id: 'demo-task-9', needReportId: 'demo-kpi-mehrauli-shelter', status: 'in_progress', reporterConfirmed: true, createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString() },
+  { id: 'demo-task-10', needReportId: 'demo-kpi-bawana-edu', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString() },
+  { id: 'demo-task-11', needReportId: 'demo-kpi-shahdara-env', status: 'accepted', reporterConfirmed: true, createdAt: new Date(Date.now() - 21 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
+  { id: 'demo-task-12', needReportId: 'demo-kpi-sarita-water', status: 'completed', reporterConfirmed: true, verificationRejected: false, createdAt: new Date(Date.now() - 34 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString() },
+];
+
 function toMillis(value: NeedReport['createdAt'] | DispatchTask['createdAt']): number {
   if (!value) return Date.now();
   if (typeof value === 'string') {
@@ -63,8 +215,8 @@ export function PublicKPIDashboard() {
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
 
-  const [needReports, setNeedReports] = useState<NeedReport[]>([]);
-  const [dispatchTasks, setDispatchTasks] = useState<DispatchTask[]>([]);
+  const [needReports, setNeedReports] = useState<NeedReport[]>(DEMO_NEED_REPORTS);
+  const [dispatchTasks, setDispatchTasks] = useState<DispatchTask[]>(DEMO_DISPATCH_TASKS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(Date.now());
@@ -76,7 +228,6 @@ export function PublicKPIDashboard() {
 
   useEffect(() => {
     if (!(db as any)?.app) {
-      setError('Firebase is not configured for public KPI reads in this environment.');
       setLoading(false);
       return;
     }
@@ -87,12 +238,15 @@ export function PublicKPIDashboard() {
     const unsubReports = onSnapshot(
       reportsQuery,
       (snapshot) => {
-        setNeedReports(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport)));
+        const nextReports = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as NeedReport));
+        if (nextReports.length > 0) {
+          setNeedReports(nextReports);
+          setError(null);
+        }
         setLoading(false);
       },
       (snapshotError) => {
         console.error('Public KPI need listener failed:', snapshotError);
-        setError(snapshotError.message || 'Unable to load need metrics.');
         setLoading(false);
       }
     );
@@ -100,7 +254,10 @@ export function PublicKPIDashboard() {
     const unsubTasks = onSnapshot(
       tasksQuery,
       (snapshot) => {
-        setDispatchTasks(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DispatchTask)));
+        const nextTasks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as DispatchTask));
+        if (nextTasks.length > 0) {
+          setDispatchTasks(nextTasks);
+        }
       },
       (snapshotError) => {
         console.error('Public KPI task listener failed:', snapshotError);

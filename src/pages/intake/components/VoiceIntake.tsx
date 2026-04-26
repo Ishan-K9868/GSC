@@ -25,6 +25,7 @@ interface VoiceIntakeProps {
 }
 
 type IntakeStep = 'ready' | 'recording' | 'processing' | 'confirm' | 'submitting' | 'success' | 'error';
+const MIN_RECORDING_MS = 700;
 
 export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
   const [step, setStep] = useState<IntakeStep>('ready');
@@ -36,7 +37,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
   const [selectedPresetId, setSelectedPresetId] = useState('');
 
   const {
-    isRecording: _isRecording,
+    isRecording,
     duration,
     audioBlob,
     transcript,
@@ -85,13 +86,30 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     if (step !== 'ready') return;
     
     setErrorMessage('');
-    await startRecording();
-    setStep('recording');
+    const started = await startRecording();
+    if (started) {
+      setStep('recording');
+    }
   };
 
   // Handle recording stop (release button)
   const handleRecordStop = async () => {
     if (step !== 'recording') return;
+
+    if (!isRecording) {
+      setStep('ready');
+      return;
+    }
+
+    const currentDuration = duration;
+    const currentTranscript = transcript.trim();
+
+    if (currentDuration < MIN_RECORDING_MS && !currentTranscript) {
+      await stopRecording();
+      resetRecording();
+      setStep('ready');
+      return;
+    }
 
     setStep('processing');
 
@@ -104,7 +122,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     try {
       const finalAudioBlob = recordedBlob ?? audioBlob;
 
-      if (!finalAudioBlob) {
+      if (!finalAudioBlob && !transcript.trim()) {
         throw new Error('No audio recorded');
       }
 
@@ -236,16 +254,13 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
         {step === 'ready' && (
           <div className={styles.readyState}>
             <p className={styles.instruction}>
-              बोलने के लिए बटन दबाकर रखें<br />
-              <span className={styles.instructionEn}>Press and hold to speak</span>
+              बोलने के लिए बटन दबाएं<br />
+              <span className={styles.instructionEn}>Tap once to start speaking</span>
             </p>
             
             <button
               className={styles.micButton}
-              onMouseDown={handleRecordStart}
-              onMouseUp={handleRecordStop}
-              onTouchStart={handleRecordStart}
-              onTouchEnd={handleRecordStop}
+              onClick={() => void handleRecordStart()}
               disabled={!voiceSupported}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className={styles.micIcon}>
@@ -267,15 +282,14 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
           <div className={styles.recordingState}>
             <div className={styles.recordingIndicator}>
               <span className={styles.recordingDot} />
-              Recording...
+              Recording... tap again to stop
             </div>
             
             <p className={styles.duration}>{formatDuration(duration)}</p>
             
             <button
               className={`${styles.micButton} ${styles.recording}`}
-              onMouseUp={handleRecordStop}
-              onTouchEnd={handleRecordStop}
+              onClick={() => void handleRecordStop()}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className={styles.micIcon}>
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>

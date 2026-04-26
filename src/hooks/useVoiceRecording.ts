@@ -21,7 +21,7 @@ interface UseVoiceRecordingReturn {
   audioUrl: string | null;
   transcript: string;
   error: string | null;
-  startRecording: () => Promise<void>;
+  startRecording: () => Promise<boolean>;
   stopRecording: () => Promise<Blob | null>;
   pauseRecording: () => void;
   resumeRecording: () => void;
@@ -119,10 +119,10 @@ export function useVoiceRecording(
   }, [updateTranscriptState]);
 
   // Start recording
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (): Promise<boolean> => {
     if (!isSupported) {
       setError('Voice recording is not supported in this browser');
-      return;
+      return false;
     }
 
     try {
@@ -200,6 +200,7 @@ export function useVoiceRecording(
       } catch {
         // Speech recognition not available - continue without it
       }
+      return true;
     } catch (err: any) {
       console.error('Recording error:', err);
       if (err.name === 'NotAllowedError') {
@@ -207,6 +208,7 @@ export function useVoiceRecording(
       } else {
         setError('Failed to start recording. Please try again.');
       }
+      return false;
     }
   }, [isSupported, maxDuration, initSpeechRecognition]);
 

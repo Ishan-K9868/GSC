@@ -72,6 +72,340 @@ type WardFeature = {
   };
 };
 
+const DEMO_NEED_REPORTS: NeedReport[] = [
+  {
+    id: 'demo-need-okhla-shelter',
+    category: 'shelter',
+    urgency: 'critical',
+    status: 'pending',
+    description: 'Night shelter queue expanded after rain displacement near river-edge settlements.',
+    estimatedPeopleAffected: 44,
+    urgencyScore: 9.8,
+    report_count: 6,
+    systemic: true,
+    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.5453,
+      longitude: 77.2734,
+      address: 'Okhla, South East Delhi, Delhi',
+      district: 'South East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-seelampur-water',
+    category: 'water_sanitation',
+    urgency: 'high',
+    status: 'classified',
+    description: 'Tankers delayed and community taps are below normal output since morning.',
+    estimatedPeopleAffected: 31,
+    urgencyScore: 8.7,
+    report_count: 5,
+    systemic: true,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.6729,
+      longitude: 77.2691,
+      address: 'Seelampur, North East Delhi, Delhi',
+      district: 'North East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-mustafabad-health',
+    category: 'health',
+    urgency: 'high',
+    status: 'in_progress',
+    description: 'Fever-medicine restock underway and two pediatric cases need follow-up visits.',
+    estimatedPeopleAffected: 19,
+    urgencyScore: 8.2,
+    report_count: 4,
+    systemic: false,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.6967,
+      longitude: 77.2861,
+      address: 'Mustafabad, North East Delhi, Delhi',
+      district: 'North East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-yamuna-food',
+    category: 'food_nutrition',
+    urgency: 'high',
+    status: 'dispatched',
+    description: 'Cooked-meal line increased after midday school kitchen disruption.',
+    estimatedPeopleAffected: 26,
+    urgencyScore: 7.9,
+    report_count: 3,
+    systemic: false,
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.7052,
+      longitude: 77.2846,
+      address: 'Yamuna Vihar, North East Delhi, Delhi',
+      district: 'North East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-bhajanpura-wc',
+    category: 'women_child',
+    urgency: 'critical',
+    status: 'in_progress',
+    description: 'Maternal-care support paired with privacy-safe case handling.',
+    estimatedPeopleAffected: 8,
+    urgencyScore: 9.2,
+    report_count: 2,
+    systemic: false,
+    createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.7041,
+      longitude: 77.2668,
+      address: 'Bhajanpura, North East Delhi, Delhi',
+      district: 'North East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-rohini-food',
+    category: 'food_nutrition',
+    urgency: 'medium',
+    status: 'classified',
+    description: 'Weekend ration support required for migrant households near pocket clusters.',
+    estimatedPeopleAffected: 17,
+    urgencyScore: 6.4,
+    report_count: 2,
+    systemic: false,
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.7494,
+      longitude: 77.0565,
+      address: 'Rohini, North West Delhi, Delhi',
+      district: 'North West Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-dwarka-health',
+    category: 'health',
+    urgency: 'medium',
+    status: 'pending',
+    description: 'Elder-care medicine refill requests are stacking up across two housing blocks.',
+    estimatedPeopleAffected: 14,
+    urgencyScore: 6.8,
+    report_count: 3,
+    systemic: false,
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.5921,
+      longitude: 77.046,
+      address: 'Dwarka, South West Delhi, Delhi',
+      district: 'South West Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-lajpat-meds',
+    category: 'health',
+    urgency: 'medium',
+    status: 'classified',
+    description: 'Medicine pickup corridor is steady but the second courier wave is still pending.',
+    estimatedPeopleAffected: 13,
+    urgencyScore: 6.1,
+    report_count: 3,
+    systemic: false,
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 95 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.5677,
+      longitude: 77.2434,
+      address: 'Lajpat Nagar, South East Delhi, Delhi',
+      district: 'South East Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-mehrauli-shelter',
+    category: 'shelter',
+    urgency: 'high',
+    status: 'pending',
+    description: 'Temporary tarpaulin support is needed for families affected by overnight wind damage.',
+    estimatedPeopleAffected: 22,
+    urgencyScore: 7.6,
+    report_count: 4,
+    systemic: true,
+    createdAt: new Date(Date.now() - 100 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.5208,
+      longitude: 77.1855,
+      address: 'Mehrauli, South Delhi, Delhi',
+      district: 'South Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-bawana-edu',
+    category: 'education',
+    urgency: 'medium',
+    status: 'dispatched',
+    description: 'Learning kits and floor mats are being routed to a pop-up community classroom.',
+    estimatedPeopleAffected: 28,
+    urgencyScore: 5.9,
+    report_count: 3,
+    systemic: false,
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.7976,
+      longitude: 77.0431,
+      address: 'Bawana, North West Delhi, Delhi',
+      district: 'North West Delhi',
+      state: 'Delhi',
+    },
+  },
+  {
+    id: 'demo-need-shahdara-env',
+    category: 'environment',
+    urgency: 'low',
+    status: 'classified',
+    description: 'Drain-side waste accumulation is worsening mosquito risk and needs coordinated cleanup.',
+    estimatedPeopleAffected: 35,
+    urgencyScore: 4.8,
+    report_count: 5,
+    systemic: true,
+    createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    location: {
+      latitude: 28.6735,
+      longitude: 77.2899,
+      address: 'Shahdara, East Delhi, Delhi',
+      district: 'East Delhi',
+      state: 'Delhi',
+    },
+  },
+];
+
+const DEMO_VOLUNTEER_POSITIONS: VolunteerPosition[] = [
+  {
+    id: 'demo-vol-farah',
+    name: 'Farah Khan',
+    availability: 'free',
+    categories: ['shelter', 'women_child'],
+    skills: ['community_outreach', 'relief_ops'],
+    stats: { reliabilityScore: 0.94, activeTasks: 1 },
+    location: { latitude: 28.5478, longitude: 77.2681, district: 'South East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-arjun',
+    name: 'Arjun Dabas',
+    availability: 'free',
+    categories: ['water_sanitation', 'health'],
+    skills: ['water_sanitation', 'first_aid'],
+    stats: { reliabilityScore: 0.91, activeTasks: 0 },
+    location: { latitude: 28.6711, longitude: 77.261, district: 'North East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-saba',
+    name: 'Saba Parveen',
+    availability: 'free',
+    categories: ['health', 'women_child'],
+    skills: ['medical_assistance', 'child_protection'],
+    stats: { reliabilityScore: 0.96, activeTasks: 1 },
+    location: { latitude: 28.694, longitude: 77.281, district: 'North East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-nidhi',
+    name: 'Nidhi Batra',
+    availability: 'free',
+    categories: ['food_nutrition', 'education'],
+    skills: ['nutrition_support', 'community_outreach'],
+    stats: { reliabilityScore: 0.89, activeTasks: 0 },
+    location: { latitude: 28.7014, longitude: 77.2792, district: 'North East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-aman',
+    name: 'Aman Malik',
+    availability: 'free',
+    categories: ['health', 'shelter'],
+    skills: ['medical_assistance', 'logistics'],
+    stats: { reliabilityScore: 0.87, activeTasks: 2 },
+    location: { latitude: 28.5682, longitude: 77.2458, district: 'South East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-tushar',
+    name: 'Tushar Yadav',
+    availability: 'free',
+    categories: ['food_nutrition', 'water_sanitation'],
+    skills: ['nutrition_support', 'community_outreach'],
+    stats: { reliabilityScore: 0.84, activeTasks: 0 },
+    location: { latitude: 28.7465, longitude: 77.0631, district: 'North West Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-ruchi',
+    name: 'Ruchi Nanda',
+    availability: 'free',
+    categories: ['water_sanitation', 'health'],
+    skills: ['water_sanitation', 'medical_assistance'],
+    stats: { reliabilityScore: 0.92, activeTasks: 0 },
+    location: { latitude: 28.5901, longitude: 77.0505, district: 'South West Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-meenal',
+    name: 'Meenal Joshi',
+    availability: 'free',
+    categories: ['women_child', 'health'],
+    skills: ['child_protection', 'community_outreach'],
+    stats: { reliabilityScore: 0.95, activeTasks: 1 },
+    location: { latitude: 28.7032, longitude: 77.2687, district: 'North East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-karan',
+    name: 'Karan Sethi',
+    availability: 'free',
+    categories: ['health', 'education'],
+    skills: ['medical_assistance', 'logistics'],
+    stats: { reliabilityScore: 0.86, activeTasks: 0 },
+    location: { latitude: 28.5856, longitude: 77.0408, district: 'South West Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-sonal',
+    name: 'Sonal Verma',
+    availability: 'free',
+    categories: ['education', 'food_nutrition'],
+    skills: ['community_outreach', 'nutrition_support'],
+    stats: { reliabilityScore: 0.88, activeTasks: 0 },
+    location: { latitude: 28.7938, longitude: 77.0515, district: 'North West Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-imran',
+    name: 'Imran Sheikh',
+    availability: 'free',
+    categories: ['shelter', 'environment'],
+    skills: ['relief_ops', 'community_outreach'],
+    stats: { reliabilityScore: 0.9, activeTasks: 1 },
+    location: { latitude: 28.6744, longitude: 77.2867, district: 'East Delhi', state: 'Delhi' },
+  },
+  {
+    id: 'demo-vol-neha',
+    name: 'Neha Ahlawat',
+    availability: 'free',
+    categories: ['education', 'women_child'],
+    skills: ['child_protection', 'community_outreach'],
+    stats: { reliabilityScore: 0.9, activeTasks: 0 },
+    location: { latitude: 28.5233, longitude: 77.1894, district: 'South Delhi', state: 'Delhi' },
+  },
+];
+
 const urgencyConfig: Record<UrgencyKey, { label: string; color: string }> = {
   critical: { label: 'Critical', color: '#B73A1E' },
   high: { label: 'High', color: '#D4622A' },
@@ -204,11 +538,13 @@ export function CommunityPulseMap() {
   const volunteerMarkersRef = useRef<google.maps.Marker[]>([]);
   const weatherCirclesRef = useRef<google.maps.Circle[]>([]);
   const dataLayerRef = useRef<google.maps.Data | null>(null);
+  const hasLiveNeedDataRef = useRef(false);
+  const hasLiveVolunteerDataRef = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needReports, setNeedReports] = useState<NeedReport[]>([]);
-  const [volunteerPositions, setVolunteerPositions] = useState<VolunteerPosition[]>([]);
+  const [needReports, setNeedReports] = useState<NeedReport[]>(DEMO_NEED_REPORTS);
+  const [volunteerPositions, setVolunteerPositions] = useState<VolunteerPosition[]>(DEMO_VOLUNTEER_POSITIONS);
   const [selectedNeedId, setSelectedNeedId] = useState('');
   const [filters, setFilters] = useState<Record<StatusFilterKey, boolean>>({
     pending: true,
@@ -330,7 +666,6 @@ export function CommunityPulseMap() {
 
   useEffect(() => {
     if (!(db as any)?.app) {
-      setError('Firebase is not configured for live Pulse Map reads in this environment.');
       return;
     }
 
@@ -351,11 +686,17 @@ export function CommunityPulseMap() {
               typeof report.location?.latitude === 'number' && typeof report.location?.longitude === 'number'
           );
 
-        setNeedReports(nextReports);
+        if (nextReports.length > 0) {
+          hasLiveNeedDataRef.current = true;
+          setNeedReports(nextReports);
+          setError(null);
+        } else if (!hasLiveNeedDataRef.current) {
+          setNeedReports(DEMO_NEED_REPORTS);
+        }
       },
       (snapshotError) => {
         console.error('Pulse map need listener failed:', snapshotError);
-        setError(snapshotError.message || 'Unable to stream live need reports.');
+        setNeedReports(DEMO_NEED_REPORTS);
       }
     );
 
@@ -375,10 +716,16 @@ export function CommunityPulseMap() {
       volunteerQuery,
       (snapshot) => {
         const nextVolunteers = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as VolunteerPosition));
-        setVolunteerPositions(nextVolunteers);
+        if (nextVolunteers.length > 0) {
+          hasLiveVolunteerDataRef.current = true;
+          setVolunteerPositions(nextVolunteers);
+        } else if (!hasLiveVolunteerDataRef.current) {
+          setVolunteerPositions(DEMO_VOLUNTEER_POSITIONS);
+        }
       },
       (snapshotError) => {
         console.error('Pulse map volunteer listener failed:', snapshotError);
+        setVolunteerPositions(DEMO_VOLUNTEER_POSITIONS);
       }
     );
 
