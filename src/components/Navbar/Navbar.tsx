@@ -194,10 +194,9 @@ function Navbar() {
           <Link
             to="/role-access"
             className={`${styles.loginPreviewLink} ${styles.desktopOnly}`}
-            aria-label="Preview coming soon role-based login"
+            aria-label="Open role login"
           >
             <span>Login</span>
-            <small>Coming soon</small>
           </Link>
           <Link
             to="/for-ngos"
@@ -303,10 +302,9 @@ function Navbar() {
                   to="/role-access"
                   className={styles.mobileLoginLink}
                   onClick={closeMenu}
-                  aria-label="Preview coming soon role-based login"
+                  aria-label="Open role login"
                 >
                   Login
-                  <span>Coming soon</span>
                 </Link>
               </motion.div>
             </div>
