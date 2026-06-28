@@ -340,6 +340,38 @@ export async function uploadAudio(
 }
 
 /**
+ * Upload audio and extract report fields with backend Gemini audio input.
+ */
+export async function extractVoiceFromAudio(
+  file: Blob,
+  language: string = 'hi'
+): Promise<ApiResponse<{
+  url: string;
+  fileName: string;
+  classification: any;
+  categoryMeta: any;
+  confirmationMessage: string;
+  storageMode?: string;
+  warning?: string;
+}>> {
+  const token = await getAuthToken();
+
+  const formData = new FormData();
+  formData.append('audio', file, 'recording.webm');
+  formData.append('language', language);
+
+  const response = await fetch(`${API_BASE_URL}/upload/audio/extract`, {
+    method: 'POST',
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
+  });
+
+  return response.json();
+}
+
+/**
  * Analyze photo without uploading (base64)
  */
 export async function analyzePhoto(

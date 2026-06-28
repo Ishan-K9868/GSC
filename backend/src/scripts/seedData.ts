@@ -867,4 +867,4 @@ if (require.main === module) {
   void main();
 }
 
-export { buildSeedReports, generateSeedReports, clearExistingData };
+export { buildSeedReports, generateSeedReports, generateSeedVolunteersAndInventory, clearExistingData };

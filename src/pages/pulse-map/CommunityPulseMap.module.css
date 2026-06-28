@@ -87,10 +87,11 @@
 
 .heroStat strong,
 .metricGrid strong {
-  font-size: 1.7rem;
+  font-size: clamp(1.15rem, 1.6vw, 1.7rem);
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 /* ========== WORKSPACE ========== */
@@ -684,6 +685,7 @@
 .metricGrid > div {
   display: grid;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .storyBlock,

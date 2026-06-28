@@ -17,6 +17,8 @@ import { getStorage } from '../config/firebase';
 import { verifyToken } from './auth';
 import { createError } from '../middleware/errorHandler';
 import { analyzeImageWithGemini } from '../services/visionAnalysis';
+import { extractNeedFromVoiceAudio } from '../services/classification';
+import { CategoryMetadata, NeedCategoryType } from '../models/NeedReport';
 
 export const uploadRouter = Router();
 
@@ -160,6 +162,45 @@ uploadRouter.post('/audio', verifyToken, upload.single('audio'), async (req: Req
   }
 });
 
+// POST /api/upload/audio/extract - Upload audio and extract a need report with Gemini audio input
+uploadRouter.post('/audio/extract', verifyToken, upload.single('audio'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) {
+      throw createError('No file uploaded', 400, 'NO_FILE');
+    }
+
+    const { uid } = (req as any).user;
+    const file = req.file;
+    const fileId = uuidv4();
+    const extension = file.mimetype.split('/')[1] || 'webm';
+    const fileName = `audio/${uid}/${fileId}.${extension}`;
+    const storedUpload = await persistUpload(req, fileName, file, uid);
+    const language = typeof req.body?.language === 'string' ? req.body.language : 'hi';
+
+    const classification = await extractNeedFromVoiceAudio({
+      audioBuffer: file.buffer,
+      mimeType: file.mimetype,
+      language,
+    });
+    const categoryMeta = CategoryMetadata[classification.category as NeedCategoryType];
+
+    res.json({
+      success: true,
+      data: {
+        url: storedUpload.publicUrl,
+        fileName,
+        storageMode: storedUpload.storageMode,
+        warning: storedUpload.warning,
+        classification,
+        categoryMeta,
+        confirmationMessage: generateAudioConfirmationMessage(classification, language),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/upload/photo/analyze - Analyze photo without uploading (base64)
 uploadRouter.post('/photo/analyze', verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -185,3 +226,21 @@ uploadRouter.post('/photo/analyze', verifyToken, async (req: Request, res: Respo
     next(error);
   }
 });
+
+function generateAudioConfirmationMessage(
+  classification: { category: string; estimatedCount?: number },
+  language: string
+): string {
+  const categoryMeta = CategoryMetadata[classification.category as NeedCategoryType];
+  const count = classification.estimatedCount || 'several';
+
+  if (!categoryMeta) {
+    return `Did this recording report a need affecting ${count} people?`;
+  }
+
+  if (language === 'hi') {
+    return `क्या इस रिकॉर्डिंग में ${count} लोगों के लिए ${categoryMeta.labelHi} की ज़रूरत बताई गई है?`;
+  }
+
+  return `Did this recording report a ${categoryMeta.label.toLowerCase()} need affecting ${count} people?`;
+}

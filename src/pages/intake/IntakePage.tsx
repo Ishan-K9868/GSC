@@ -87,7 +87,7 @@ export function IntakePage() {
             <span>{currentMode.label} intake</span>
           </div>
           <div className={styles.surfaceBody}>
-            {activeMode === 'voice' && <VoiceIntake />}
+            {activeMode === 'voice' && <VoiceIntake onSwitchToForm={() => setActiveMode('form')} />}
             {activeMode === 'photo' && <PhotoIntake />}
             {activeMode === 'form' && <FormIntake />}
             {activeMode === 'whatsapp' && <WhatsAppIntake />}

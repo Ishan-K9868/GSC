@@ -140,6 +140,34 @@ export async function generateStructuredJsonFromImage<T>(input: {
   });
 }
 
+export async function generateStructuredJsonFromAudio<T>(input: {
+  task: string;
+  prompt: string;
+  audioBuffer: Buffer;
+  mimeType: string;
+  model?: GeminiModelTier;
+  temperature?: number;
+  maxOutputTokens?: number;
+  schema?: ResponseSchema;
+}): Promise<StructuredResult<T>> {
+  return generateStructuredJson<T>(input.prompt, {
+    task: input.task,
+    model: input.model,
+    temperature: input.temperature,
+    maxOutputTokens: input.maxOutputTokens,
+    schema: input.schema,
+    parts: [
+      { text: input.prompt },
+      {
+        inlineData: {
+          data: input.audioBuffer.toString('base64'),
+          mimeType: input.mimeType,
+        },
+      },
+    ],
+  });
+}
+
 export function buildFallbackMeta(task: string, error: unknown, model: GeminiModelTier = 'flash'): AiExecutionMeta {
   return {
     provider: 'fallback',

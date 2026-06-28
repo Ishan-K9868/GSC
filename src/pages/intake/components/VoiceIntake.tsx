@@ -10,7 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useVoiceRecording, formatDuration } from '../../../hooks/useVoiceRecording';
 import { useGeolocation } from '../../../hooks/useGeolocation';
-import { submitReport, classifyVoice, uploadAudio } from '../../../services/api';
+import { submitReport, classifyVoice, uploadAudio, extractVoiceFromAudio } from '../../../services/api';
 import { IntakeSource, SupportedLanguages, CategoryMetadata } from '../../../types';
 import type { Location, NeedCategoryType } from '../../../types';
 import { AppIcon } from '../../../components/shared';
@@ -22,25 +22,30 @@ import styles from './VoiceIntake.module.css';
 interface VoiceIntakeProps {
   onSuccess?: (reportId: string) => void;
   onError?: (error: string) => void;
+  onSwitchToForm?: () => void;
 }
 
-type IntakeStep = 'ready' | 'recording' | 'processing' | 'confirm' | 'submitting' | 'success' | 'error';
+type IntakeStep = 'ready' | 'recording' | 'processing' | 'transcription_recovery' | 'extracting_audio' | 'confirm' | 'submitting' | 'success' | 'error';
 const MIN_RECORDING_MS = 700;
 
-export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
+export function VoiceIntake({ onSuccess, onError, onSwitchToForm }: VoiceIntakeProps) {
   const [step, setStep] = useState<IntakeStep>('ready');
   const [language, setLanguage] = useState('hi');
   const [classification, setClassification] = useState<any>(null);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
   const [reportId, setReportId] = useState<string | null>(null);
   const [selectedPresetId, setSelectedPresetId] = useState('');
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+  const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | undefined>();
 
   const {
     isRecording,
     duration,
     audioBlob,
     transcript,
+    speechRecognitionError,
     error: recordingError,
     startRecording,
     stopRecording,
@@ -48,6 +53,7 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     isSupported: voiceSupported,
   } = useVoiceRecording({
     maxDuration: 60000,
+    language,
   });
 
   const {
@@ -86,6 +92,9 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     if (step !== 'ready') return;
     
     setErrorMessage('');
+    setRecoveryMessage('');
+    setUploadedAudioUrl(undefined);
+    setRecordedAudioBlob(null);
     const started = await startRecording();
     if (started) {
       setStep('recording');
@@ -121,13 +130,26 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
   const processRecording = async (recordedBlob?: Blob | null) => {
     try {
       const finalAudioBlob = recordedBlob ?? audioBlob;
+      if (finalAudioBlob) {
+        setRecordedAudioBlob(finalAudioBlob);
+      }
 
       if (!finalAudioBlob && !transcript.trim()) {
         throw new Error('No audio recorded');
       }
 
       // Get transcript and classify
-      const transcriptText = transcript || 'Voice recording submitted';
+      const transcriptText = transcript.trim();
+
+      if (transcriptText.length < 5) {
+        setRecoveryMessage(
+          speechRecognitionError
+            ? 'Live transcription could not complete, but your audio was recorded.'
+            : 'No clear transcript came through, but your audio was recorded.'
+        );
+        setStep('transcription_recovery');
+        return;
+      }
       
       // Call classification API
       const classifyResult = await classifyVoice(transcriptText, language);
@@ -155,14 +177,44 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     }
   };
 
+  const handleExtractFromAudio = async () => {
+    const finalAudioBlob = recordedAudioBlob ?? audioBlob;
+    if (!finalAudioBlob) {
+      setErrorMessage('No recorded audio is available. Record once more or use the form.');
+      setStep('error');
+      return;
+    }
+
+    setStep('extracting_audio');
+    setRecoveryMessage('');
+
+    try {
+      const extractResult = await extractVoiceFromAudio(finalAudioBlob, language);
+
+      if (extractResult.success && extractResult.data) {
+        setUploadedAudioUrl(extractResult.data.url);
+        setClassification(extractResult.data.classification);
+        setConfirmationMessage(extractResult.data.confirmationMessage);
+        setStep('confirm');
+        return;
+      }
+
+      throw new Error(extractResult.error?.message || 'Audio extraction failed');
+    } catch (err: any) {
+      console.error('Audio extraction error:', err);
+      setRecoveryMessage('Gemini could not extract the recording. You can try again or switch to the form.');
+      setStep('transcription_recovery');
+    }
+  };
+
   // Submit the report
   const handleConfirm = async () => {
     setStep('submitting');
 
     try {
       // Upload audio if available
-      let audioUrl: string | undefined;
-      if (audioBlob) {
+      let audioUrl = uploadedAudioUrl;
+      if (!audioUrl && audioBlob) {
         const uploadResult = await uploadAudio(audioBlob);
         if (uploadResult.success && uploadResult.data) {
           audioUrl = uploadResult.data.url;
@@ -215,7 +267,15 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
     setClassification(null);
     setConfirmationMessage('');
     setErrorMessage('');
+    setRecoveryMessage('');
+    setRecordedAudioBlob(null);
+    setUploadedAudioUrl(undefined);
     setStep('ready');
+  };
+
+  const handleSwitchToForm = () => {
+    handleCancel();
+    onSwitchToForm?.();
   };
 
   // Reset after success
@@ -300,6 +360,13 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
             {transcript && (
               <p className={styles.transcript}>{transcript}</p>
             )}
+
+            {!transcript && speechRecognitionError && (
+              <div className={styles.liveTranscriptWarning} role="status">
+                <strong>Live transcript paused</strong>
+                <span>Keep speaking. The recording is still saved for audio extraction.</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -308,6 +375,34 @@ export function VoiceIntake({ onSuccess, onError }: VoiceIntakeProps) {
           <div className={styles.processingState}>
             <div className={styles.spinner} />
             <p>Processing your report...</p>
+          </div>
+        )}
+
+        {step === 'transcription_recovery' && (
+          <div className={styles.recoveryState}>
+            <div className={styles.recoveryIcon}><AppIcon name="alert" size={22} /></div>
+            <div>
+              <strong>Audio is saved. Transcript did not come through.</strong>
+              <p>{recoveryMessage || 'Extract the need from the recording, switch to the form, or record again.'}</p>
+            </div>
+            <div className={styles.recoveryActions}>
+              <button className={styles.confirmButton} type="button" onClick={() => void handleExtractFromAudio()}>
+                Extract from audio
+              </button>
+              <button className={styles.cancelButton} type="button" onClick={handleSwitchToForm}>
+                Use form instead
+              </button>
+              <button className={styles.retryButton} type="button" onClick={handleCancel}>
+                Record again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'extracting_audio' && (
+          <div className={styles.processingState}>
+            <div className={styles.spinner} />
+            <p>Extracting details from the recording...</p>
           </div>
         )}
 

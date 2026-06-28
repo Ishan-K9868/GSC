@@ -7,7 +7,7 @@
  */
 
 import { NeedCategory, UrgencyLevel, GeminiExtraction } from '../models/NeedReport';
-import { buildFallbackMeta, geminiSchema, generateStructuredJson } from './geminiClient';
+import { buildFallbackMeta, geminiSchema, generateStructuredJson, generateStructuredJsonFromAudio } from './geminiClient';
 import { computeFullUrgencyScore, type UrgencyBreakdown } from './urgencyMultipliers';
 
 type ClassificationContext = {
@@ -34,6 +34,21 @@ const CLASSIFICATION_SCHEMA = geminiSchema.object(
     language: geminiSchema.string('Detected language code'),
   },
   ['category', 'severity', 'description', 'keywords', 'confidence', 'language']
+);
+
+const AUDIO_EXTRACTION_SCHEMA = geminiSchema.object(
+  {
+    transcript: geminiSchema.string('Best-effort transcript in the original spoken language'),
+    category: geminiSchema.enum(Object.values(NeedCategory), 'Best-fit need category'),
+    subCategory: geminiSchema.string('Specific sub-category', true),
+    severity: geminiSchema.enum(Object.values(UrgencyLevel), 'Best-fit urgency level'),
+    estimatedCount: geminiSchema.integer('Estimated affected people count', true),
+    description: geminiSchema.string('Brief English summary of the need'),
+    keywords: geminiSchema.array(geminiSchema.string('Keyword'), 'Key supporting keywords'),
+    confidence: geminiSchema.number('Extraction confidence from 0 to 1'),
+    language: geminiSchema.string('Detected language code'),
+  },
+  ['transcript', 'category', 'severity', 'description', 'keywords', 'confidence', 'language']
 );
 
 function buildClassificationPrompt(text: string): string {
@@ -99,6 +114,58 @@ Extract the key information even if the text is informal.
 Transcript: ${transcript}`;
 
   return classifyNeedReport(enhancedPrompt, language, context);
+}
+
+export async function extractNeedFromVoiceAudio(input: {
+  audioBuffer: Buffer;
+  mimeType: string;
+  language?: string;
+  context?: ClassificationContext;
+}): Promise<ClassifiedNeedReport> {
+  const prompt = [
+    'You are extracting a community need report from a field voice recording for an NGO response platform in India.',
+    `Expected language code if known: ${input.language || 'unknown'}. Detect the spoken language if different.`,
+    'Transcribe the useful speech, ignore background noise, and extract the need even if the speaker is informal or incomplete.',
+    'Use only the allowed enum values from the schema.',
+    'Allowed category values: emergency, food_nutrition, health, education, water_sanitation, shelter, women_child, environment.',
+    'Allowed severity values: critical, high, medium, low.',
+    'description must be a brief English summary operators can confirm before submission.',
+    'Return JSON only.',
+  ].join('\n');
+
+  const { data, meta } = await generateStructuredJsonFromAudio<Record<string, unknown>>({
+    task: 'voice audio extraction',
+    prompt,
+    audioBuffer: input.audioBuffer,
+    mimeType: input.mimeType,
+    model: 'flash',
+    temperature: 0.1,
+    maxOutputTokens: 700,
+    schema: AUDIO_EXTRACTION_SCHEMA,
+  });
+
+  const transcript = typeof data.transcript === 'string' ? data.transcript.trim() : '';
+  const classification: GeminiExtraction = {
+    category: validateCategory(String(data.category || '')),
+    subCategory: typeof data.subCategory === 'string' ? data.subCategory : undefined,
+    severity: validateUrgency(String(data.severity || '')),
+    estimatedCount: typeof data.estimatedCount === 'number' ? data.estimatedCount : undefined,
+    description:
+      typeof data.description === 'string' && data.description.trim()
+        ? data.description.trim()
+        : transcript || 'Voice report extracted from recorded audio',
+    keywords: Array.isArray(data.keywords)
+      ? data.keywords.filter((item): item is string => typeof item === 'string')
+      : [],
+    confidence: Math.min(1, Math.max(0, Number(data.confidence || 0.75))),
+    language: typeof data.language === 'string' ? data.language : input.language || 'unknown',
+    rawTranscript: transcript,
+    provider: meta.provider,
+    model: meta.model,
+    degraded: meta.degraded,
+  };
+
+  return enrichWithUrgencyScore(classification, input.context);
 }
 
 function validateCategory(category: string): string {

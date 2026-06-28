@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import wardData from '../../../backend/src/data/ward_vulnerability_index.json';
 import { db } from '../../config/firebase';
 import { AppIcon } from '../../components/shared';
+import { getReports } from '../../services/api';
 import styles from './CommunityPulseMap.module.css';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
+const GOOGLE_MAPS_CALLBACK_NAME = 'sevaSetuPulseMapReady';
+const GOOGLE_MAPS_SCRIPT_SRC = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=marker&callback=${GOOGLE_MAPS_CALLBACK_NAME}&loading=async`;
 const ACTIVE_NEED_STATUSES = ['pending', 'classified', 'dispatched', 'in_progress'] as const;
+const NEED_API_FALLBACK_POLL_MS = 12000;
 
 type NeedStatus = typeof ACTIVE_NEED_STATUSES[number] | 'resolved' | 'cancelled';
 type UrgencyKey = 'critical' | 'high' | 'medium' | 'low';
@@ -57,6 +62,8 @@ type CuratedVolunteer = VolunteerPosition & {
   reliability: number;
   activeTasks: number;
 };
+
+type MapMarker = google.maps.Marker | google.maps.marker.AdvancedMarkerElement;
 
 type WardFeature = {
   properties: {
@@ -463,6 +470,24 @@ function getVulnerabilityColor(score: number): string {
   return '#2D9D78';
 }
 
+function getSafeUrgencyScore(report: NeedReport): number {
+  const rawScore = Number(report.urgencyScore);
+  if (Number.isFinite(rawScore) && rawScore >= 0) {
+    return Math.min(rawScore, 10);
+  }
+
+  switch (report.urgency) {
+    case 'critical':
+      return 9;
+    case 'high':
+      return 7;
+    case 'low':
+      return 3;
+    default:
+      return 5;
+  }
+}
+
 function getClusterGlyph(category: string): string {
   switch (category) {
     case 'shelter':
@@ -484,7 +509,7 @@ function buildNeedMarkerIcon(report: NeedReport, selected: boolean) {
   const createdAtMs = toMillis(report.createdAt);
   const ageHours = (Date.now() - createdAtMs) / (1000 * 60 * 60);
   const opacity = Math.max(0.3, 1 - ageHours / 48);
-  const pinScale = 0.8 + ((report.urgencyScore || 0) / 20);
+  const pinScale = 0.8 + (getSafeUrgencyScore(report) / 20);
   const size = Math.max(42, Math.round(54 * Math.min(pinScale, 1.9)));
   const center = size / 2;
   const badge = reportCount >= 2
@@ -531,11 +556,123 @@ function buildVolunteerDotIcon() {
   };
 }
 
+function supportsAdvancedMarkers() {
+  return Boolean((google.maps as any).marker?.AdvancedMarkerElement);
+}
+
+function createAdvancedMarkerContent(icon: google.maps.Icon, label?: string) {
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'relative';
+  wrapper.style.display = 'grid';
+  wrapper.style.placeItems = 'center';
+  wrapper.style.transform = 'translateY(-2px)';
+  wrapper.style.pointerEvents = 'auto';
+
+  const image = document.createElement('img');
+  image.src = String(icon.url || '');
+  image.alt = '';
+  image.draggable = false;
+  image.style.width = `${icon.scaledSize?.width || 18}px`;
+  image.style.height = `${icon.scaledSize?.height || 18}px`;
+  image.style.display = 'block';
+  wrapper.appendChild(image);
+
+  if (label) {
+    const caption = document.createElement('span');
+    caption.textContent = label;
+    caption.className = styles.markerLabel;
+    caption.style.position = 'absolute';
+    caption.style.top = 'calc(100% - 6px)';
+    caption.style.left = '50%';
+    caption.style.transform = 'translateX(-50%)';
+    caption.style.whiteSpace = 'nowrap';
+    caption.style.color = '#1C0E06';
+    caption.style.fontSize = '12px';
+    caption.style.fontWeight = '700';
+    caption.style.pointerEvents = 'none';
+    wrapper.appendChild(caption);
+  }
+
+  return wrapper;
+}
+
+function clearMapMarker(marker: MapMarker) {
+  if ('setMap' in marker) {
+    marker.setMap(null);
+    return;
+  }
+
+  marker.map = null;
+}
+
+function createMapMarker(options: {
+  map: google.maps.Map;
+  position: google.maps.LatLngLiteral;
+  title: string;
+  icon: google.maps.Icon;
+  label?: string;
+  onClick?: () => void;
+}): MapMarker {
+  if (supportsAdvancedMarkers()) {
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      map: options.map,
+      position: options.position,
+      title: options.title,
+      content: createAdvancedMarkerContent(options.icon, options.label),
+      gmpClickable: Boolean(options.onClick),
+    });
+
+    if (options.onClick) {
+      marker.addListener('click', options.onClick);
+    }
+
+    return marker;
+  }
+
+  const marker = new google.maps.Marker({
+    map: options.map,
+    position: options.position,
+    title: options.title,
+    icon: options.icon,
+    label: options.label
+      ? {
+          text: options.label,
+          color: '#1C0E06',
+          fontSize: '12px',
+          fontWeight: '700',
+          className: styles.markerLabel,
+        }
+      : undefined,
+  });
+
+  if (options.onClick) {
+    marker.addListener('click', options.onClick);
+  }
+
+  return marker;
+}
+
+function isGoogleMapsReady() {
+  return typeof (window as any).google?.maps?.Map === 'function';
+}
+
+async function loadGoogleMapsLibraries() {
+  const mapsApi = (window as any).google?.maps;
+  if (!mapsApi) return false;
+
+  if (typeof mapsApi.importLibrary === 'function') {
+    await mapsApi.importLibrary('maps');
+    await mapsApi.importLibrary('marker').catch(() => undefined);
+  }
+
+  return typeof mapsApi.Map === 'function';
+}
+
 export function CommunityPulseMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
-  const needMarkersRef = useRef<google.maps.Marker[]>([]);
-  const volunteerMarkersRef = useRef<google.maps.Marker[]>([]);
+  const needMarkersRef = useRef<MapMarker[]>([]);
+  const volunteerMarkersRef = useRef<MapMarker[]>([]);
   const weatherCirclesRef = useRef<google.maps.Circle[]>([]);
   const dataLayerRef = useRef<google.maps.Data | null>(null);
   const hasLiveNeedDataRef = useRef(false);
@@ -546,6 +683,7 @@ export function CommunityPulseMap() {
   const [needReports, setNeedReports] = useState<NeedReport[]>(DEMO_NEED_REPORTS);
   const [volunteerPositions, setVolunteerPositions] = useState<VolunteerPosition[]>(DEMO_VOLUNTEER_POSITIONS);
   const [selectedNeedId, setSelectedNeedId] = useState('');
+  const [useNeedApiFallback, setUseNeedApiFallback] = useState(false);
   const [filters, setFilters] = useState<Record<StatusFilterKey, boolean>>({
     pending: true,
     classified: true,
@@ -567,7 +705,7 @@ export function CommunityPulseMap() {
   );
 
   const topWatchlist = useMemo(
-    () => [...filteredNeeds].sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0)).slice(0, 8),
+    () => [...filteredNeeds].sort((a, b) => getSafeUrgencyScore(b) - getSafeUrgencyScore(a)).slice(0, 8),
     [filteredNeeds]
   );
   const watchlistPreview = useMemo(() => topWatchlist.slice(0, 6), [topWatchlist]);
@@ -634,11 +772,40 @@ export function CommunityPulseMap() {
     const visibleCases = filteredNeeds.length;
     const households = filteredNeeds.reduce((sum, report) => sum + (report.estimatedPeopleAffected || report.report_count || 0), 0);
     const critical = filteredNeeds.filter(
-      (report) => report.urgency === 'critical' || (report.urgencyScore || 0) >= 9
+      (report) => report.urgency === 'critical' || getSafeUrgencyScore(report) >= 9
     ).length;
 
     return { visibleCases, households, critical };
   }, [filteredNeeds]);
+
+  const loadNeedReportsFromApi = useCallback(async () => {
+    const response = await getReports({ limit: 200 });
+    const reports = response.data?.reports || [];
+
+    if (!response.success) {
+      console.warn('Pulse map backend need fallback failed:', response.error);
+      if (!hasLiveNeedDataRef.current) {
+        setNeedReports(DEMO_NEED_REPORTS);
+      }
+      return;
+    }
+
+    const nextReports = reports
+      .filter((report) => Boolean(report.id))
+      .map((report) => ({ ...report, id: report.id as string } as NeedReport))
+      .filter((report) => ACTIVE_NEED_STATUSES.includes(report.status as StatusFilterKey))
+      .filter(
+        (report) =>
+          typeof report.location?.latitude === 'number' && typeof report.location?.longitude === 'number'
+      );
+
+    if (nextReports.length > 0) {
+      hasLiveNeedDataRef.current = true;
+      setNeedReports(nextReports);
+    } else if (!hasLiveNeedDataRef.current) {
+      setNeedReports(DEMO_NEED_REPORTS);
+    }
+  }, []);
 
   useEffect(() => {
     if (!GOOGLE_MAPS_API_KEY) {
@@ -646,22 +813,51 @@ export function CommunityPulseMap() {
       return;
     }
 
-    if ((window as any).google?.maps && mapRef.current && !mapInstance.current) {
-      initialiseMap();
-      return;
+    let cancelled = false;
+    let readinessTimer: number | undefined;
+    const startMap = () => {
+      if (!cancelled) {
+        void initialiseMap();
+      }
+    };
+
+    (window as any)[GOOGLE_MAPS_CALLBACK_NAME] = startMap;
+
+    if (isGoogleMapsReady()) {
+      startMap();
+      return () => {
+        cancelled = true;
+      };
     }
 
     const existing = document.getElementById('sevasetu-maps-script');
-    if (existing) return;
+    if (existing) {
+      existing.addEventListener('load', startMap);
+      readinessTimer = window.setInterval(() => {
+        if (isGoogleMapsReady()) {
+          window.clearInterval(readinessTimer);
+          startMap();
+        }
+      }, 100);
+
+      return () => {
+        cancelled = true;
+        existing.removeEventListener('load', startMap);
+        if (readinessTimer) window.clearInterval(readinessTimer);
+      };
+    }
 
     const script = document.createElement('script');
     script.id = 'sevasetu-maps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
+    script.src = GOOGLE_MAPS_SCRIPT_SRC;
     script.async = true;
     script.defer = true;
-    script.onload = initialiseMap;
     script.onerror = () => setError('Google Maps failed to load. Check the API key or billing settings.');
     document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -688,6 +884,7 @@ export function CommunityPulseMap() {
 
         if (nextReports.length > 0) {
           hasLiveNeedDataRef.current = true;
+          setUseNeedApiFallback(false);
           setNeedReports(nextReports);
           setError(null);
         } else if (!hasLiveNeedDataRef.current) {
@@ -695,13 +892,25 @@ export function CommunityPulseMap() {
         }
       },
       (snapshotError) => {
-        console.error('Pulse map need listener failed:', snapshotError);
-        setNeedReports(DEMO_NEED_REPORTS);
+        console.warn('Pulse map need listener unavailable; using backend API fallback:', snapshotError);
+        setUseNeedApiFallback(true);
+        void loadNeedReportsFromApi();
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [loadNeedReportsFromApi]);
+
+  useEffect(() => {
+    if (!useNeedApiFallback) return;
+
+    void loadNeedReportsFromApi();
+    const fallbackPoll = window.setInterval(() => {
+      void loadNeedReportsFromApi();
+    }, NEED_API_FALLBACK_POLL_MS);
+
+    return () => window.clearInterval(fallbackPoll);
+  }, [loadNeedReportsFromApi, useNeedApiFallback]);
 
   useEffect(() => {
     if (!(db as any)?.app) return;
@@ -724,7 +933,7 @@ export function CommunityPulseMap() {
         }
       },
       (snapshotError) => {
-        console.error('Pulse map volunteer listener failed:', snapshotError);
+        console.warn('Pulse map volunteer listener unavailable; showing seeded responder positions:', snapshotError);
         setVolunteerPositions(DEMO_VOLUNTEER_POSITIONS);
       }
     );
@@ -745,9 +954,10 @@ export function CommunityPulseMap() {
 
   useEffect(() => {
     if (!mapInstance.current || !ready) return;
+    const map = mapInstance.current;
 
-    needMarkersRef.current.forEach((marker) => marker.setMap(null));
-    volunteerMarkersRef.current.forEach((marker) => marker.setMap(null));
+    needMarkersRef.current.forEach(clearMapMarker);
+    volunteerMarkersRef.current.forEach(clearMapMarker);
     weatherCirclesRef.current.forEach((circle) => circle.setMap(null));
     needMarkersRef.current = [];
     volunteerMarkersRef.current = [];
@@ -761,27 +971,21 @@ export function CommunityPulseMap() {
         lng: report.location?.longitude || 0,
       };
 
-      const marker = new google.maps.Marker({
-        map: mapInstance.current,
+      const marker = createMapMarker({
+        map,
         position,
         title: `${formatCategory(report.category)} · ${report.location?.district || 'Unknown district'}`,
         icon: buildNeedMarkerIcon(report, report.id === selectedNeed?.id),
-        label: {
-          text: report.location?.district || report.category,
-          color: '#1C0E06',
-          fontSize: '12px',
-          fontWeight: '700',
-          className: styles.markerLabel,
-        },
+        label: report.location?.district || report.category,
+        onClick: () => setSelectedNeedId(report.id),
       });
 
-      marker.addListener('click', () => setSelectedNeedId(report.id));
       needMarkersRef.current.push(marker);
       bounds.extend(position);
 
       if (showWeatherLayer && ['water_sanitation', 'shelter', 'health'].includes(report.category)) {
         const circle = new google.maps.Circle({
-          map: mapInstance.current,
+          map,
           center: position,
           radius: report.urgency === 'critical' ? 900 : 650,
           strokeColor: '#D4921A',
@@ -801,8 +1005,8 @@ export function CommunityPulseMap() {
           lng: volunteer.location?.longitude || 0,
         };
 
-        const marker = new google.maps.Marker({
-          map: mapInstance.current,
+        const marker = createMapMarker({
+          map,
           position,
           title: volunteer.name || volunteer.id,
           icon: buildVolunteerDotIcon(),
@@ -814,12 +1018,12 @@ export function CommunityPulseMap() {
     }
 
     if (!dataLayerRef.current) {
-      dataLayerRef.current = new google.maps.Data({ map: mapInstance.current });
+      dataLayerRef.current = new google.maps.Data({ map });
       dataLayerRef.current.addGeoJson(wardData as any);
     }
 
     if (showVulnerabilityLayer) {
-      dataLayerRef.current.setMap(mapInstance.current);
+      dataLayerRef.current.setMap(map);
       dataLayerRef.current.setStyle((feature) => {
         const score = computeVulnerabilityIndex({
           properties: {
@@ -846,17 +1050,24 @@ export function CommunityPulseMap() {
     }
 
     if (!bounds.isEmpty()) {
-      mapInstance.current.fitBounds(bounds, 80);
-      mapInstance.current.setZoom(Math.min(mapInstance.current.getZoom() || 11, 12));
+      map.fitBounds(bounds, 80);
+      map.setZoom(Math.min(map.getZoom() || 11, 12));
     }
   }, [availableVolunteers, filteredNeeds, ready, selectedNeed?.id, showVolunteerLayer, showVulnerabilityLayer, showWeatherLayer]);
 
-  function initialiseMap() {
+  async function initialiseMap() {
     if (!mapRef.current || mapInstance.current || !(window as any).google?.maps) return;
+
+    const mapsReady = await loadGoogleMapsLibraries();
+    if (!mapsReady) {
+      setError('Google Maps loaded, but the map library is not ready yet. Refresh the page once.');
+      return;
+    }
 
     mapInstance.current = new google.maps.Map(mapRef.current, {
       center: { lat: 28.6139, lng: 77.209 },
       zoom: 11,
+      mapId: GOOGLE_MAPS_MAP_ID,
       mapTypeControl: false,
       fullscreenControl: false,
       streetViewControl: false,
@@ -872,6 +1083,7 @@ export function CommunityPulseMap() {
       ],
     });
 
+    setError(null);
     setReady(true);
   }
 
@@ -987,7 +1199,7 @@ export function CommunityPulseMap() {
                     <p className={styles.clusterDescription}>{summarizeNeed(report)}</p>
                   </div>
                   <div className={styles.clusterMeta}>
-                    <span className={styles.clusterScore}>{Math.round(report.urgencyScore || 0)}</span>
+                    <span className={styles.clusterScore}>{Math.round(getSafeUrgencyScore(report))}</span>
                     <small className={styles.clusterScoreLabel}>urgency</small>
                     <small>{(report.report_count || 1) >= 2 ? `x${report.report_count} reports` : 'single report'}</small>
                   </div>
@@ -1144,7 +1356,7 @@ export function CommunityPulseMap() {
                 <div className={styles.metricGrid}>
                   <div>
                     <span>Urgency score</span>
-                    <strong>{Number(selectedNeed.urgencyScore || 0).toFixed(1)}</strong>
+                    <strong>{getSafeUrgencyScore(selectedNeed).toFixed(1)}</strong>
                   </div>
                   <div>
                     <span>People affected</span>

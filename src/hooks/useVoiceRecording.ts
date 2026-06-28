@@ -10,6 +10,7 @@ import { useState, useRef, useCallback } from 'react';
 
 interface UseVoiceRecordingOptions {
   maxDuration?: number; // Max recording duration in ms (default: 60000)
+  language?: string;
   onTranscript?: (transcript: string) => void;
 }
 
@@ -20,6 +21,7 @@ interface UseVoiceRecordingReturn {
   audioBlob: Blob | null;
   audioUrl: string | null;
   transcript: string;
+  speechRecognitionError: string | null;
   error: string | null;
   startRecording: () => Promise<boolean>;
   stopRecording: () => Promise<Blob | null>;
@@ -32,7 +34,7 @@ interface UseVoiceRecordingReturn {
 export function useVoiceRecording(
   options: UseVoiceRecordingOptions = {}
 ): UseVoiceRecordingReturn {
-  const { maxDuration = 60000, onTranscript } = options;
+  const { maxDuration = 60000, language = 'hi', onTranscript } = options;
 
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -40,6 +42,7 @@ export function useVoiceRecording(
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcript, setTranscript] = useState('');
+  const [speechRecognitionError, setSpeechRecognitionError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -50,6 +53,7 @@ export function useVoiceRecording(
   const recognitionRef = useRef<any>(null);
   const stopResolverRef = useRef<((blob: Blob | null) => void) | null>(null);
   const finalTranscriptRef = useRef('');
+  const shouldRestartRecognitionRef = useRef(false);
 
   const updateTranscriptState = useCallback(
     (finalText: string, interimText: string = '') => {
@@ -75,7 +79,7 @@ export function useVoiceRecording(
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = 'hi-IN'; // Default to Hindi, can be changed
+    recognition.lang = getSpeechRecognitionLocale(language);
     
     recognition.onresult = (event: any) => {
       let finalTranscriptChunk = '';
@@ -102,11 +106,23 @@ export function useVoiceRecording(
 
     recognition.onerror = (event: any) => {
       console.warn('Speech recognition error:', event.error);
-      // Don't set error - speech recognition is optional
+      if (event.error && event.error !== 'no-speech') {
+        setSpeechRecognitionError(String(event.error));
+        shouldRestartRecognitionRef.current = false;
+        try {
+          recognition.abort();
+        } catch {
+          // Browser recognition is optional; local audio recording continues.
+        }
+      }
     };
 
     recognition.onend = () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      if (
+        shouldRestartRecognitionRef.current &&
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === 'recording'
+      ) {
         try {
           recognition.start();
         } catch {
@@ -116,7 +132,7 @@ export function useVoiceRecording(
     };
 
     return recognition;
-  }, [updateTranscriptState]);
+  }, [language, updateTranscriptState]);
 
   // Start recording
   const startRecording = useCallback(async (): Promise<boolean> => {
@@ -127,8 +143,10 @@ export function useVoiceRecording(
 
     try {
       setError(null);
+      setSpeechRecognitionError(null);
       chunksRef.current = [];
       finalTranscriptRef.current = '';
+      shouldRestartRecognitionRef.current = true;
       setTranscript('');
       
       // Get microphone access
@@ -221,6 +239,7 @@ export function useVoiceRecording(
       }
 
       stopResolverRef.current = resolve;
+      shouldRestartRecognitionRef.current = false;
 
       try {
         mediaRecorderRef.current.requestData();
@@ -281,6 +300,7 @@ export function useVoiceRecording(
     finalTranscriptRef.current = '';
     setTranscript('');
     setError(null);
+    setSpeechRecognitionError(null);
     chunksRef.current = [];
   }, [stopRecording, audioUrl]);
 
@@ -291,6 +311,7 @@ export function useVoiceRecording(
     audioBlob,
     audioUrl,
     transcript,
+    speechRecognitionError,
     error,
     startRecording,
     stopRecording,
@@ -299,6 +320,22 @@ export function useVoiceRecording(
     resetRecording,
     isSupported,
   };
+}
+
+function getSpeechRecognitionLocale(language: string): string {
+  const locales: Record<string, string> = {
+    hi: 'hi-IN',
+    en: 'en-IN',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    bn: 'bn-IN',
+    mr: 'mr-IN',
+    gu: 'gu-IN',
+    kn: 'kn-IN',
+    or: 'or-IN',
+  };
+
+  return locales[language] || 'hi-IN';
 }
 
 // Format duration as MM:SS
