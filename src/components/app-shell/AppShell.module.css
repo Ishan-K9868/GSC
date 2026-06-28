@@ -69,6 +69,25 @@
   letter-spacing: -0.03em;
 }
 
+.brandStack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.brandRole {
+  margin-top: 0.18rem;
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---- NAV GROUPS ---- */
 .nav {
   flex: 1;
@@ -179,6 +198,28 @@
   padding-top: 0.75rem;
   margin-top: auto;
   border-top: 1px solid var(--glass-border);
+}
+
+.resetRoleButton {
+  width: 100%;
+  margin: 0 0 0.45rem;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: 'General Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.resetRoleButton:hover {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent);
 }
 
 .themeToggle {
@@ -484,6 +525,7 @@
   .breadcrumbSep {
     display: none;
   }
+
 }
 
 /* ===================================

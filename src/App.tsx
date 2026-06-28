@@ -1,9 +1,11 @@
 import { Suspense, lazy } from 'react';
-import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import { ReactLenis } from 'lenis/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { DemoRoleProvider, useDemoRole } from './context/DemoRoleContext';
+import { canRoleAccessPath, roleDefaultPaths } from './config/appNavigation';
 import { SectionSkeleton, SectionNavigator, CustomCursor } from './components/shared';
 import Navbar from './components/Navbar';
 import AppShell from './components/app-shell/AppShell';
@@ -39,6 +41,7 @@ const PanchayatInterface = lazy(() => import('./pages/panchayat/PanchayatInterfa
 const CrisisModePage = lazy(() => import('./pages/crisis-mode/CrisisModePage'));
 const WorkspaceDashboard = lazy(() => import('./pages/workspace/WorkspaceDashboard'));
 const ForNgosPage = lazy(() => import('./pages/for-ngos/ForNgosPage'));
+const RoleAccessPage = lazy(() => import('./pages/role-access/RoleAccessPage'));
 
 function LandingPage() {
   return (
@@ -78,11 +81,30 @@ function MarketingLayout() {
   );
 }
 
+function RoleAccessGate({ children }: { children: JSX.Element }) {
+  const location = useLocation();
+  const { role } = useDemoRole();
+
+  if (!canRoleAccessPath(role, location.pathname)) {
+    return <Navigate to={roleDefaultPaths[role]} replace />;
+  }
+
+  return children;
+}
+
 function InternalLayout() {
-  return <AppShell />;
+  return (
+    <RoleAccessGate>
+      <AppShell />
+    </RoleAccessGate>
+  );
 }
 
 function PublicLayout() {
+  return <Outlet />;
+}
+
+function StandaloneLayout() {
   return <Outlet />;
 }
 
@@ -103,6 +125,10 @@ function AppChrome() {
           <Route element={<PublicLayout />}>
             <Route path="/impact/live" element={<PublicKPIDashboard />} />
             <Route path="/impact/:wardSlug" element={<PublicKPIDashboard />} />
+          </Route>
+
+          <Route element={<StandaloneLayout />}>
+            <Route path="/role-access" element={<RoleAccessPage />} />
           </Route>
 
           <Route element={<InternalLayout />}>
@@ -128,11 +154,13 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <MotionConfig reducedMotion="user">
-          <ReactLenis root options={{ lerp: 0.1, duration: 1.5 }}>
-            <AppChrome />
-          </ReactLenis>
-        </MotionConfig>
+        <DemoRoleProvider>
+          <MotionConfig reducedMotion="user">
+            <ReactLenis root options={{ lerp: 0.1, duration: 1.5 }}>
+              <AppChrome />
+            </ReactLenis>
+          </MotionConfig>
+        </DemoRoleProvider>
       </AuthProvider>
     </ThemeProvider>
   );

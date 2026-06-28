@@ -1,0 +1,924 @@
+.page {
+  --role-dark: #174432;
+  --role-mid: #2f7b58;
+  --role-soft: #dff3e8;
+  --role-pale: #f3fbf6;
+  --role-ink: #0d2319;
+  --role-shadow: rgba(14, 67, 45, 0.2);
+  --spotlight-x: 72%;
+  --spotlight-y: 30%;
+  min-height: 100dvh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(22rem, 42%) minmax(0, 58%);
+  background: var(--role-pale);
+  color: var(--role-ink);
+  overflow: hidden;
+}
+
+.page[data-role='volunteer'] {
+  --role-dark: #102f63;
+  --role-mid: #2e66b3;
+  --role-soft: #dfeeff;
+  --role-pale: #f2f7ff;
+  --role-ink: #071b38;
+  --role-shadow: rgba(16, 47, 99, 0.22);
+}
+
+.page[data-role='ngo'] {
+  --role-dark: #8f3c18;
+  --role-mid: #d4622a;
+  --role-soft: #f8e6d6;
+  --role-pale: #fff7ef;
+  --role-ink: #2c1810;
+  --role-shadow: rgba(143, 60, 24, 0.22);
+}
+
+.storyPanel,
+.loginStage {
+  position: relative;
+  min-width: 0;
+}
+
+.storyPanel {
+  display: flex;
+  min-height: 100dvh;
+  height: 100dvh;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(1.1rem, 2.3vw, 2.2rem);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--role-dark) 94%, black) 0%, var(--role-dark) 52%, color-mix(in srgb, var(--role-mid) 72%, var(--role-dark)) 100%);
+  color: #fbfff9;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.storyTexture {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.33;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 52px 52px, 52px 52px, 220px 220px;
+  mix-blend-mode: screen;
+}
+
+.storyPanel::after {
+  content: '';
+  position: absolute;
+  inset: auto -8rem -10rem 18%;
+  height: 24rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 68%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.ghostWord {
+  position: absolute;
+  left: -0.12em;
+  bottom: clamp(4rem, 10vh, 8rem);
+  z-index: -1;
+  max-width: 120%;
+  color: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-display);
+  font-size: clamp(5.5rem, 12vw, 12rem);
+  font-weight: 800;
+  line-height: 0.78;
+  letter-spacing: 0;
+  white-space: pre-line;
+  user-select: none;
+}
+
+.storyTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: inline-flex;
+  width: 2.8rem;
+  height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 12px 34px rgba(0, 0, 0, 0.16);
+}
+
+.brand strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.brand small {
+  display: block;
+  margin-top: 0.22rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.comingSoon {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.4rem 0.72rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  backdrop-filter: blur(14px);
+}
+
+.storyContent {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(0.95rem, 2.4vh, 1.8rem);
+  padding: clamp(1.35rem, 4.2vh, 3.4rem) 0 clamp(0.75rem, 1.6vh, 1.35rem);
+}
+
+.eyebrow,
+.stageEyebrow {
+  margin: 0 0 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.storyContent h1 {
+  max-width: 10ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 5.65vw, 5.35rem);
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: 0;
+}
+
+.description {
+  max-width: 34rem;
+  margin: 0.82rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.94rem, 1.2vw, 1.04rem);
+  line-height: 1.6;
+}
+
+.flowRail {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.flowStep {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.flowNode {
+  display: inline-flex;
+  width: 1.72rem;
+  height: 1.72rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  font-size: 0.76rem;
+  font-weight: 900;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06);
+}
+
+.flowStep strong {
+  display: block;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.86rem;
+}
+
+.flowStep small {
+  display: block;
+  max-width: 30rem;
+  margin-top: 0.16rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  line-height: 1.28;
+}
+
+.storyFooter {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.metric {
+  min-height: 4.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.4rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 18px 44px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.metric strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.2vw, 2.7rem);
+  font-weight: 800;
+  line-height: 0.88;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric small {
+  display: block;
+  margin-top: 0.42rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.loginStage {
+  min-height: 100dvh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(0.85rem, 2vw, 1.6rem);
+  background:
+    radial-gradient(560px circle at var(--spotlight-x) var(--spotlight-y), color-mix(in srgb, var(--role-mid) 16%, transparent), transparent 62%),
+    linear-gradient(135deg, var(--role-soft), var(--role-pale) 48%, color-mix(in srgb, white 66%, var(--role-soft)));
+  overflow: hidden;
+}
+
+.stageGlow {
+  position: absolute;
+  inset: 8% 8% auto auto;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--role-mid) 22%, white), transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loginStage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.stageHeader,
+.selector,
+.loginCardShell {
+  position: relative;
+  z-index: 1;
+  width: min(42rem, 100%);
+  margin-inline: auto;
+}
+
+.stageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0;
+}
+
+.stageEyebrow {
+  color: var(--role-mid);
+}
+
+.stageHeader h2 {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--role-ink);
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.35vw, 3.85rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: 2.4rem;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--role-mid) 20%, transparent);
+  border-radius: 999px;
+  padding: 0.52rem 0.85rem;
+  background: rgba(255, 255, 255, 0.54);
+  color: var(--role-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 1px 2px var(--role-shadow), 0 10px 28px rgba(44, 24, 16, 0.06);
+  backdrop-filter: blur(16px);
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.backLink:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--role-mid) 45%, transparent);
+}
+
+.selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: clamp(0.85rem, 2vh, 1.15rem);
+  border: 1px solid color-mix(in srgb, var(--role-mid) 14%, transparent);
+  border-radius: 1.5rem;
+  padding: 0.45rem;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 1px 2px rgba(44, 24, 16, 0.08), 0 16px 44px rgba(44, 24, 16, 0.08);
+  backdrop-filter: blur(22px);
+}
+
+.selectorButton {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  min-height: 3.25rem;
+  border: none;
+  border-radius: 1.1rem;
+  padding: 0.72rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--role-ink) 70%, transparent);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.selectorButton:hover {
+  color: var(--role-ink);
+}
+
+.selectorButton > *:not(.selectorActive) {
+  position: relative;
+  z-index: 1;
+}
+
+.selectorActive {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, white 72%, var(--role-soft));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--role-mid) 18%, transparent),
+    0 12px 30px var(--role-shadow);
+}
+
+.selectorIcon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--role-mid) 12%, white);
+  color: var(--role-mid);
+}
+
+.selectorButton strong {
+  display: block;
+  color: inherit;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.selectorButton small {
+  display: block;
+  margin-top: 0.2rem;
+  color: color-mix(in srgb, var(--role-ink) 48%, transparent);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.loginCardShell {
+  margin-top: 0.72rem;
+}
+
+.loginCard {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--role-mid) 16%, transparent);
+  border-radius: 1.55rem;
+  padding: clamp(0.95rem, 1.8vw, 1.18rem);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), color-mix(in srgb, white 74%, var(--role-soft))),
+    var(--role-pale);
+  box-shadow:
+    0 2px 4px rgba(44, 24, 16, 0.08),
+    0 28px 80px var(--role-shadow);
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+}
+
+.loginCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.045;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.loginCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.cardTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.roleBadge,
+.statusDot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.8rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.roleBadge {
+  padding: 0.3rem 0.62rem;
+  background: var(--role-dark);
+  color: white;
+  box-shadow: 0 10px 28px var(--role-shadow);
+}
+
+.statusDot {
+  color: var(--role-mid);
+}
+
+.statusDot::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--role-mid) 13%, transparent);
+}
+
+.cardHeading {
+  margin-top: clamp(0.75rem, 1.6vh, 1rem);
+}
+
+.cardHeading h3 {
+  margin: 0;
+  color: var(--role-ink);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.35vw, 2.78rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.cardHeading p {
+  max-width: 39rem;
+  margin: 0.52rem 0 0;
+  color: color-mix(in srgb, var(--role-ink) 62%, transparent);
+  font-size: 0.86rem;
+  line-height: 1.42;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: clamp(0.72rem, 1.6vh, 0.9rem);
+}
+
+.field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.field span {
+  color: color-mix(in srgb, var(--role-ink) 50%, transparent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.field input {
+  width: 100%;
+  min-height: 2.62rem;
+  border: 1px solid color-mix(in srgb, var(--role-mid) 14%, transparent);
+  border-radius: 1rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--role-ink);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.field input:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--role-mid) 15%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.destinationPanel {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.62rem;
+  border-radius: 1.2rem;
+  padding: 0.64rem 0.72rem;
+  background: color-mix(in srgb, var(--role-mid) 10%, white);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--role-mid) 14%, transparent);
+}
+
+.destinationPanel span,
+.destinationPanel small {
+  color: color-mix(in srgb, var(--role-ink) 52%, transparent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.destinationPanel strong {
+  color: var(--role-ink);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44rem;
+  margin-top: 0.58rem;
+}
+
+.chips span {
+  display: inline-flex;
+  min-height: 1.5rem;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--role-mid) 16%, transparent);
+  border-radius: 999px;
+  padding: 0.38rem 0.7rem;
+  background: rgba(255, 255, 255, 0.48);
+  color: color-mix(in srgb, var(--role-ink) 70%, transparent);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.submitButton,
+.mvpButton {
+  width: 100%;
+  min-height: 2.55rem;
+  border-radius: 1.05rem;
+  font-family: var(--font-body);
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.62rem;
+  border: none;
+  background: var(--role-dark);
+  color: white;
+  box-shadow: 0 10px 24px var(--role-shadow), 0 24px 54px color-mix(in srgb, var(--role-shadow) 70%, transparent);
+  transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.submitButton:disabled {
+  cursor: wait;
+  opacity: 0.82;
+}
+
+.mvpButton {
+  margin-top: 0.38rem;
+  border: 1px solid color-mix(in srgb, var(--role-mid) 16%, transparent);
+  background: rgba(255, 255, 255, 0.36);
+  color: color-mix(in srgb, var(--role-ink) 72%, transparent);
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.mvpButton:hover {
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--role-ink);
+}
+
+@media (max-width: 1080px) {
+  .page {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .storyPanel {
+    height: auto;
+    min-height: auto;
+    padding: 1.25rem;
+  }
+
+  .storyContent {
+    padding: 3rem 0 2rem;
+  }
+
+  .storyContent h1 {
+    max-width: 13ch;
+  }
+
+  .ghostWord {
+    right: -0.2em;
+    bottom: 1rem;
+    left: auto;
+    font-size: clamp(4rem, 16vw, 8rem);
+  }
+
+  .loginStage {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1081px) and (max-height: 820px) {
+  .storyPanel {
+    padding: 1rem 1.35rem;
+  }
+
+  .brandMark {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .comingSoon {
+    min-height: 1.7rem;
+    padding: 0.28rem 0.58rem;
+  }
+
+  .storyContent {
+    gap: 0.8rem;
+    padding: 1.1rem 0 0.8rem;
+  }
+
+  .storyContent h1 {
+    font-size: clamp(2.7rem, 5.1vw, 4.7rem);
+  }
+
+  .description {
+    margin-top: 0.72rem;
+    font-size: 0.9rem;
+    line-height: 1.52;
+  }
+
+  .storyFooter {
+    gap: 0.6rem;
+  }
+
+  .metric {
+    min-height: 4rem;
+    padding: 0.72rem;
+  }
+
+  .stageHeader h2 {
+    font-size: clamp(2.15rem, 3.8vw, 3.25rem);
+  }
+
+  .stageEyebrow {
+    margin-bottom: 0.5rem;
+  }
+
+  .selector {
+    margin-top: 0.75rem;
+  }
+
+  .selectorButton {
+    min-height: 3.1rem;
+    padding: 0.52rem;
+  }
+
+  .loginCard {
+    padding: 0.78rem 0.95rem;
+  }
+
+  .roleBadge,
+  .statusDot {
+    min-height: 1.62rem;
+    font-size: 0.68rem;
+  }
+
+  .roleBadge {
+    padding: 0.24rem 0.54rem;
+  }
+
+  .cardHeading {
+    margin-top: 0.55rem;
+  }
+
+  .cardHeading h3 {
+    font-size: clamp(1.85rem, 3.15vw, 2.42rem);
+  }
+
+  .cardHeading p {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    line-height: 1.32;
+  }
+
+  .formGrid {
+    gap: 0.55rem;
+    margin-top: 0.55rem;
+  }
+
+  .field {
+    gap: 0.28rem;
+  }
+
+  .field input {
+    min-height: 2.25rem;
+    padding: 0.62rem 0.78rem;
+  }
+
+  .destinationPanel {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.62rem;
+  }
+
+  .destinationPanel strong {
+    font-size: 1.08rem;
+  }
+
+  .chips {
+    gap: 0.35rem;
+    margin-top: 0.48rem;
+  }
+
+  .chips span {
+    min-height: 1.38rem;
+    padding: 0.28rem 0.58rem;
+    font-size: 0.66rem;
+  }
+
+  .submitButton,
+  .mvpButton {
+    min-height: 2.28rem;
+  }
+
+  .submitButton {
+    margin-top: 0.5rem;
+  }
+
+  .mvpButton {
+    margin-top: 0.32rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .storyTop,
+  .stageHeader,
+  .cardTopline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .storyFooter,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .selector {
+    grid-template-columns: 1fr;
+  }
+
+  .selectorButton {
+    min-height: 3.8rem;
+  }
+
+  .loginStage {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .storyContent h1 {
+    font-size: clamp(3rem, 18vw, 4.5rem);
+  }
+
+  .stageHeader h2,
+  .cardHeading h3 {
+    font-size: clamp(2.4rem, 14vw, 3.3rem);
+  }
+
+  .brand small,
+  .comingSoon {
+    letter-spacing: 0.1em;
+  }
+
+  .loginCard {
+    border-radius: 1.4rem;
+  }
+}
+
+[data-theme='dark'] .loginStage {
+  background:
+    radial-gradient(560px circle at var(--spotlight-x) var(--spotlight-y), color-mix(in srgb, var(--role-mid) 22%, transparent), transparent 62%),
+    linear-gradient(135deg, color-mix(in srgb, var(--role-dark) 26%, #130b06), color-mix(in srgb, var(--role-pale) 18%, #130b06));
+}
+
+[data-theme='dark'] .stageHeader h2,
+[data-theme='dark'] .cardHeading h3,
+[data-theme='dark'] .destinationPanel strong,
+[data-theme='dark'] .field input {
+  color: color-mix(in srgb, var(--role-pale) 92%, white);
+}
+
+[data-theme='dark'] .cardHeading p,
+[data-theme='dark'] .chips span,
+[data-theme='dark'] .mvpButton,
+[data-theme='dark'] .selectorButton {
+  color: color-mix(in srgb, var(--role-pale) 72%, transparent);
+}
+
+[data-theme='dark'] .loginCard,
+[data-theme='dark'] .selector,
+[data-theme='dark'] .backLink {
+  background: color-mix(in srgb, var(--role-dark) 28%, #170c06);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .selectorActive,
+[data-theme='dark'] .field input,
+[data-theme='dark'] .destinationPanel,
+[data-theme='dark'] .chips span,
+[data-theme='dark'] .mvpButton {
+  background: color-mix(in srgb, var(--role-dark) 34%, #211108);
+}

@@ -1,3 +1,5 @@
+export type DemoRole = 'all' | 'reporter' | 'volunteer' | 'ngo';
+
 export type AppNavItem = {
   label: string;
   path: string;
@@ -5,6 +7,7 @@ export type AppNavItem = {
   group: 'Command' | 'Field' | 'Intelligence' | 'Partners';
   icon: string;
   accent: 'terra' | 'jade' | 'amber';
+  demoRoles: Exclude<DemoRole, 'all'>[];
 };
 
 export const appNavItems: AppNavItem[] = [
@@ -15,6 +18,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Command',
     icon: 'constellation',
     accent: 'terra',
+    demoRoles: ['ngo'],
   },
   {
     label: 'The Map',
@@ -23,6 +27,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Command',
     icon: 'map',
     accent: 'jade',
+    demoRoles: ['reporter', 'volunteer', 'ngo'],
   },
   {
     label: 'SEVA Agent',
@@ -31,6 +36,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Command',
     icon: 'dispatch',
     accent: 'amber',
+    demoRoles: ['ngo'],
   },
   {
     label: 'NGO Dashboard',
@@ -39,6 +45,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Command',
     icon: 'dashboard',
     accent: 'jade',
+    demoRoles: ['ngo'],
   },
   {
     label: 'Report a Need',
@@ -47,6 +54,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Field',
     icon: 'intake',
     accent: 'terra',
+    demoRoles: ['reporter'],
   },
   {
     label: 'Volunteer App',
@@ -55,6 +63,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Field',
     icon: 'volunteer',
     accent: 'jade',
+    demoRoles: ['volunteer'],
   },
   {
     label: 'Gemini Lab',
@@ -63,6 +72,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Intelligence',
     icon: 'spark',
     accent: 'amber',
+    demoRoles: ['ngo'],
   },
   {
     label: 'CSR Portal',
@@ -71,6 +81,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Partners',
     icon: 'csr',
     accent: 'terra',
+    demoRoles: ['ngo'],
   },
   {
     label: 'Panchayat',
@@ -79,6 +90,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Partners',
     icon: 'civic',
     accent: 'jade',
+    demoRoles: ['ngo'],
   },
   {
     label: 'Crisis Mode',
@@ -87,6 +99,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Command',
     icon: 'crisis',
     accent: 'amber',
+    demoRoles: ['ngo'],
   },
   {
     label: 'For NGOs',
@@ -95,6 +108,7 @@ export const appNavItems: AppNavItem[] = [
     group: 'Partners',
     icon: 'network',
     accent: 'terra',
+    demoRoles: ['ngo'],
   },
 ];
 
@@ -102,6 +116,37 @@ export const marketingNavItems = appNavItems.filter((item) =>
   ['/pulse-map', '/intake', '/workspace'].includes(item.path)
 );
 
+export const roleDefaultPaths: Record<DemoRole, string> = {
+  all: '/workspace',
+  reporter: '/intake',
+  volunteer: '/volunteer-app',
+  ngo: '/workspace',
+};
+
+export function getNavItemsForRole(role: DemoRole) {
+  if (role === 'all') return appNavItems;
+  return appNavItems.filter((item) => item.demoRoles.includes(role));
+}
+
+export function canRoleAccessPath(role: DemoRole, pathname: string) {
+  if (role === 'all') return true;
+  if (pathname === '/role-access') return true;
+  const item = appNavItems.find((navItem) => navItem.path === pathname);
+  return item ? item.demoRoles.includes(role) : true;
+}
+
 export function getAppNavItem(pathname: string) {
+  if (pathname === '/role-access') {
+    return {
+      label: 'Role Access',
+      path: '/role-access',
+      description: 'Coming soon role-based workspaces for reporters, volunteers, and NGO teams.',
+      group: 'Command',
+      icon: 'shield',
+      accent: 'amber',
+      demoRoles: ['reporter', 'volunteer', 'ngo'],
+    } satisfies AppNavItem;
+  }
+
   return appNavItems.find((item) => item.path === pathname) || appNavItems[0];
 }

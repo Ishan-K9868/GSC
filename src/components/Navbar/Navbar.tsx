@@ -192,6 +192,14 @@ function Navbar() {
             Join Waitlist
           </button>
           <Link
+            to="/role-access"
+            className={`${styles.loginPreviewLink} ${styles.desktopOnly}`}
+            aria-label="Preview coming soon role-based login"
+          >
+            <span>Login</span>
+            <small>Coming soon</small>
+          </Link>
+          <Link
             to="/for-ngos"
             className={`btn btn-primary ${styles.desktopOnly} ${styles.ctaLink}`}
             aria-label="Open the NGO onboarding workspace"
@@ -290,6 +298,15 @@ function Navbar() {
                   aria-label="Open the NGO onboarding workspace"
                 >
                   For NGOs
+                </Link>
+                <Link
+                  to="/role-access"
+                  className={styles.mobileLoginLink}
+                  onClick={closeMenu}
+                  aria-label="Preview coming soon role-based login"
+                >
+                  Login
+                  <span>Coming soon</span>
                 </Link>
               </motion.div>
             </div>

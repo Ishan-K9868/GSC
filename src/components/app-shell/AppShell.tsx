@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { AppIcon } from '../shared';
-import { appNavItems, getAppNavItem } from '../../config/appNavigation';
+import { getAppNavItem, getNavItemsForRole } from '../../config/appNavigation';
 import { useTheme } from '../../context/ThemeContext';
+import { useDemoRole } from '../../context/DemoRoleContext';
 import '../../styles/internal.css';
 import styles from './AppShell.module.css';
 
@@ -12,16 +13,18 @@ const groups = ['Command', 'Field', 'Intelligence', 'Partners'] as const;
 export function AppShell() {
   const location = useLocation();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { role, roleLabel, isRolePreview, clearRole } = useDemoRole();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const current = getAppNavItem(location.pathname);
+  const roleNavItems = useMemo(() => getNavItemsForRole(role), [role]);
   const grouped = useMemo(
     () =>
       groups.map((group) => ({
         group,
-        items: appNavItems.filter((item) => item.group === group),
-      })),
-    []
+        items: roleNavItems.filter((item) => item.group === group),
+      })).filter(({ items }) => items.length > 0),
+    [roleNavItems]
   );
 
   return (
@@ -33,7 +36,10 @@ export function AppShell() {
             <span className={styles.brandMark}>
               <AppIcon name="network" size={20} />
             </span>
-            <span className={styles.brandText}>SevaSetu</span>
+            <span className={styles.brandStack}>
+              <span className={styles.brandText}>SevaSetu</span>
+              <span className={styles.brandRole}>{roleLabel}</span>
+            </span>
           </Link>
 
           <nav className={styles.nav} aria-label="Internal navigation">
@@ -62,6 +68,11 @@ export function AppShell() {
           </nav>
 
           <div className={styles.sidebarFooter}>
+            {isRolePreview ? (
+              <button type="button" className={styles.resetRoleButton} onClick={clearRole}>
+                Return to MVP demo view
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles.themeToggle}
@@ -140,7 +151,10 @@ export function AppShell() {
                   <span className={styles.brandMark}>
                     <AppIcon name="network" size={20} />
                   </span>
-                  <span className={styles.brandText}>SevaSetu</span>
+                  <span className={styles.brandStack}>
+                    <span className={styles.brandText}>SevaSetu</span>
+                    <span className={styles.brandRole}>{roleLabel}</span>
+                  </span>
                 </Link>
                 <button
                   type="button"
@@ -179,6 +193,11 @@ export function AppShell() {
               </nav>
 
               <div className={styles.sidebarFooter}>
+                {isRolePreview ? (
+                  <button type="button" className={styles.resetRoleButton} onClick={clearRole}>
+                    Return to MVP demo view
+                  </button>
+                ) : null}
                 <button type="button" className={styles.themeToggle} onClick={toggleTheme}>
                   <AppIcon name={theme === 'light' ? 'spark' : 'constellation'} size={16} />
                   <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
