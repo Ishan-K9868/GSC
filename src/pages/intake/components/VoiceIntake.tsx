@@ -79,6 +79,11 @@ export function VoiceIntake({ onSuccess, onError, onSwitchToForm }: VoiceIntakeP
     setLocation(preset.location);
   };
 
+  const handleSelectTypedLocation = (nextLocation: Location) => {
+    setSelectedPresetId('');
+    setLocation(nextLocation);
+  };
+
   const handleUseCurrentLocation = async () => {
     const currentLocation = await getLocation();
     if (currentLocation) {
@@ -435,6 +440,7 @@ export function VoiceIntake({ onSuccess, onError, onSwitchToForm }: VoiceIntakeP
                 locationLoading={locationLoading}
                 locationError={locationError}
                 onSelectPreset={handleSelectLocationPreset}
+                onSelectTypedLocation={handleSelectTypedLocation}
                 onUseCurrentLocation={handleUseCurrentLocation}
               />
             </div>

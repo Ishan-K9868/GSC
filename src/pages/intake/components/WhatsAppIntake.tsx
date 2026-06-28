@@ -513,6 +513,7 @@ export function WhatsAppIntake({ onSuccess, onError }: WhatsAppIntakeProps) {
             selectedPresetId={selectedPresetId}
             location={reportData.location}
             onSelectPreset={(presetId) => void handleSelectLocationPreset(presetId)}
+            onSelectTypedLocation={(location, label) => void applyResolvedLocation(location, `Typed address: ${label}`)}
             onUseCurrentLocation={handleUseCurrentLocation}
           />
         </div>

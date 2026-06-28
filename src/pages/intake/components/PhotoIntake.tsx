@@ -80,6 +80,11 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
     setLocation(preset.location);
   };
 
+  const handleSelectTypedLocation = (nextLocation: Location) => {
+    setSelectedPresetId('');
+    setLocation(nextLocation);
+  };
+
   const handleUseCurrentLocation = async () => {
     const currentLocation = await getLocation();
     if (currentLocation) {
@@ -419,6 +424,7 @@ export function PhotoIntake({ onSuccess, onError }: PhotoIntakeProps) {
                 locationLoading={locationLoading}
                 locationError={locationError}
                 onSelectPreset={handleSelectLocationPreset}
+                onSelectTypedLocation={handleSelectTypedLocation}
                 onUseCurrentLocation={handleUseCurrentLocation}
               />
             </div>

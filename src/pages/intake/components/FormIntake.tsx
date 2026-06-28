@@ -95,6 +95,11 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
     setLocation(preset.location);
   };
 
+  const handleSelectTypedLocation = (nextLocation: Location) => {
+    setSelectedPresetId('');
+    setLocation(nextLocation);
+  };
+
   const handleUseCurrentLocation = async () => {
     const currentLocation = await getLocation();
     if (currentLocation) {
@@ -535,6 +540,7 @@ export function FormIntake({ onSuccess, onError }: FormIntakeProps) {
           locationLoading={locationLoading}
           locationError={locationError}
           onSelectPreset={handleSelectLocationPreset}
+          onSelectTypedLocation={handleSelectTypedLocation}
           onUseCurrentLocation={handleUseCurrentLocation}
         />
       </div>

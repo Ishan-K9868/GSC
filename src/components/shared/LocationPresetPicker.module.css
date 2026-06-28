@@ -1,10 +1,17 @@
 .wrapper {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--glass-border, var(--border));
   border-radius: var(--radius-lg);
-  background: var(--surface-1, var(--bg-2));
+  background:
+    radial-gradient(circle at 12% 0%, rgba(212, 98, 42, 0.12), transparent 34%),
+    var(--surface-1, var(--bg-2));
+  box-shadow:
+    0 1px 2px rgba(44, 24, 16, 0.08),
+    0 10px 30px rgba(44, 24, 16, 0.06);
+  position: relative;
+  z-index: 4;
 }
 
 .topRow {
@@ -30,7 +37,12 @@
   border-radius: 999px;
   padding: 0.45rem 0.8rem;
   font-size: 0.78rem;
+  font-weight: 800;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  touch-action: manipulation;
 }
 
 .gpsButton:disabled {
@@ -45,6 +57,149 @@
   border: 1px solid rgba(212, 98, 42, 0.18);
   display: grid;
   gap: 0.18rem;
+}
+
+.searchBox {
+  position: relative;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.searchBox label {
+  color: var(--text-subtle, var(--text-muted));
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.searchInputWrap {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid rgba(212, 98, 42, 0.18);
+  border-radius: calc(var(--radius-md) + 0.15rem);
+  padding: 0 0.85rem;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.searchInputWrap:focus-within {
+  border-color: rgba(212, 98, 42, 0.48);
+  box-shadow:
+    0 0 0 3px rgba(212, 98, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.searchInputWrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.searchInputWrap input::placeholder {
+  color: var(--text-subtle, var(--text-muted));
+  font-weight: 500;
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(212, 98, 42, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 0.45rem;
+  background: rgba(255, 250, 244, 0.96);
+  box-shadow:
+    0 2px 4px rgba(44, 24, 16, 0.1),
+    0 18px 56px rgba(44, 24, 16, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.suggestionButton,
+.useTypedButton {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.suggestionButton {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.65rem;
+}
+
+.suggestionButton:hover,
+.suggestionButton:focus-visible {
+  background: rgba(212, 98, 42, 0.09);
+}
+
+.suggestionIcon {
+  display: inline-flex;
+  width: 1.9rem;
+  height: 1.9rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.7rem;
+  background: rgba(212, 98, 42, 0.1);
+  color: var(--accent);
+}
+
+.suggestionButton strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1.1;
+}
+
+.suggestionButton small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-subtle, var(--text-muted));
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.useTypedButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-top: 1px solid rgba(44, 24, 16, 0.08);
+  border-radius: 0 0 calc(var(--radius-lg) - 0.45rem) calc(var(--radius-lg) - 0.45rem);
+  padding: 0.7rem 0.65rem 0.55rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.useTypedButton:hover,
+.useTypedButton:focus-visible {
+  background: rgba(212, 98, 42, 0.08);
+}
+
+.noSuggestions {
+  padding: 0.75rem;
+  color: var(--text-subtle, var(--text-muted));
+  font-size: 0.78rem;
 }
 
 .selectedCard strong {
@@ -73,6 +228,13 @@
   cursor: pointer;
   display: grid;
   gap: 0.2rem;
+  touch-action: manipulation;
+}
+
+.presetButton:hover,
+.presetButton:focus-visible {
+  border-color: rgba(212, 98, 42, 0.28);
+  background: rgba(212, 98, 42, 0.05);
 }
 
 .presetButton strong {
@@ -100,4 +262,14 @@
 .error {
   font-size: 0.75rem;
   color: var(--error, #ef4444);
+}
+
+@media (max-width: 560px) {
+  .wrapper {
+    padding: 0.85rem;
+  }
+
+  .searchInputWrap {
+    min-height: 3.2rem;
+  }
 }
