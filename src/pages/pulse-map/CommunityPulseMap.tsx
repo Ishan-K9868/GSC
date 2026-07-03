@@ -12,6 +12,15 @@ const GOOGLE_MAPS_CALLBACK_NAME = 'sevaSetuPulseMapReady';
 const GOOGLE_MAPS_SCRIPT_SRC = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=marker&callback=${GOOGLE_MAPS_CALLBACK_NAME}&loading=async`;
 const ACTIVE_NEED_STATUSES = ['pending', 'classified', 'dispatched', 'in_progress'] as const;
 const NEED_API_FALLBACK_POLL_MS = 12000;
+const DELHI_NCR_CENTER = { lat: 28.6139, lng: 77.209 };
+const DELHI_NCR_BOUNDS = {
+  north: 29.15,
+  south: 28.25,
+  east: 77.75,
+  west: 76.7,
+} as const;
+const DELHI_NCR_MIN_ZOOM = 9;
+const DELHI_NCR_DEFAULT_ZOOM = 10;
 
 type NeedStatus = typeof ACTIVE_NEED_STATUSES[number] | 'resolved' | 'cancelled';
 type UrgencyKey = 'critical' | 'high' | 'medium' | 'low';
@@ -488,6 +497,17 @@ function getSafeUrgencyScore(report: NeedReport): number {
   }
 }
 
+function isWithinDelhiNcr(location?: { latitude?: number; longitude?: number }): boolean {
+  if (typeof location?.latitude !== 'number' || typeof location?.longitude !== 'number') return false;
+
+  return (
+    location.latitude >= DELHI_NCR_BOUNDS.south &&
+    location.latitude <= DELHI_NCR_BOUNDS.north &&
+    location.longitude >= DELHI_NCR_BOUNDS.west &&
+    location.longitude <= DELHI_NCR_BOUNDS.east
+  );
+}
+
 function getClusterGlyph(category: string): string {
   switch (category) {
     case 'shelter':
@@ -695,7 +715,7 @@ export function CommunityPulseMap() {
   const [showWeatherLayer, setShowWeatherLayer] = useState(false);
 
   const filteredNeeds = useMemo(
-    () => needReports.filter((report) => filters[report.status as StatusFilterKey] ?? false),
+    () => needReports.filter((report) => (filters[report.status as StatusFilterKey] ?? false) && isWithinDelhiNcr(report.location)),
     [filters, needReports]
   );
 
@@ -712,7 +732,7 @@ export function CommunityPulseMap() {
 
   const availableVolunteers = useMemo(
     () => volunteerPositions.filter(
-      (volunteer) => typeof volunteer.location?.latitude === 'number' && typeof volunteer.location?.longitude === 'number'
+      (volunteer) => isWithinDelhiNcr(volunteer.location)
     ),
     [volunteerPositions]
   );
@@ -963,8 +983,6 @@ export function CommunityPulseMap() {
     volunteerMarkersRef.current = [];
     weatherCirclesRef.current = [];
 
-    const bounds = new google.maps.LatLngBounds();
-
     filteredNeeds.forEach((report) => {
       const position = {
         lat: report.location?.latitude || 0,
@@ -981,7 +999,6 @@ export function CommunityPulseMap() {
       });
 
       needMarkersRef.current.push(marker);
-      bounds.extend(position);
 
       if (showWeatherLayer && ['water_sanitation', 'shelter', 'health'].includes(report.category)) {
         const circle = new google.maps.Circle({
@@ -1013,7 +1030,6 @@ export function CommunityPulseMap() {
         });
 
         volunteerMarkersRef.current.push(marker);
-        bounds.extend(position);
       });
     }
 
@@ -1049,10 +1065,6 @@ export function CommunityPulseMap() {
       dataLayerRef.current.setMap(null);
     }
 
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, 80);
-      map.setZoom(Math.min(map.getZoom() || 11, 12));
-    }
   }, [availableVolunteers, filteredNeeds, ready, selectedNeed?.id, showVolunteerLayer, showVulnerabilityLayer, showWeatherLayer]);
 
   async function initialiseMap() {
@@ -1065,8 +1077,13 @@ export function CommunityPulseMap() {
     }
 
     mapInstance.current = new google.maps.Map(mapRef.current, {
-      center: { lat: 28.6139, lng: 77.209 },
-      zoom: 11,
+      center: DELHI_NCR_CENTER,
+      zoom: DELHI_NCR_DEFAULT_ZOOM,
+      minZoom: DELHI_NCR_MIN_ZOOM,
+      restriction: {
+        latLngBounds: DELHI_NCR_BOUNDS,
+        strictBounds: true,
+      },
       mapId: GOOGLE_MAPS_MAP_ID,
       mapTypeControl: false,
       fullscreenControl: false,
